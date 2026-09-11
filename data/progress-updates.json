@@ -40,10 +40,12 @@
       "weekEnd": 5,
       "periodStart": "2026-08-28",
       "periodEnd": "2026-09-11",
-      "title": "First prototype: a working directory of projects, batches, and roles",
-      "summary": "Following the change in approach above, this is the first build-show-learn cycle: a working prototype of the project directory, rather than more up-front research.",
+      "title": "First prototype: real project data, live and shared",
+      "summary": "Following the change in approach above, this is the first build-show-learn cycle: a working prototype of the project directory, now loaded with the batch's real projects and mentors, deployed live, and shared with the coordinator for feedback.",
       "completed": [
-        "Designed the data model and screens for a project directory, grouped into batches, with role-based permissions for students, mentors and the coordinator."
+        "Designed the data model and screens for a project directory, grouped into batches, with role-based permissions for students, mentors and the coordinator.",
+        "Loaded the real PDM 2025–2027 batch roster and all 22 registered project ideas from the batch's project registration form, replacing the placeholder demo data the prototype started with.",
+        "Sent the programme coordinator a status update covering this prototype, the live link, the GitHub repo and this progress page, with two open questions: what details a final year project record actually needs, and who should be responsible for entering them (coordinator vs. mentor)."
       ],
       "added": [
         "Project directory home page: browse as cards or a table, search by title, and filter by batch, domain, status, or \"only mine\".",
@@ -52,19 +54,28 @@
         "Project detail and edit pages.",
         "Role switcher (student / mentor / coordinator) that demonstrates what each role can see and do, ahead of real sign-in.",
         "Duplicate-title detection that flags likely repeat project titles before saving.",
-        "This Project progress page and a sidebar collaborators panel."
+        "This Project progress page and a sidebar collaborators panel.",
+        "A Mentor filter in the project directory, so a coordinator can shortlist projects by who mentors them.",
+        "A three-dot actions menu on project and batch cards: Edit, Share (copies a link), and Archive/Restore.",
+        "An Edit batch panel, so a batch's years, name and description can be changed after it's created.",
+        "The live prototype is now deployed and connected to GitHub, so every push updates it automatically: https://pdm-project-manager.vercel.app"
       ],
       "improved": [
         "When a mentor creates a project, the Mentor field is now pre-filled with their own name and locked, since a mentor always mentors the projects they add.",
         "Add Project and Add Batch panels keep Cancel/Save pinned in a fixed footer instead of scrolling away with the form.",
         "The top header bar is now sticky so it stays visible while a page scrolls.",
-        "The sidebar's selected item now shows solid white in light mode for clearer contrast; dark mode is unchanged."
+        "The sidebar's selected item now shows solid white in light mode for clearer contrast; dark mode is unchanged.",
+        "Project cards now show the team and mentor as avatars (initials for now, real photos later) instead of a plain name list, and the directory grid is capped at two columns with a single-line title so cards stay easy to scan.",
+        "Archiving a batch is blocked while it still has active projects in it, so a batch can't accidentally hide its own projects."
       ],
       "removed": [
-        "The cover-image / placeholder graphic on project cards in the directory — cards now lead with status, title, team, and mentor."
+        "The cover-image / placeholder graphic on project cards in the directory — cards now lead with status, title, team, and mentor.",
+        "The batch name shown on every project card in its own directory — redundant once you're already inside that batch.",
+        "The Ongoing/Completed status filter and the three placeholder batches (2022–24, 2023–25, 2024–26) — trimmed for now to keep the directory to the one real batch."
       ],
       "unfinished": [
-        "Not shown to real users yet — no testing or feedback has been recorded for this prototype."
+        "Not shown to real users yet — no testing or feedback has been recorded for this prototype.",
+        "Waiting on the coordinator's answer on what fields a project record actually needs and who should own entering them — real project data was loaded as-is without guessing at either."
       ],
       "nextSteps": [
         "Show this prototype to students, mentors and/or the coordinator and record what we learn.",
@@ -72,8 +83,17 @@
         "No real authentication yet; the role switcher stands in for sign-in.",
         "\"Materials\" are pasted links today, not uploaded files."
       ],
-      "evidence": [],
-      "lastIncludedCommit": "c588cd7be6c9d3b400009d6deab1eb9c849aaa86"
+      "evidence": [
+        {
+          "label": "Live prototype",
+          "url": "https://pdm-project-manager.vercel.app"
+        },
+        {
+          "label": "GitHub repository",
+          "url": "https://github.com/keshavdubeyy/pdm-project-management-tool"
+        }
+      ],
+      "lastIncludedCommit": "fa8c76edd5bf363a529d201d416ecc62c470fde8"
     }
   ]
 }
