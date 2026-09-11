@@ -30,10 +30,10 @@ function NewProjectContent() {
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>Mentors can&apos;t add projects</EmptyTitle>
+            <EmptyTitle>Students can&apos;t add projects</EmptyTitle>
             <EmptyDescription>
-              Mentors have browse access in this prototype. Switch to Student or Coordinator to
-              add a project.
+              Only mentors and the coordinator can add a project. Switch to Mentor or Coordinator
+              to add one.
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>

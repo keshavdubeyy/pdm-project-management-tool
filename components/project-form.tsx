@@ -29,45 +29,52 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { MaterialsEditor } from "@/components/materials-editor"
 import { PeoplePicker } from "@/components/people-picker"
+import { TeamMemberPicker } from "@/components/team-member-picker"
 import { findLikelyDuplicates } from "@/lib/duplicates"
-import { canManageRecords } from "@/lib/permissions"
 import { useProjectsStore } from "@/lib/store"
 import type { Project, ProjectDraft, ProjectStatus } from "@/lib/types"
 
-const NEW_BATCH = "__new_batch__"
 const NEW_DOMAIN = "__new_domain__"
 
 type ProjectFormProps = {
   mode: "create" | "edit"
   project?: Project
   initialBatchId?: string
+  /** Overrides the Cancel button's default `router.back()` — used when the
+   * form is embedded in a sheet rather than its own page. */
+  onCancel?: () => void
+  /** Id applied to the <form> element, so an external footer's buttons can
+   * submit it via the `form` attribute. */
+  formId?: string
+  /** Set to false when the caller renders its own Cancel/Save buttons
+   * (e.g. a sticky sheet footer) instead of the form's built-in ones. */
+  showActions?: boolean
 }
 
 type Errors = Partial<Record<"title" | "description" | "teamMemberIds" | "batchId", string>>
 
-export function ProjectForm({ mode, project, initialBatchId }: ProjectFormProps) {
+export function ProjectForm({
+  mode,
+  project,
+  initialBatchId,
+  onCancel,
+  formId,
+  showActions = true,
+}: ProjectFormProps) {
   const router = useRouter()
-  const {
-    people,
-    batches,
-    domains,
-    projects,
-    currentUser,
-    addProject,
-    updateProject,
-    addPerson,
-    addBatch,
-    addDomain,
-  } = useProjectsStore()
+  const { people, batches, domains, projects, currentUser, addProject, updateProject, addPerson, addDomain } =
+    useProjectsStore()
+
+  // A mentor creating a project is always its mentor — that field is locked to them.
+  const mentorLockedToSelf = mode === "create" && currentUser.role === "mentor"
 
   const [title, setTitle] = React.useState(project?.title ?? "")
   const [description, setDescription] = React.useState(project?.description ?? "")
-  const [coverImage, setCoverImage] = React.useState(project?.coverImage ?? "")
-  const [teamMemberIds, setTeamMemberIds] = React.useState<string[]>(
-    project?.teamMemberIds ?? (currentUser.role === "student" ? [currentUser.id] : [])
+  const [teamMemberIds, setTeamMemberIds] = React.useState<string[]>(project?.teamMemberIds ?? [])
+  const batchId = project?.batchId ?? initialBatchId ?? ""
+  const [mentorIds, setMentorIds] = React.useState<string[]>(
+    project?.mentorIds ?? (mentorLockedToSelf ? [currentUser.id] : [])
   )
-  const [batchId, setBatchId] = React.useState(project?.batchId ?? initialBatchId ?? "")
-  const [mentorIds, setMentorIds] = React.useState<string[]>(project?.mentorIds ?? [])
   const [domainId, setDomainId] = React.useState<string | null>(project?.domainId ?? null)
   const [status, setStatus] = React.useState<ProjectStatus>(project?.status ?? "ongoing")
   const [problem, setProblem] = React.useState(project?.problem ?? "")
@@ -75,41 +82,21 @@ export function ProjectForm({ mode, project, initialBatchId }: ProjectFormProps)
   const [materials, setMaterials] = React.useState(project?.materials ?? [])
 
   const [errors, setErrors] = React.useState<Errors>({})
-  const [addingBatch, setAddingBatch] = React.useState(false)
-  const [newBatchLabel, setNewBatchLabel] = React.useState("")
   const [addingDomain, setAddingDomain] = React.useState(false)
   const [newDomainLabel, setNewDomainLabel] = React.useState("")
+
+  const batch = batches.find((b) => b.id === batchId)
 
   const duplicates = React.useMemo(
     () => findLikelyDuplicates(projects, title, project?.id),
     [projects, title, project?.id]
   )
 
-  const batchItems = React.useMemo(
-    () => Object.fromEntries(batches.map((b) => [b.id, b.label])),
-    [batches]
-  )
   const domainItems = React.useMemo(
     () => Object.fromEntries(domains.map((d) => [d.id, d.label])),
     [domains]
   )
   const statusItems = React.useMemo(() => ({ ongoing: "Ongoing", completed: "Completed" }), [])
-
-  function handleBatchChange(value: string) {
-    if (value === NEW_BATCH) {
-      setAddingBatch(true)
-      return
-    }
-    setBatchId(value)
-  }
-
-  function confirmNewBatch() {
-    if (!newBatchLabel.trim()) return
-    const batch = addBatch(newBatchLabel.trim())
-    setBatchId(batch.id)
-    setNewBatchLabel("")
-    setAddingBatch(false)
-  }
 
   function handleDomainChange(value: string) {
     if (value === NEW_DOMAIN) {
@@ -132,7 +119,7 @@ export function ProjectForm({ mode, project, initialBatchId }: ProjectFormProps)
     if (!title.trim()) next.title = "Add a project title."
     if (!description.trim()) next.description = "Add a short description."
     if (teamMemberIds.length === 0) next.teamMemberIds = "Add at least one team member."
-    if (!batchId) next.batchId = "Select a batch."
+    if (!batchId) next.batchId = "This project must be created from inside a batch."
     return next
   }
 
@@ -145,7 +132,6 @@ export function ProjectForm({ mode, project, initialBatchId }: ProjectFormProps)
     const draft: ProjectDraft = {
       title: title.trim(),
       description: description.trim(),
-      coverImage: coverImage.trim() || undefined,
       teamMemberIds,
       batchId,
       mentorIds,
@@ -166,7 +152,7 @@ export function ProjectForm({ mode, project, initialBatchId }: ProjectFormProps)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+    <form id={formId} onSubmit={handleSubmit} className="flex flex-col gap-8">
       {duplicates.length > 0 && (
         <Alert>
           <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} />
@@ -177,156 +163,119 @@ export function ProjectForm({ mode, project, initialBatchId }: ProjectFormProps)
         </Alert>
       )}
 
-      <FieldSet>
-        <FieldLegend>Basics</FieldLegend>
-        <FieldGroup>
-          <Field data-invalid={Boolean(errors.title)}>
-            <FieldLabel htmlFor="title">Title</FieldLabel>
-            <Input
-              id="title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              aria-invalid={Boolean(errors.title)}
-            />
-            <FieldError>{errors.title}</FieldError>
-          </Field>
+      <FieldGroup>
+        <Field data-invalid={Boolean(errors.batchId)}>
+          <FieldLabel>Batch</FieldLabel>
+          <div className="flex h-9 w-full items-center rounded-3xl border border-transparent bg-input/50 px-3 text-sm text-muted-foreground">
+            {batch?.label ?? "No batch selected"}
+          </div>
+          <FieldError>{errors.batchId}</FieldError>
+        </Field>
 
-          <Field data-invalid={Boolean(errors.description)}>
-            <FieldLabel htmlFor="description">Short description</FieldLabel>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              aria-invalid={Boolean(errors.description)}
-              rows={2}
-            />
-            <FieldError>{errors.description}</FieldError>
-          </Field>
+        <Field data-invalid={Boolean(errors.title)}>
+          <FieldLabel htmlFor="title">Title</FieldLabel>
+          <Input
+            id="title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            aria-invalid={Boolean(errors.title)}
+          />
+          <FieldError>{errors.title}</FieldError>
+        </Field>
 
-          <Field>
-            <FieldLabel htmlFor="coverImage">Cover image URL</FieldLabel>
-            <Input
-              id="coverImage"
-              type="url"
-              value={coverImage}
-              onChange={(event) => setCoverImage(event.target.value)}
-              placeholder="https://example.com/cover.jpg"
-            />
-            <FieldDescription>
-              Optional — shown as the thumbnail on the project card. Paste a link to an image.
-            </FieldDescription>
-          </Field>
+        <Field data-invalid={Boolean(errors.description)}>
+          <FieldLabel htmlFor="description">Short description</FieldLabel>
+          <Textarea
+            id="description"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            aria-invalid={Boolean(errors.description)}
+            rows={2}
+          />
+          <FieldError>{errors.description}</FieldError>
+        </Field>
 
-          <Field data-invalid={Boolean(errors.teamMemberIds)}>
-            <FieldLabel>Team members</FieldLabel>
-            <PeoplePicker
-              people={people}
-              value={teamMemberIds}
-              onChange={setTeamMemberIds}
-              onCreatePerson={(name) => addPerson(name, "student")}
-              placeholder="Search or add a team member"
-            />
-            <FieldError>{errors.teamMemberIds}</FieldError>
-          </Field>
+        <Field>
+          <FieldLabel>Domain</FieldLabel>
+          {addingDomain ? (
+            <div className="flex gap-2">
+              <Input
+                autoFocus
+                value={newDomainLabel}
+                onChange={(event) => setNewDomainLabel(event.target.value)}
+                placeholder="Request a new domain label"
+              />
+              <Button type="button" onClick={confirmNewDomain}>
+                Add
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setAddingDomain(false)}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <Select
+              items={domainItems}
+              value={domainId ?? ""}
+              onValueChange={(value) => handleDomainChange(value as string)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a domain (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {domains.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.label}
+                  </SelectItem>
+                ))}
+                <SelectSeparator />
+                <SelectItem value={NEW_DOMAIN}>+ Request a new label</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </Field>
 
-          <Field data-invalid={Boolean(errors.batchId)}>
-            <FieldLabel>Batch</FieldLabel>
-            {addingBatch ? (
-              <div className="flex gap-2">
-                <Input
-                  autoFocus
-                  value={newBatchLabel}
-                  onChange={(event) => setNewBatchLabel(event.target.value)}
-                  placeholder="e.g. Batch 2027"
-                />
-                <Button type="button" onClick={confirmNewBatch}>
-                  Add
-                </Button>
-                <Button type="button" variant="ghost" onClick={() => setAddingBatch(false)}>
-                  Cancel
-                </Button>
+        <Field>
+          <FieldLabel>Mentor</FieldLabel>
+          {mentorLockedToSelf ? (
+            <>
+              <div className="flex h-9 w-full items-center rounded-3xl border border-transparent bg-input/50 px-3 text-sm text-muted-foreground">
+                {currentUser.name}
               </div>
-            ) : (
-              <Select
-                items={batchItems}
-                value={batchId}
-                onValueChange={(value) => handleBatchChange(value as string)}
-              >
-                <SelectTrigger aria-invalid={Boolean(errors.batchId)} className="w-full sm:w-64">
-                  <SelectValue placeholder="Select a batch" />
-                </SelectTrigger>
-                <SelectContent>
-                  {batches.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.label}
-                    </SelectItem>
-                  ))}
-                  {canManageRecords(currentUser) && (
-                    <>
-                      <SelectSeparator />
-                      <SelectItem value={NEW_BATCH}>+ Add new batch</SelectItem>
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
-            )}
-            <FieldError>{errors.batchId}</FieldError>
-          </Field>
+              <FieldDescription>
+                Projects you add are mentored by you.
+              </FieldDescription>
+            </>
+          ) : (
+            <>
+              <PeoplePicker
+                people={people}
+                value={mentorIds}
+                onChange={setMentorIds}
+                onCreatePerson={(name) => addPerson(name, "mentor")}
+                roleFilter="mentor"
+                placeholder="Search or add a mentor (optional)"
+              />
+              <FieldDescription>
+                Leave blank if the project doesn&apos;t have a mentor yet.
+              </FieldDescription>
+            </>
+          )}
+        </Field>
 
-          <Field>
-            <FieldLabel>Mentor</FieldLabel>
-            <PeoplePicker
-              people={people}
-              value={mentorIds}
-              onChange={setMentorIds}
-              onCreatePerson={(name) => addPerson(name, "mentor")}
-              roleFilter="mentor"
-              placeholder="Search or add a mentor (optional)"
-            />
-            <FieldDescription>
-              Leave blank if the project doesn&apos;t have a mentor yet.
-            </FieldDescription>
-          </Field>
+        <Field data-invalid={Boolean(errors.teamMemberIds)}>
+          <FieldLabel>Team members</FieldLabel>
+          <TeamMemberPicker
+            people={people}
+            value={teamMemberIds}
+            onChange={setTeamMemberIds}
+            onCreatePerson={(name, rollNumber) => addPerson(name, "student", rollNumber)}
+            placeholder="Search or add a team member"
+            batchAdmissionYear={batch?.admissionYear}
+          />
+          <FieldError>{errors.teamMemberIds}</FieldError>
+        </Field>
 
-          <Field>
-            <FieldLabel>Domain</FieldLabel>
-            {addingDomain ? (
-              <div className="flex gap-2">
-                <Input
-                  autoFocus
-                  value={newDomainLabel}
-                  onChange={(event) => setNewDomainLabel(event.target.value)}
-                  placeholder="Request a new domain label"
-                />
-                <Button type="button" onClick={confirmNewDomain}>
-                  Add
-                </Button>
-                <Button type="button" variant="ghost" onClick={() => setAddingDomain(false)}>
-                  Cancel
-                </Button>
-              </div>
-            ) : (
-              <Select
-                items={domainItems}
-                value={domainId ?? ""}
-                onValueChange={(value) => handleDomainChange(value as string)}
-              >
-                <SelectTrigger className="w-full sm:w-64">
-                  <SelectValue placeholder="Select a domain (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {domains.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.label}
-                    </SelectItem>
-                  ))}
-                  <SelectSeparator />
-                  <SelectItem value={NEW_DOMAIN}>+ Request a new label</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          </Field>
-
+        {mode === "edit" && (
           <Field>
             <FieldLabel>Status</FieldLabel>
             <Select
@@ -346,52 +295,58 @@ export function ProjectForm({ mode, project, initialBatchId }: ProjectFormProps)
               Marking a project completed is a directory label, not academic approval.
             </FieldDescription>
           </Field>
-        </FieldGroup>
-      </FieldSet>
+        )}
+      </FieldGroup>
 
-      <FieldSeparator />
+      {mode === "edit" && (
+        <>
+          <FieldSeparator />
 
-      <FieldSet>
-        <FieldLegend>Problem and outcome</FieldLegend>
-        <FieldDescription>Optional — add now or update later as work develops.</FieldDescription>
-        <FieldGroup>
-          <Field>
-            <FieldLabel htmlFor="problem">Problem</FieldLabel>
-            <Textarea
-              id="problem"
-              value={problem}
-              onChange={(event) => setProblem(event.target.value)}
-              rows={3}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="outcome">Work so far or outcome</FieldLabel>
-            <Textarea
-              id="outcome"
-              value={workOrOutcome}
-              onChange={(event) => setWorkOrOutcome(event.target.value)}
-              rows={3}
-            />
-          </Field>
-        </FieldGroup>
-      </FieldSet>
+          <FieldSet>
+            <FieldLegend>Problem and outcome</FieldLegend>
+            <FieldDescription>Optional — add now or update later as work develops.</FieldDescription>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="problem">Problem</FieldLabel>
+                <Textarea
+                  id="problem"
+                  value={problem}
+                  onChange={(event) => setProblem(event.target.value)}
+                  rows={3}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="outcome">Work so far or outcome</FieldLabel>
+                <Textarea
+                  id="outcome"
+                  value={workOrOutcome}
+                  onChange={(event) => setWorkOrOutcome(event.target.value)}
+                  rows={3}
+                />
+              </Field>
+            </FieldGroup>
+          </FieldSet>
 
-      <FieldSeparator />
+          <FieldSeparator />
 
-      <FieldSet>
-        <FieldLegend>Project materials</FieldLegend>
-        <FieldDescription>
-          Optional — add named links such as a report, prototype or repository.
-        </FieldDescription>
-        <MaterialsEditor value={materials} onChange={setMaterials} />
-      </FieldSet>
+          <FieldSet>
+            <FieldLegend>Project materials</FieldLegend>
+            <FieldDescription>
+              Optional — add named links such as a report, prototype or repository.
+            </FieldDescription>
+            <MaterialsEditor value={materials} onChange={setMaterials} />
+          </FieldSet>
+        </>
+      )}
 
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={() => router.back()}>
-          Cancel
-        </Button>
-        <Button type="submit">{mode === "create" ? "Save project" : "Save changes"}</Button>
-      </div>
+      {showActions && (
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={() => (onCancel ? onCancel() : router.back())}>
+            Cancel
+          </Button>
+          <Button type="submit">{mode === "create" ? "Save project" : "Save changes"}</Button>
+        </div>
+      )}
     </form>
   )
 }

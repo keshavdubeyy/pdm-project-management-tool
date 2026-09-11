@@ -8,24 +8,32 @@ export const DEMO_USER_IDS = {
   coordinator: "u-coordinator",
 } as const
 
+// Roll numbers follow <admission year><6-digit serial>, e.g. "2024100041" —
+// the prefix differs by the student's batch (2022/2023/2024 admission years).
 export const seedPeople: Person[] = [
-  { id: "u-student", name: "You (Student)", email: "you.student@pdm.edu", role: "student" },
+  { id: "u-student", name: "You (Student)", email: "you.student@pdm.edu", role: "student", rollNumber: "2024100041" },
   { id: "u-mentor", name: "You (Mentor)", email: "you.mentor@pdm.edu", role: "mentor" },
   { id: "u-coordinator", name: "You (Coordinator)", email: "you.coordinator@pdm.edu", role: "coordinator" },
-  { id: "p-arjun", name: "Arjun Nair", email: "arjun.nair@pdm.edu", role: "student" },
-  { id: "p-meera", name: "Meera Iyer", email: "meera.iyer@pdm.edu", role: "student" },
-  { id: "p-devika", name: "Devika Pillai", email: "devika.pillai@pdm.edu", role: "student" },
-  { id: "p-rohan", name: "Rohan Kulkarni", email: "rohan.kulkarni@pdm.edu", role: "student" },
-  { id: "p-sana", name: "Sana Sheikh", email: "sana.sheikh@pdm.edu", role: "student" },
+  { id: "p-arjun", name: "Arjun Nair", email: "arjun.nair@pdm.edu", role: "student", rollNumber: "2024100042" },
+  { id: "p-meera", name: "Meera Iyer", email: "meera.iyer@pdm.edu", role: "student", rollNumber: "2024100043" },
+  { id: "p-devika", name: "Devika Pillai", email: "devika.pillai@pdm.edu", role: "student", rollNumber: "2023100044" },
+  { id: "p-rohan", name: "Rohan Kulkarni", email: "rohan.kulkarni@pdm.edu", role: "student", rollNumber: "2024100045" },
+  { id: "p-sana", name: "Sana Sheikh", email: "sana.sheikh@pdm.edu", role: "student", rollNumber: "2023100046" },
   { id: "p-kavita", name: "Dr. Kavita Sharma", email: "kavita.sharma@pdm.edu", role: "mentor" },
   { id: "p-vikram", name: "Prof. Vikram Desai", email: "vikram.desai@pdm.edu", role: "mentor" },
   { id: "p-anjali", name: "Anjali Menon", email: "anjali.menon@pdm.edu", role: "coordinator" },
 ]
 
+const daysAgo = (n: number) => {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return d.toISOString()
+}
+
 export const seedBatches: Batch[] = [
-  { id: "b-2024", label: "Batch 2024" },
-  { id: "b-2025", label: "Batch 2025" },
-  { id: "b-2026", label: "Batch 2026" },
+  { id: "b-2024", label: "PDM 2022–2024", admissionYear: 2022, graduationYear: 2024, createdAt: daysAgo(400) },
+  { id: "b-2025", label: "PDM 2023–2025", admissionYear: 2023, graduationYear: 2025, createdAt: daysAgo(220) },
+  { id: "b-2026", label: "PDM 2024–2026", admissionYear: 2024, graduationYear: 2026, createdAt: daysAgo(40) },
 ]
 
 export const seedDomains: Domain[] = [
@@ -35,12 +43,6 @@ export const seedDomains: Domain[] = [
   { id: "d-sustainability", label: "Sustainability" },
   { id: "d-mobility", label: "Mobility" },
 ]
-
-const daysAgo = (n: number) => {
-  const d = new Date()
-  d.setDate(d.getDate() - n)
-  return d.toISOString()
-}
 
 export const seedProjects: Project[] = [
   {

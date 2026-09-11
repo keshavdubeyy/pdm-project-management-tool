@@ -1,31 +1,60 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Add01Icon } from "@hugeicons/core-free-icons"
+import { usePathname, useSearchParams } from "next/navigation"
 
-import { Button } from "@/components/ui/button"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import { RoleSwitcher } from "@/components/role-switcher"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { canAddProject } from "@/lib/permissions"
+import { backHrefOrDefault } from "@/lib/navigation"
 import { useProjectsStore } from "@/lib/store"
 
-export function SiteHeader() {
-  const { currentUser } = useProjectsStore()
+function HeaderBreadcrumb() {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const { batches } = useProjectsStore()
 
+  const batchId = pathname.match(/^\/batches\/([^/]+)/)?.[1]
+  const batch = batchId ? batches.find((b) => b.id === batchId) : undefined
+
+  if (!batch) return null
+
+  const directoryHref = backHrefOrDefault(searchParams.get("back"), "/")
+
+  return (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink render={<Link href={directoryHref} />}>Project directory</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>{batch.label}</BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
+  )
+}
+
+export function SiteHeader() {
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/60 px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="data-vertical:h-4 data-vertical:self-auto" />
+      <React.Suspense fallback={null}>
+        <HeaderBreadcrumb />
+      </React.Suspense>
       <div className="ml-auto flex items-center gap-2">
         <RoleSwitcher />
-        {canAddProject(currentUser) && (
-          <Button size="sm" render={<Link href="/projects/new" />} nativeButton={false}>
-            <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />
-            Add project
-          </Button>
-        )}
       </div>
     </header>
   )

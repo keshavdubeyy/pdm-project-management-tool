@@ -3,7 +3,7 @@
 import * as React from "react"
 
 import { DEMO_USER_IDS, seedBatches, seedDomains, seedPeople, seedProjects } from "@/lib/mock-data"
-import type { Batch, Domain, Person, Project, ProjectDraft, Role } from "@/lib/types"
+import type { Batch, BatchDraft, Domain, Person, Project, ProjectDraft, Role } from "@/lib/types"
 
 type ProjectsState = {
   people: Person[]
@@ -19,8 +19,8 @@ type ProjectsContextValue = ProjectsState & {
   updateProject: (id: string, draft: ProjectDraft) => void
   archiveProject: (id: string) => void
   restoreProject: (id: string) => void
-  addPerson: (name: string, role: Role) => Person
-  addBatch: (label: string) => Batch
+  addPerson: (name: string, role: Role, rollNumber?: string) => Person
+  addBatch: (draft: BatchDraft) => Batch
   addDomain: (label: string) => Domain
 }
 
@@ -88,14 +88,14 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, archived: false } : p)))
   }, [])
 
-  const addPerson = React.useCallback((name: string, role: Role) => {
-    const person: Person = { id: nextId("p"), name, email: "", role }
+  const addPerson = React.useCallback((name: string, role: Role, rollNumber?: string) => {
+    const person: Person = { id: nextId("p"), name, email: "", role, rollNumber }
     setPeople((prev) => [...prev, person])
     return person
   }, [])
 
-  const addBatch = React.useCallback((label: string) => {
-    const batch: Batch = { id: nextId("b"), label }
+  const addBatch = React.useCallback((draft: BatchDraft) => {
+    const batch: Batch = { ...draft, id: nextId("b"), createdAt: new Date().toISOString() }
     setBatches((prev) => [...prev, batch])
     return batch
   }, [])

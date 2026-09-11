@@ -1,4 +1,4 @@
-import type { Project } from "@/lib/types"
+import type { Batch, Project } from "@/lib/types"
 
 function normalize(title: string) {
   return title
@@ -32,4 +32,11 @@ export function findLikelyDuplicates(
     const similarity = intersection / union
     return similarity >= 0.3
   })
+}
+
+/** Batch labels are derived from a year (or year range), so an exact,
+ * case-insensitive match is a real duplicate, not just a likely one. */
+export function isDuplicateBatchLabel(batches: Batch[], label: string) {
+  const target = label.trim().toLowerCase()
+  return batches.some((batch) => batch.label.trim().toLowerCase() === target)
 }

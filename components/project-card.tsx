@@ -1,7 +1,5 @@
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Image01Icon } from "@hugeicons/core-free-icons"
 
 import { Badge } from "@/components/ui/badge"
 import {
@@ -46,21 +44,6 @@ export function ProjectCard({ project, people, batches, domains, backHref }: Pro
             {project.archived && <Badge variant="destructive">Archived</Badge>}
             {domain && <Badge variant="outline">{domain.label}</Badge>}
           </div>
-          {project.coverImage ? (
-            <img
-              src={project.coverImage}
-              alt=""
-              className="mt-1.5 size-[300px] max-w-full rounded-2xl object-cover"
-            />
-          ) : (
-            <div className="mt-1.5 flex size-[300px] max-w-full items-center justify-center rounded-2xl bg-muted">
-              <HugeiconsIcon
-                icon={Image01Icon}
-                strokeWidth={1.5}
-                className="size-10 text-muted-foreground/40"
-              />
-            </div>
-          )}
           <CardTitle className="mt-1.5 line-clamp-2">{project.title}</CardTitle>
           <CardDescription className="line-clamp-2">{project.description}</CardDescription>
         </CardHeader>

@@ -1,9 +1,9 @@
 import type { Person, Project } from "@/lib/types"
 
-/** Students may add projects and edit the ones they're a member of; the
- * coordinator can edit anything. Mentors are browse-only per the PRD. */
+/** Only mentors and the coordinator can add projects. Students can still
+ * edit the ones they're a member of, but can't create new ones. */
 export function canAddProject(user: Person) {
-  return user.role === "student" || user.role === "coordinator"
+  return user.role === "mentor" || user.role === "coordinator"
 }
 
 export function canEditProject(project: Project, user: Person) {

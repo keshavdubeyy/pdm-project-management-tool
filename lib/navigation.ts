@@ -11,7 +11,10 @@ export function backHrefOrDefault(back: string | null, fallback: string) {
   return back || fallback
 }
 
-/** Links to a batch's project list. */
-export function batchHref(batchId: string) {
-  return `/batches/${batchId}`
+/** Links to a batch's project list, optionally carrying the directory's
+ * current href (path + query) as `back` so its search and sort survive
+ * the round trip. */
+export function batchHref(batchId: string, backHref?: string) {
+  if (!backHref) return `/batches/${batchId}`
+  return `/batches/${batchId}?back=${encodeURIComponent(backHref)}`
 }

@@ -46,6 +46,7 @@ type ProjectFiltersProps = {
   domains: Domain[]
   role: Role
   showBatchFilter?: boolean
+  showDomainAndStatusFilters?: boolean
 }
 
 export function ProjectFilters({
@@ -55,6 +56,7 @@ export function ProjectFilters({
   domains,
   role,
   showBatchFilter = true,
+  showDomainAndStatusFilters = true,
 }: ProjectFiltersProps) {
   function set<K extends keyof DirectoryFilters>(key: K, value: DirectoryFilters[K]) {
     onChange({ ...filters, [key]: value })
@@ -96,38 +98,42 @@ export function ProjectFilters({
           </Select>
         )}
 
-        <Select
-          items={{ [ALL]: "All domains", ...Object.fromEntries(domains.map((d) => [d.id, d.label])) }}
-          value={filters.domainId}
-          onValueChange={(value) => set("domainId", value as string)}
-        >
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="Domain" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>All domains</SelectItem>
-            {domains.map((d) => (
-              <SelectItem key={d.id} value={d.id}>
-                {d.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {showDomainAndStatusFilters && (
+          <>
+            <Select
+              items={{ [ALL]: "All domains", ...Object.fromEntries(domains.map((d) => [d.id, d.label])) }}
+              value={filters.domainId}
+              onValueChange={(value) => set("domainId", value as string)}
+            >
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Domain" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>All domains</SelectItem>
+                {domains.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <Select
-          items={{ [ALL]: "Ongoing or completed", ongoing: "Ongoing", completed: "Completed" }}
-          value={filters.status}
-          onValueChange={(value) => set("status", value as string)}
-        >
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Ongoing or completed</SelectItem>
-            <SelectItem value="ongoing">Ongoing</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-          </SelectContent>
-        </Select>
+            <Select
+              items={{ [ALL]: "Ongoing or completed", ongoing: "Ongoing", completed: "Completed" }}
+              value={filters.status}
+              onValueChange={(value) => set("status", value as string)}
+            >
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>Ongoing or completed</SelectItem>
+                <SelectItem value="ongoing">Ongoing</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </>
+        )}
 
         {role !== "coordinator" && (
           <Label className="flex items-center gap-2 rounded-3xl border border-border bg-background px-3 py-2 text-sm has-[:focus-visible]:border-ring">
@@ -140,16 +146,8 @@ export function ProjectFilters({
           </Label>
         )}
 
-        {role === "coordinator" && (
-          <Label className="flex items-center gap-2 rounded-3xl border border-border bg-background px-3 py-2 text-sm has-[:focus-visible]:border-ring">
-            <Switch
-              size="sm"
-              checked={filters.showArchived}
-              onCheckedChange={(checked) => set("showArchived", Boolean(checked))}
-            />
-            Show archived
-          </Label>
-        )}
+        {/* "Show archived" is deferred to a dedicated archive section rather
+         * than living alongside the everyday domain/status filters. */}
       </div>
     </div>
   )

@@ -5,8 +5,9 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Add01Icon, ArrowLeft02Icon, SearchRemoveIcon } from "@hugeicons/core-free-icons"
+import { SearchRemoveIcon } from "@hugeicons/core-free-icons"
 
+import { AddProjectSheet } from "@/components/add-project-sheet"
 import { Button } from "@/components/ui/button"
 import {
   Empty,
@@ -19,7 +20,7 @@ import {
 import { ProjectCard } from "@/components/project-card"
 import { ALL, ProjectFilters, defaultFilters, type DirectoryFilters } from "@/components/project-filters"
 import { ProjectTable } from "@/components/project-table"
-import { batchHref } from "@/lib/navigation"
+import { backHrefOrDefault, batchHref } from "@/lib/navigation"
 import { canAddProject } from "@/lib/permissions"
 import { useProjectsStore } from "@/lib/store"
 
@@ -55,9 +56,14 @@ function BatchContent() {
   const batch = batches.find((b) => b.id === params.id)
   const filters = React.useMemo(() => filtersFromParams(searchParams), [searchParams])
 
+  const directoryHref = backHrefOrDefault(searchParams.get("back"), "/")
+
   function setFilters(next: DirectoryFilters) {
-    const query = paramsFromFilters(next)
-    router.replace(query ? `${batchHref(params.id)}?${query}` : batchHref(params.id), {
+    const query = new URLSearchParams(paramsFromFilters(next))
+    const back = searchParams.get("back")
+    if (back) query.set("back", back)
+    const queryString = query.toString()
+    router.replace(queryString ? `${batchHref(params.id)}?${queryString}` : batchHref(params.id), {
       scroll: false,
     })
   }
@@ -71,7 +77,7 @@ function BatchContent() {
             <EmptyDescription>This batch doesn&apos;t exist.</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button variant="outline" render={<Link href="/" />} nativeButton={false}>
+            <Button variant="outline" render={<Link href={directoryHref} />} nativeButton={false}>
               Back to project directory
             </Button>
           </EmptyContent>
@@ -121,28 +127,20 @@ function BatchContent() {
   ).length
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6">
+    <div className="flex flex-col gap-6 px-8 py-6">
       <div>
-        <Link
-          href="/"
-          className="mb-2 inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <HugeiconsIcon icon={ArrowLeft02Icon} strokeWidth={2} className="size-4" />
-          All batches
-        </Link>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="font-heading text-xl font-medium">{batch.label}</h1>
             <p className="text-sm text-muted-foreground">
-              {visibleCount} {visibleCount === 1 ? "project" : "projects"} in this batch.
+              Admission {batch.admissionYear} &middot; Expected graduation {batch.graduationYear} &middot;{" "}
+              {visibleCount} {visibleCount === 1 ? "project" : "projects"}
             </p>
+            {batch.description && (
+              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{batch.description}</p>
+            )}
           </div>
-          {canAddProject(currentUser) && (
-            <Button size="sm" render={<Link href={`/projects/new?batch=${batch.id}`} />} nativeButton={false}>
-              <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />
-              Add project
-            </Button>
-          )}
+          {canAddProject(currentUser) && <AddProjectSheet batchId={batch.id} triggerSize="sm" />}
         </div>
       </div>
 
@@ -153,6 +151,7 @@ function BatchContent() {
         domains={domains}
         role={currentUser.role}
         showBatchFilter={false}
+        showDomainAndStatusFilters={batchProjects.length > 0}
       />
 
       {filtered.length === 0 ? (
@@ -161,7 +160,9 @@ function BatchContent() {
             <EmptyMedia variant="icon">
               <HugeiconsIcon icon={SearchRemoveIcon} strokeWidth={2} />
             </EmptyMedia>
-            <EmptyTitle>No projects found</EmptyTitle>
+            <EmptyTitle>
+              {batchProjects.length === 0 ? "No projects added yet" : "No projects found"}
+            </EmptyTitle>
             <EmptyDescription>
               {hasAnyFilter
                 ? "Nothing matches these filters yet. Try clearing them or searching a different term."
@@ -169,13 +170,15 @@ function BatchContent() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            {hasAnyFilter && (
+            {hasAnyFilter ? (
               <Button
                 variant="outline"
                 onClick={() => setFilters({ ...defaultFilters, view: filters.view })}
               >
                 Clear filters
               </Button>
+            ) : (
+              canAddProject(currentUser) && <AddProjectSheet batchId={batch.id} />
             )}
           </EmptyContent>
         </Empty>

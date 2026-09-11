@@ -5,11 +5,24 @@ export type Person = {
   name: string
   email: string
   role: Role
+  /** Student roll number. Not applicable to mentors or coordinators. */
+  rollNumber?: string
 }
 
 export type Batch = {
   id: string
   label: string
+  admissionYear: number
+  graduationYear: number
+  description?: string
+  createdAt: string
+}
+
+export type BatchDraft = {
+  label: string
+  admissionYear: number
+  graduationYear: number
+  description?: string
 }
 
 export type Domain = {
