@@ -9,7 +9,9 @@ import type { Batch, BatchDraft } from "@/lib/types"
 // more, this becomes a programme selector and the prefix comes from it.
 export const PROGRAMME = "PDM"
 
-export type BatchFormErrors = Partial<Record<"admissionYear" | "graduationYear" | "name", string>>
+export type BatchFormErrors = Partial<
+  Record<"admissionYear" | "graduationYear" | "name", string>
+>
 
 function isYear(value: string) {
   return /^\d{4}$/.test(value.trim())
@@ -18,14 +20,25 @@ function isYear(value: string) {
 /** Drives the "Add batch" fields (admission/graduation year, an
  * auto-generated but editable name, and an optional description) so the
  * same validation and name-generation logic can back both the directory's
- * dialog and the project form's inline "add a batch" flow. */
-export function useBatchForm(existingBatches: Batch[]) {
-  const [admissionYear, setAdmissionYearRaw] = React.useState("")
-  const [graduationYear, setGraduationYearRaw] = React.useState("")
-  const [nameValue, setNameValue] = React.useState("")
-  const [nameTouched, setNameTouched] = React.useState(false)
-  const [description, setDescription] = React.useState("")
+ * dialog and the project form's inline "add a batch" flow. Pass
+ * `initialBatch` to prefill the fields for editing an existing batch —
+ * its own label won't trip the duplicate-name check. */
+export function useBatchForm(existingBatches: Batch[], initialBatch?: Batch) {
+  const [admissionYear, setAdmissionYearRaw] = React.useState(
+    initialBatch ? String(initialBatch.admissionYear) : ""
+  )
+  const [graduationYear, setGraduationYearRaw] = React.useState(
+    initialBatch ? String(initialBatch.graduationYear) : ""
+  )
+  const [nameValue, setNameValue] = React.useState(initialBatch?.label ?? "")
+  const [nameTouched, setNameTouched] = React.useState(Boolean(initialBatch))
+  const [description, setDescription] = React.useState(
+    initialBatch?.description ?? ""
+  )
   const [errors, setErrors] = React.useState<BatchFormErrors>({})
+  const otherBatches = initialBatch
+    ? existingBatches.filter((b) => b.id !== initialBatch.id)
+    : existingBatches
 
   const generatedName =
     isYear(admissionYear) && isYear(graduationYear)
@@ -79,7 +92,10 @@ export function useBatchForm(existingBatches: Batch[]) {
       nextErrors.graduationYear = "Enter the expected graduation year."
     } else if (!isYear(graduationYear)) {
       nextErrors.graduationYear = "Use a 4-digit year, e.g. 2028."
-    } else if (isYear(admissionYear) && Number(graduationYear) <= Number(admissionYear)) {
+    } else if (
+      isYear(admissionYear) &&
+      Number(graduationYear) <= Number(admissionYear)
+    ) {
       nextErrors.graduationYear = "Must be after the admission year."
     }
 
@@ -87,7 +103,7 @@ export function useBatchForm(existingBatches: Batch[]) {
     if (!nextErrors.admissionYear && !nextErrors.graduationYear) {
       if (!finalName) {
         nextErrors.name = "Give the batch a name."
-      } else if (isDuplicateBatchLabel(existingBatches, finalName)) {
+      } else if (isDuplicateBatchLabel(otherBatches, finalName)) {
         nextErrors.name = `"${finalName}" already exists. Choose different years or edit the name.`
       }
     }

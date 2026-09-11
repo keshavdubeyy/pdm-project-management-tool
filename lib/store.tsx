@@ -2,8 +2,22 @@
 
 import * as React from "react"
 
-import { DEMO_USER_IDS, seedBatches, seedDomains, seedPeople, seedProjects } from "@/lib/mock-data"
-import type { Batch, BatchDraft, Domain, Person, Project, ProjectDraft, Role } from "@/lib/types"
+import {
+  DEMO_USER_IDS,
+  seedBatches,
+  seedDomains,
+  seedPeople,
+  seedProjects,
+} from "@/lib/mock-data"
+import type {
+  Batch,
+  BatchDraft,
+  Domain,
+  Person,
+  Project,
+  ProjectDraft,
+  Role,
+} from "@/lib/types"
 
 type ProjectsState = {
   people: Person[]
@@ -21,6 +35,9 @@ type ProjectsContextValue = ProjectsState & {
   restoreProject: (id: string) => void
   addPerson: (name: string, role: Role, rollNumber?: string) => Person
   addBatch: (draft: BatchDraft) => Batch
+  updateBatch: (id: string, draft: BatchDraft) => void
+  archiveBatch: (id: string) => void
+  restoreBatch: (id: string) => void
   addDomain: (label: string) => Domain
 }
 
@@ -36,7 +53,9 @@ function noopSubscribe() {
 
 function getStoredRoleSnapshot(): Role | null {
   const stored = window.localStorage.getItem(ROLE_STORAGE_KEY)
-  return stored === "student" || stored === "mentor" || stored === "coordinator" ? stored : null
+  return stored === "student" || stored === "mentor" || stored === "coordinator"
+    ? stored
+    : null
 }
 
 function getStoredRoleServerSnapshot(): Role | null {
@@ -53,7 +72,9 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const [people, setPeople] = React.useState<Person[]>(() => [...seedPeople])
   const [batches, setBatches] = React.useState<Batch[]>(() => [...seedBatches])
   const [domains, setDomains] = React.useState<Domain[]>(() => [...seedDomains])
-  const [projects, setProjects] = React.useState<Project[]>(() => [...seedProjects])
+  const [projects, setProjects] = React.useState<Project[]>(() => [
+    ...seedProjects,
+  ])
 
   // useSyncExternalStore reads localStorage safely — the server snapshot
   // (null) keeps SSR/hydration consistent, then React reconciles to the
@@ -111,23 +132,59 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   )
 
   const archiveProject = React.useCallback((id: string) => {
-    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, archived: true } : p)))
+    setProjects((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, archived: true } : p))
+    )
   }, [])
 
   const restoreProject = React.useCallback((id: string) => {
-    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, archived: false } : p)))
+    setProjects((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, archived: false } : p))
+    )
   }, [])
 
-  const addPerson = React.useCallback((name: string, role: Role, rollNumber?: string) => {
-    const person: Person = { id: nextId("p"), name, email: "", role, rollNumber }
-    setPeople((prev) => [...prev, person])
-    return person
-  }, [])
+  const addPerson = React.useCallback(
+    (name: string, role: Role, rollNumber?: string) => {
+      const person: Person = {
+        id: nextId("p"),
+        name,
+        email: "",
+        role,
+        rollNumber,
+      }
+      setPeople((prev) => [...prev, person])
+      return person
+    },
+    []
+  )
 
   const addBatch = React.useCallback((draft: BatchDraft) => {
-    const batch: Batch = { ...draft, id: nextId("b"), createdAt: new Date().toISOString() }
+    const batch: Batch = {
+      ...draft,
+      id: nextId("b"),
+      archived: false,
+      createdAt: new Date().toISOString(),
+    }
     setBatches((prev) => [...prev, batch])
     return batch
+  }, [])
+
+  const updateBatch = React.useCallback((id: string, draft: BatchDraft) => {
+    setBatches((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, ...draft } : b))
+    )
+  }, [])
+
+  const archiveBatch = React.useCallback((id: string) => {
+    setBatches((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, archived: true } : b))
+    )
+  }, [])
+
+  const restoreBatch = React.useCallback((id: string) => {
+    setBatches((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, archived: false } : b))
+    )
   }, [])
 
   const addDomain = React.useCallback((label: string) => {
@@ -150,6 +207,9 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       restoreProject,
       addPerson,
       addBatch,
+      updateBatch,
+      archiveBatch,
+      restoreBatch,
       addDomain,
     }),
     [
@@ -165,11 +225,18 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       restoreProject,
       addPerson,
       addBatch,
+      updateBatch,
+      archiveBatch,
+      restoreBatch,
       addDomain,
     ]
   )
 
-  return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>
+  return (
+    <ProjectsContext.Provider value={value}>
+      {children}
+    </ProjectsContext.Provider>
+  )
 }
 
 export function useProjectsStore() {

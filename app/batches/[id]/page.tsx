@@ -18,7 +18,12 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { ProjectCard } from "@/components/project-card"
-import { ALL, ProjectFilters, defaultFilters, type DirectoryFilters } from "@/components/project-filters"
+import {
+  ALL,
+  ProjectFilters,
+  defaultFilters,
+  type DirectoryFilters,
+} from "@/components/project-filters"
 import { ProjectTable } from "@/components/project-table"
 import { backHrefOrDefault, batchHref } from "@/lib/navigation"
 import { canAddProject } from "@/lib/permissions"
@@ -29,7 +34,7 @@ function filtersFromParams(params: URLSearchParams): DirectoryFilters {
     q: params.get("q") ?? defaultFilters.q,
     batchId: ALL,
     domainId: params.get("domain") ?? defaultFilters.domainId,
-    status: params.get("status") ?? defaultFilters.status,
+    mentorId: params.get("mentor") ?? defaultFilters.mentorId,
     onlyMine: params.get("mine") === "1",
     showArchived: params.get("archived") === "1",
     view: params.get("view") === "table" ? "table" : defaultFilters.view,
@@ -40,7 +45,7 @@ function paramsFromFilters(filters: DirectoryFilters): string {
   const params = new URLSearchParams()
   if (filters.q) params.set("q", filters.q)
   if (filters.domainId !== ALL) params.set("domain", filters.domainId)
-  if (filters.status !== ALL) params.set("status", filters.status)
+  if (filters.mentorId !== ALL) params.set("mentor", filters.mentorId)
   if (filters.onlyMine) params.set("mine", "1")
   if (filters.showArchived) params.set("archived", "1")
   if (filters.view !== defaultFilters.view) params.set("view", filters.view)
@@ -54,7 +59,10 @@ function BatchContent() {
   const { projects, people, batches, domains, currentUser } = useProjectsStore()
 
   const batch = batches.find((b) => b.id === params.id)
-  const filters = React.useMemo(() => filtersFromParams(searchParams), [searchParams])
+  const filters = React.useMemo(
+    () => filtersFromParams(searchParams),
+    [searchParams]
+  )
 
   const directoryHref = backHrefOrDefault(searchParams.get("back"), "/")
 
@@ -63,9 +71,14 @@ function BatchContent() {
     const back = searchParams.get("back")
     if (back) query.set("back", back)
     const queryString = query.toString()
-    router.replace(queryString ? `${batchHref(params.id)}?${queryString}` : batchHref(params.id), {
-      scroll: false,
-    })
+    router.replace(
+      queryString
+        ? `${batchHref(params.id)}?${queryString}`
+        : batchHref(params.id),
+      {
+        scroll: false,
+      }
+    )
   }
 
   if (!batch) {
@@ -77,7 +90,11 @@ function BatchContent() {
             <EmptyDescription>This batch doesn&apos;t exist.</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button variant="outline" render={<Link href={directoryHref} />} nativeButton={false}>
+            <Button
+              variant="outline"
+              render={<Link href={directoryHref} />}
+              nativeButton={false}
+            >
               Back to project directory
             </Button>
           </EmptyContent>
@@ -86,18 +103,36 @@ function BatchContent() {
     )
   }
 
-  const batchProjects = projects.filter((project) => project.batchId === batch.id)
+  const batchProjects = projects.filter(
+    (project) => project.batchId === batch.id
+  )
 
   const filtered = batchProjects.filter((project) => {
-    if (project.archived && !(currentUser.role === "coordinator" && filters.showArchived)) {
+    if (
+      project.archived &&
+      !(currentUser.role === "coordinator" && filters.showArchived)
+    ) {
       return false
     }
-    if (filters.status !== ALL && project.status !== filters.status) return false
-    if (filters.domainId !== ALL && project.domainId !== filters.domainId) return false
+    if (filters.domainId !== ALL && project.domainId !== filters.domainId)
+      return false
+    if (
+      filters.mentorId !== ALL &&
+      !project.mentorIds.includes(filters.mentorId)
+    )
+      return false
 
     if (filters.onlyMine) {
-      if (currentUser.role === "mentor" && !project.mentorIds.includes(currentUser.id)) return false
-      if (currentUser.role === "student" && !project.teamMemberIds.includes(currentUser.id)) return false
+      if (
+        currentUser.role === "mentor" &&
+        !project.mentorIds.includes(currentUser.id)
+      )
+        return false
+      if (
+        currentUser.role === "student" &&
+        !project.teamMemberIds.includes(currentUser.id)
+      )
+        return false
     }
 
     const q = filters.q.trim().toLowerCase()
@@ -106,7 +141,8 @@ function BatchContent() {
       const teamNames = project.teamMemberIds
         .map((id) => people.find((p) => p.id === id)?.name ?? "")
         .join(" ")
-      const haystack = `${project.title} ${project.description} ${domain?.label ?? ""} ${teamNames}`.toLowerCase()
+      const haystack =
+        `${project.title} ${project.description} ${domain?.label ?? ""} ${teamNames}`.toLowerCase()
       if (!haystack.includes(q)) return false
     }
 
@@ -116,12 +152,14 @@ function BatchContent() {
   const hasAnyFilter =
     filters.q.length > 0 ||
     filters.domainId !== ALL ||
-    filters.status !== ALL ||
+    filters.mentorId !== ALL ||
     filters.onlyMine ||
     filters.showArchived
 
   const query = searchParams.toString()
-  const backHref = query ? `${batchHref(batch.id)}?${query}` : batchHref(batch.id)
+  const backHref = query
+    ? `${batchHref(batch.id)}?${query}`
+    : batchHref(batch.id)
   const visibleCount = batchProjects.filter(
     (p) => !p.archived || currentUser.role === "coordinator"
   ).length
@@ -133,14 +171,19 @@ function BatchContent() {
           <div>
             <h1 className="font-heading text-xl font-medium">{batch.label}</h1>
             <p className="text-sm text-muted-foreground">
-              Admission {batch.admissionYear} &middot; Expected graduation {batch.graduationYear} &middot;{" "}
-              {visibleCount} {visibleCount === 1 ? "project" : "projects"}
+              Admission {batch.admissionYear} &middot; Expected graduation{" "}
+              {batch.graduationYear} &middot; {visibleCount}{" "}
+              {visibleCount === 1 ? "project" : "projects"}
             </p>
             {batch.description && (
-              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{batch.description}</p>
+              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                {batch.description}
+              </p>
             )}
           </div>
-          {canAddProject(currentUser) && <AddProjectSheet batchId={batch.id} triggerSize="sm" />}
+          {canAddProject(currentUser) && (
+            <AddProjectSheet batchId={batch.id} triggerSize="sm" />
+          )}
         </div>
       </div>
 
@@ -149,9 +192,10 @@ function BatchContent() {
         onChange={setFilters}
         batches={batches}
         domains={domains}
+        mentors={people.filter((p) => p.role === "mentor")}
         role={currentUser.role}
         showBatchFilter={false}
-        showDomainAndStatusFilters={batchProjects.length > 0}
+        showDomainFilter={batchProjects.length > 0}
       />
 
       {filtered.length === 0 ? (
@@ -161,7 +205,9 @@ function BatchContent() {
               <HugeiconsIcon icon={SearchRemoveIcon} strokeWidth={2} />
             </EmptyMedia>
             <EmptyTitle>
-              {batchProjects.length === 0 ? "No projects added yet" : "No projects found"}
+              {batchProjects.length === 0
+                ? "No projects added yet"
+                : "No projects found"}
             </EmptyTitle>
             <EmptyDescription>
               {hasAnyFilter
@@ -173,25 +219,34 @@ function BatchContent() {
             {hasAnyFilter ? (
               <Button
                 variant="outline"
-                onClick={() => setFilters({ ...defaultFilters, view: filters.view })}
+                onClick={() =>
+                  setFilters({ ...defaultFilters, view: filters.view })
+                }
               >
                 Clear filters
               </Button>
             ) : (
-              canAddProject(currentUser) && <AddProjectSheet batchId={batch.id} />
+              canAddProject(currentUser) && (
+                <AddProjectSheet batchId={batch.id} />
+              )
             )}
           </EmptyContent>
         </Empty>
       ) : filters.view === "table" ? (
-        <ProjectTable projects={filtered} people={people} batches={batches} domains={domains} backHref={backHref} />
+        <ProjectTable
+          projects={filtered}
+          people={people}
+          batches={batches}
+          domains={domains}
+          backHref={backHref}
+        />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {filtered.map((project) => (
             <ProjectCard
               key={project.id}
               project={project}
               people={people}
-              batches={batches}
               domains={domains}
               backHref={backHref}
             />

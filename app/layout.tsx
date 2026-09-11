@@ -7,10 +7,11 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { RoleOnboardingDialog } from "@/components/role-onboarding-dialog"
 import { SiteHeader } from "@/components/site-header"
+import { Toaster } from "@/components/ui/toast"
 import { ProjectsProvider } from "@/lib/store"
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'})
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
@@ -26,21 +27,28 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", geist.variable)}
+      className={cn(
+        "antialiased",
+        fontMono.variable,
+        "font-sans",
+        geist.variable
+      )}
     >
       <body>
         <ThemeProvider>
           <TooltipProvider>
-            <ProjectsProvider>
-              <RoleOnboardingDialog />
-              <SidebarProvider>
-                <AppSidebar />
-                <SidebarInset>
-                  <SiteHeader />
-                  {children}
-                </SidebarInset>
-              </SidebarProvider>
-            </ProjectsProvider>
+            <Toaster>
+              <ProjectsProvider>
+                <RoleOnboardingDialog />
+                <SidebarProvider>
+                  <AppSidebar />
+                  <SidebarInset>
+                    <SiteHeader />
+                    {children}
+                  </SidebarInset>
+                </SidebarProvider>
+              </ProjectsProvider>
+            </Toaster>
           </TooltipProvider>
         </ThemeProvider>
       </body>

@@ -7,6 +7,8 @@ export type Person = {
   role: Role
   /** Student roll number. Not applicable to mentors or coordinators. */
   rollNumber?: string
+  /** Falls back to initials wherever a person is shown when unset. */
+  avatarUrl?: string
 }
 
 export type Batch = {
@@ -15,6 +17,7 @@ export type Batch = {
   admissionYear: number
   graduationYear: number
   description?: string
+  archived: boolean
   createdAt: string
 }
 

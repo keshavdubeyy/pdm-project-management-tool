@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import type { Batch, Domain, Role } from "@/lib/types"
+import type { Batch, Domain, Person, Role } from "@/lib/types"
 
 export const ALL = "all"
 
@@ -23,7 +23,7 @@ export type DirectoryFilters = {
   q: string
   batchId: string
   domainId: string
-  status: string
+  mentorId: string
   onlyMine: boolean
   showArchived: boolean
   view: ViewMode
@@ -33,7 +33,7 @@ export const defaultFilters: DirectoryFilters = {
   q: "",
   batchId: ALL,
   domainId: ALL,
-  status: ALL,
+  mentorId: ALL,
   onlyMine: false,
   showArchived: false,
   view: "cards",
@@ -44,9 +44,10 @@ type ProjectFiltersProps = {
   onChange: (filters: DirectoryFilters) => void
   batches: Batch[]
   domains: Domain[]
+  mentors: Person[]
   role: Role
   showBatchFilter?: boolean
-  showDomainAndStatusFilters?: boolean
+  showDomainFilter?: boolean
 }
 
 export function ProjectFilters({
@@ -54,9 +55,10 @@ export function ProjectFilters({
   onChange,
   batches,
   domains,
+  mentors,
   role,
   showBatchFilter = true,
-  showDomainAndStatusFilters = true,
+  showDomainFilter = true,
 }: ProjectFiltersProps) {
   function set<K extends keyof DirectoryFilters>(key: K, value: DirectoryFilters[K]) {
     onChange({ ...filters, [key]: value })
@@ -98,42 +100,43 @@ export function ProjectFilters({
           </Select>
         )}
 
-        {showDomainAndStatusFilters && (
-          <>
-            <Select
-              items={{ [ALL]: "All domains", ...Object.fromEntries(domains.map((d) => [d.id, d.label])) }}
-              value={filters.domainId}
-              onValueChange={(value) => set("domainId", value as string)}
-            >
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Domain" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>All domains</SelectItem>
-                {domains.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              items={{ [ALL]: "Ongoing or completed", ongoing: "Ongoing", completed: "Completed" }}
-              value={filters.status}
-              onValueChange={(value) => set("status", value as string)}
-            >
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>Ongoing or completed</SelectItem>
-                <SelectItem value="ongoing">Ongoing</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          </>
+        {showDomainFilter && (
+          <Select
+            items={{ [ALL]: "All domains", ...Object.fromEntries(domains.map((d) => [d.id, d.label])) }}
+            value={filters.domainId}
+            onValueChange={(value) => set("domainId", value as string)}
+          >
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder="Domain" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>All domains</SelectItem>
+              {domains.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
+
+        <Select
+          items={{ [ALL]: "All mentors", ...Object.fromEntries(mentors.map((m) => [m.id, m.name])) }}
+          value={filters.mentorId}
+          onValueChange={(value) => set("mentorId", value as string)}
+        >
+          <SelectTrigger className="w-full sm:w-56">
+            <SelectValue placeholder="Mentor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>All mentors</SelectItem>
+            {mentors.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {role !== "coordinator" && (
           <Label className="flex items-center gap-2 rounded-3xl border border-border bg-background px-3 py-2 text-sm has-[:focus-visible]:border-ring">
@@ -147,7 +150,7 @@ export function ProjectFilters({
         )}
 
         {/* "Show archived" is deferred to a dedicated archive section rather
-         * than living alongside the everyday domain/status filters. */}
+         * than living alongside the everyday domain/mentor filters. */}
       </div>
     </div>
   )
