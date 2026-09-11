@@ -17,7 +17,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
 } from "@/components/ui/sidebar"
 
 const navItems = [{ title: "Project directory", url: "/", icon: Layers01Icon }]
@@ -69,8 +68,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarSeparator />
-        <div className="px-2 py-1.5">
+        <div className="rounded-2xl border border-sidebar-border px-3 py-2.5">
           <span className="text-xs font-medium text-sidebar-foreground/70">Collaborators</span>
           <div className="mt-2 flex flex-col gap-2">
             {buildTeam.map((person) => (
@@ -78,7 +76,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <Avatar size="sm">
                   <AvatarFallback className="text-[10px]">{person.initials}</AvatarFallback>
                 </Avatar>
-                <span className="truncate text-xs font-medium text-sidebar-foreground">
+                <span className="truncate text-sm font-medium text-sidebar-foreground">
                   {person.name}
                 </span>
               </div>

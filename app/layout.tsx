@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
+import { RoleOnboardingDialog } from "@/components/role-onboarding-dialog"
 import { SiteHeader } from "@/components/site-header"
 import { ProjectsProvider } from "@/lib/store"
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ export default function RootLayout({
         <ThemeProvider>
           <TooltipProvider>
             <ProjectsProvider>
+              <RoleOnboardingDialog />
               <SidebarProvider>
                 <AppSidebar />
                 <SidebarInset>

@@ -26,6 +26,23 @@ type ProjectsContextValue = ProjectsState & {
 
 const ProjectsContext = React.createContext<ProjectsContextValue | null>(null)
 
+/** Remembers the "viewing as" role across reloads — set by the first-visit
+ * onboarding prompt or the header role switcher, whichever comes first. */
+export const ROLE_STORAGE_KEY = "pdm.viewingAsRole"
+
+function noopSubscribe() {
+  return () => {}
+}
+
+function getStoredRoleSnapshot(): Role | null {
+  const stored = window.localStorage.getItem(ROLE_STORAGE_KEY)
+  return stored === "student" || stored === "mentor" || stored === "coordinator" ? stored : null
+}
+
+function getStoredRoleServerSnapshot(): Role | null {
+  return null
+}
+
 let idCounter = 0
 function nextId(prefix: string) {
   idCounter += 1
@@ -37,7 +54,17 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const [batches, setBatches] = React.useState<Batch[]>(() => [...seedBatches])
   const [domains, setDomains] = React.useState<Domain[]>(() => [...seedDomains])
   const [projects, setProjects] = React.useState<Project[]>(() => [...seedProjects])
-  const [currentUserId, setCurrentUserId] = React.useState<string>(DEMO_USER_IDS.student)
+
+  // useSyncExternalStore reads localStorage safely — the server snapshot
+  // (null) keeps SSR/hydration consistent, then React reconciles to the
+  // real stored value right after mount without a manual effect.
+  const storedRole = React.useSyncExternalStore(
+    noopSubscribe,
+    getStoredRoleSnapshot,
+    getStoredRoleServerSnapshot
+  )
+  const [roleOverride, setRoleOverride] = React.useState<Role | null>(null)
+  const currentUserId = DEMO_USER_IDS[roleOverride ?? storedRole ?? "student"]
 
   const currentUser = React.useMemo(
     () => people.find((p) => p.id === currentUserId) ?? people[0],
@@ -45,7 +72,10 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   )
 
   const setRole = React.useCallback((role: Role) => {
-    setCurrentUserId(DEMO_USER_IDS[role])
+    setRoleOverride(role)
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(ROLE_STORAGE_KEY, role)
+    }
   }, [])
 
   const addProject = React.useCallback(

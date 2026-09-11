@@ -14,9 +14,9 @@ import { useProjectsStore } from "@/lib/store"
 import type { Role } from "@/lib/types"
 
 const roles: { value: Role; label: string; description: string }[] = [
-  { value: "student", label: "Student", description: "Browse, add and edit your own projects" },
-  { value: "mentor", label: "Mentor", description: "Browse projects and see which you mentor" },
   { value: "coordinator", label: "Coordinator", description: "Manage all records and batches" },
+  { value: "mentor", label: "Mentor", description: "Browse projects and see which you mentor" },
+  { value: "student", label: "Student", description: "Browse, add and edit your own projects" },
 ]
 
 export function RoleSwitcher() {
