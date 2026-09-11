@@ -1,0 +1,79 @@
+{
+  "updates": [
+    {
+      "id": "2026-08-27-weeks-1-2",
+      "status": "published",
+      "weekStart": 1,
+      "weekEnd": 2,
+      "periodStart": "2026-08-14",
+      "periodEnd": "2026-08-27",
+      "title": "Documentation, and a change in approach",
+      "summary": "Before any code was written, we wrote up the project proposal, scope, roadmap and a research plan — then decided to change how we'd actually work.",
+      "completed": [
+        "Wrote the project proposal: overview, context, stakeholders, and the initial areas to investigate.",
+        "Drafted the project roadmap and revised its effort/duration estimate (2 students, 5 hours/week each, 16 weeks).",
+        "Wrote a research plan for Weeks 3–6 covering who we'd talk to, what we wanted to learn, and when."
+      ],
+      "approachChange": "The original roadmap laid out fixed phases — research, then define and design, then a single test-and-improve phase near the end. We decided against that: instead we're working in short cycles, building a prototype, showing it to real users, gathering feedback, improving it, and repeating. Research and user conversations now happen alongside each cycle instead of as one separate phase.",
+      "nextSteps": [
+        "Start the first build-show-learn cycle instead of the original Week 3–6 research phase."
+      ],
+      "evidence": [
+        {
+          "label": "Project proposal",
+          "url": "/Proposal_%20Digitizing%20the%20PDM%20Final%20Project%20Lifecycle.pdf"
+        },
+        {
+          "label": "Project roadmap (original plan — kept as reference, not used to auto-mark work done)",
+          "url": "/Proposal_%20Digitizing%20the%20PDM%20Final%20Project%20Lifecycle%20(1).pdf"
+        },
+        {
+          "label": "Research plan for Weeks 3–6 (superseded by the approach change above)",
+          "url": "/Proposal_%20Digitizing%20the%20PDM%20Final%20Project%20Lifecycle%20(2).pdf"
+        }
+      ]
+    },
+    {
+      "id": "2026-09-11-weeks-3-5",
+      "status": "published",
+      "weekStart": 3,
+      "weekEnd": 5,
+      "periodStart": "2026-08-28",
+      "periodEnd": "2026-09-11",
+      "title": "First prototype: a working directory of projects, batches, and roles",
+      "summary": "Following the change in approach above, this is the first build-show-learn cycle: a working prototype of the project directory, rather than more up-front research.",
+      "completed": [
+        "Designed the data model and screens for a project directory, grouped into batches, with role-based permissions for students, mentors and the coordinator."
+      ],
+      "added": [
+        "Project directory home page: browse as cards or a table, search by title, and filter by batch, domain, status, or \"only mine\".",
+        "Batches: list view, a side-panel to create a new batch, and a batch detail page grouping its projects.",
+        "Add Project flow (side panel) and full project form: title, description, domain, team members, mentor, problem, outcome, and material links.",
+        "Project detail and edit pages.",
+        "Role switcher (student / mentor / coordinator) that demonstrates what each role can see and do, ahead of real sign-in.",
+        "Duplicate-title detection that flags likely repeat project titles before saving.",
+        "This Project progress page and a sidebar collaborators panel."
+      ],
+      "improved": [
+        "When a mentor creates a project, the Mentor field is now pre-filled with their own name and locked, since a mentor always mentors the projects they add.",
+        "Add Project and Add Batch panels keep Cancel/Save pinned in a fixed footer instead of scrolling away with the form.",
+        "The top header bar is now sticky so it stays visible while a page scrolls.",
+        "The sidebar's selected item now shows solid white in light mode for clearer contrast; dark mode is unchanged."
+      ],
+      "removed": [
+        "The cover-image / placeholder graphic on project cards in the directory — cards now lead with status, title, team, and mentor."
+      ],
+      "unfinished": [
+        "Not shown to real users yet — no testing or feedback has been recorded for this prototype."
+      ],
+      "nextSteps": [
+        "Show this prototype to students, mentors and/or the coordinator and record what we learn.",
+        "No persistence yet — data resets on refresh; a real backend/database is next.",
+        "No real authentication yet; the role switcher stands in for sign-in.",
+        "\"Materials\" are pasted links today, not uploaded files."
+      ],
+      "evidence": [],
+      "lastIncludedCommit": "c588cd7be6c9d3b400009d6deab1eb9c849aaa86"
+    }
+  ]
+}
