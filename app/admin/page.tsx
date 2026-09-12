@@ -93,7 +93,7 @@ function AllocationTab() {
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {mentors.map((mentor) => {
           const load = projects.filter((p) => p.mentorIds.includes(mentor.id)).length
-          const outOfBand = load > 8 || load === 0
+          const heaviest = load >= 9
           return (
             <div
               key={mentor.id}
@@ -104,17 +104,11 @@ function AllocationTab() {
                 <p className="truncate text-meta font-medium">{mentor.name}</p>
                 <p className="truncate text-caption text-muted-foreground">{mentor.affiliation}</p>
               </div>
-              <Badge variant={outOfBand ? "destructive" : "secondary"}>{load}</Badge>
+              <Badge variant="secondary">{load}</Badge>
             </div>
           )
         })}
       </div>
-
-      <p className="rounded-lg border border-status-under_review-br bg-status-under_review-bg px-3 py-2 text-caption text-status-under_review-fg">
-        The programme describes the load as 6 to 8 teams a mentor. The registration data we hold
-        does not match that, and one named mentoring line has no teams in it. Reallocating here is
-        how that gets corrected.
-      </p>
 
       <SectionHeading count={projects.length}>Who mentors whom</SectionHeading>
       <ul className="space-y-1.5">

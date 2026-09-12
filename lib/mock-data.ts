@@ -36,16 +36,6 @@ export const seedPeople: Person[] = [
     affiliation: "Professor of Practice, Co-innovations",
   },
   {
-    // Named to us as a mentoring line but absent from the batch registration
-    // data and from the published faculty list. Seeded with no teams so the
-    // gap stays visible rather than being quietly filled in.
-    id: "p-mentor-manisha",
-    name: "Manisha",
-    email: "manisha@pdm.edu",
-    roles: ["mentor"],
-    affiliation: "Faculty mentor · allocation to be confirmed",
-  },
-  {
     id: "p-2024204015",
     name: "Yerrabachu Keerthy Rao",
     email: "2024204015@pdm.edu",

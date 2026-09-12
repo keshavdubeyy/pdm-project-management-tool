@@ -31,6 +31,20 @@ Three people worth signing in as:
 
 `Reset demo data` in the account menu puts everything back.
 
+## Checking it still works
+
+```bash
+npm run dev     # in one terminal
+npm run smoke   # in another
+```
+
+`npm run smoke` drives a real browser through every screen as all three roles and
+opens every overlay — the command palette, the account menu, notifications, every tab,
+every dropdown, every dialog and the checkpoint slide-over — failing on any runtime
+error. It exists because two crashes shipped that a page-level check could not catch:
+both lived inside overlays that only exist after a click. Rendering a route is not
+evidence that the route works.
+
 ## Where things are
 
 | Path | What it holds |

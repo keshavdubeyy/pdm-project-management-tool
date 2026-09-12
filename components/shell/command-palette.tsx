@@ -17,6 +17,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import {
+  Command,
   CommandDialog,
   CommandEmpty,
   CommandGroup,
@@ -103,67 +104,69 @@ export function CommandPalette() {
         title="Search and commands"
         description="Jump to a project, a page, or switch role"
       >
-        <CommandInput placeholder="Search teams, projects and pages…" />
-        <CommandList>
-          <CommandEmpty>
-            No matches. Try a team name, a project title, or a page like “grid”.
-          </CommandEmpty>
+        <Command>
+            <CommandInput placeholder="Search teams, projects and pages…" />
+            <CommandList>
+            <CommandEmpty>
+              No matches. Try a team name, a project title, or a page like “grid”.
+            </CommandEmpty>
 
-          <CommandGroup heading="Go to">
-            {pages.map((page) => (
-              <CommandItem key={page.href} value={`page ${page.label}`} onSelect={() => go(page.href)}>
-                <HugeiconsIcon icon={page.icon} className="size-4" strokeWidth={2} />
-                {page.label}
-              </CommandItem>
-            ))}
-          </CommandGroup>
+            <CommandGroup heading="Go to">
+              {pages.map((page) => (
+                <CommandItem key={page.href} value={`page ${page.label}`} onSelect={() => go(page.href)}>
+                  <HugeiconsIcon icon={page.icon} className="size-4" strokeWidth={2} />
+                  {page.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
 
-          {myProjects.length > 0 && (
-            <>
-              <CommandSeparator />
-              <CommandGroup heading={actor?.role === "student" ? "Your project" : "Projects"}>
-                {myProjects.slice(0, 30).map((project) => {
-                  const team = db.teams.find((t) => t.id === project.teamId)
-                  return (
-                    <CommandItem
-                      key={project.id}
-                      value={`project ${project.title} ${team?.name ?? ""}`}
-                      onSelect={() => go(`/projects/${project.id}`)}
-                    >
-                      <HugeiconsIcon icon={MilestoneIcon} className="size-4" strokeWidth={2} />
-                      <span className="min-w-0 flex-1 truncate">{project.title}</span>
-                      {team && <CommandShortcut>{team.name}</CommandShortcut>}
-                    </CommandItem>
-                  )
-                })}
-              </CommandGroup>
-            </>
-          )}
+            {myProjects.length > 0 && (
+              <>
+                <CommandSeparator />
+                <CommandGroup heading={actor?.role === "student" ? "Your project" : "Projects"}>
+                  {myProjects.slice(0, 30).map((project) => {
+                    const team = db.teams.find((t) => t.id === project.teamId)
+                    return (
+                      <CommandItem
+                        key={project.id}
+                        value={`project ${project.title} ${team?.name ?? ""}`}
+                        onSelect={() => go(`/projects/${project.id}`)}
+                      >
+                        <HugeiconsIcon icon={MilestoneIcon} className="size-4" strokeWidth={2} />
+                        <span className="min-w-0 flex-1 truncate">{project.title}</span>
+                        {team && <CommandShortcut>{team.name}</CommandShortcut>}
+                      </CommandItem>
+                    )
+                  })}
+                </CommandGroup>
+              </>
+            )}
 
-          {currentUser && currentUser.roles.length > 1 && (
-            <>
-              <CommandSeparator />
-              <CommandGroup heading="Switch role">
-                {currentUser.roles
-                  .filter((role) => role !== actor?.role)
-                  .map((role) => (
-                    <CommandItem
-                      key={role}
-                      value={`switch role ${ROLE_LABEL[role]}`}
-                      onSelect={() => {
-                        setActiveRole(role)
-                        setOpen(false)
-                        router.push("/")
-                      }}
-                    >
-                      <HugeiconsIcon icon={UserSwitchIcon} className="size-4" strokeWidth={2} />
-                      Act as {ROLE_LABEL[role].toLowerCase()}
-                    </CommandItem>
-                  ))}
-              </CommandGroup>
-            </>
-          )}
-        </CommandList>
+            {currentUser && currentUser.roles.length > 1 && (
+              <>
+                <CommandSeparator />
+                <CommandGroup heading="Switch role">
+                  {currentUser.roles
+                    .filter((role) => role !== actor?.role)
+                    .map((role) => (
+                      <CommandItem
+                        key={role}
+                        value={`switch role ${ROLE_LABEL[role]}`}
+                        onSelect={() => {
+                          setActiveRole(role)
+                          setOpen(false)
+                          router.push("/")
+                        }}
+                      >
+                        <HugeiconsIcon icon={UserSwitchIcon} className="size-4" strokeWidth={2} />
+                        Act as {ROLE_LABEL[role].toLowerCase()}
+                      </CommandItem>
+                    ))}
+                </CommandGroup>
+              </>
+            )}
+            </CommandList>
+        </Command>
       </CommandDialog>
     </>
   )

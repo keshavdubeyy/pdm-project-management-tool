@@ -428,7 +428,7 @@ function CoordinatorHome() {
             const load = db.projects.filter(
               (p) => !p.archived && p.mentorIds.includes(mentor.id)
             ).length
-            const outOfBand = load > 8 || load === 0
+            const heaviest = load >= 9
             return (
               <li
                 key={mentor.id}
@@ -444,9 +444,7 @@ function CoordinatorHome() {
                 <span
                   className={cn(
                     "shrink-0 rounded-md px-2 py-0.5 text-meta font-semibold",
-                    outOfBand
-                      ? "bg-status-returned-bg text-status-returned-fg"
-                      : "bg-muted text-muted-foreground"
+                    heaviest ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"
                   )}
                 >
                   {load} {load === 1 ? "team" : "teams"}
@@ -455,10 +453,7 @@ function CoordinatorHome() {
             )
           })}
         </ul>
-        <p className="mt-2 text-caption text-muted-foreground">
-          The programme describes the load as 6 to 8 teams each. Two lines sit outside that in the
-          data we hold, which is on the list to confirm.
-        </p>
+
       </section>
     </>
   )
