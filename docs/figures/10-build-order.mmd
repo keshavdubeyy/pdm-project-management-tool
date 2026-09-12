@@ -1,0 +1,24 @@
+flowchart LR
+    subgraph R1["FIRST HALF"]
+        direction TB
+        A["Week 6<br/>Milestone calendar and status<br/>for every team"]
+        B["Week 7<br/>Programme dashboard<br/>22 projects by 12 checkpoints"]
+        C["Week 8<br/>Login and saved data<br/>Nothing lost on refresh"]
+        D["Week 9<br/>Submit a deliverable<br/>Mentor accepts or returns"]
+        A --> B --> C --> D
+    end
+    subgraph R2["SECOND HALF"]
+        direction TB
+        E["Week 10<br/>Feedback history and<br/>mentor review queue"]
+        F["Week 11<br/>Meetings, minutes and<br/>action items"]
+        G["Week 12<br/>Announcements and<br/>mentor groups"]
+        H["Week 13 onwards<br/>Chosen from what the<br/>interviews confirm"]
+        E --> F --> G --> H
+    end
+    R1 ==> R2
+    classDef done fill:#1F3864,stroke:#0D1B33,color:#FFFFFF,stroke-width:2px
+    classDef next fill:#EAF1F8,stroke:#1F3864,color:#12243F,stroke-width:1.5px
+    classDef later fill:#F2F2F2,stroke:#888888,color:#333333
+    class A done
+    class B,C,D,E,F,G next
+    class H later

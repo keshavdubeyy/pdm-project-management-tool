@@ -1,0 +1,28 @@
+flowchart LR
+    subgraph SETUP["AT THE START OF THE YEAR"]
+        direction TB
+        C1["Set up the batch<br/>Students, teams, mentors"]
+        C2["Allocate mentors<br/>Preferred vs assigned"]
+        C3["Publish the calendar<br/>Circulated as a PDF"]
+        C1 --> C2 --> C3
+    end
+    subgraph RUN["THROUGH THE YEAR"]
+        direction TB
+        C4["Announce deadlines<br/>Email or WhatsApp"]
+        C5["Ask the mentor how<br/>a project is going"]
+        C6["Or wait for the next<br/>checkpoint to find out"]
+        C8["Step in on projects<br/>that are behind"]
+        C4 --> C5 --> C8
+        C4 --> C6 --> C8
+    end
+    subgraph END1["AT THE END"]
+        direction TB
+        C9["Confirm completion<br/>Criteria not written down"]
+        C10["Archive the project<br/>Title, summary, team, poster"]
+        C9 --> C10
+    end
+    SETUP --> RUN --> END1
+    classDef problem fill:#FDEDED,stroke:#C62828,color:#7F1D1D,stroke-width:1.5px
+    classDef normal fill:#F4F6F9,stroke:#5A6B85,color:#12243F
+    class C3,C4,C5,C6,C9,C10 problem
+    class C1,C2,C8 normal

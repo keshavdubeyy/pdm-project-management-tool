@@ -1,0 +1,28 @@
+flowchart LR
+    subgraph NOW["HOW IT WORKS TODAY"]
+        direction TB
+        T1["Meeting happens"]
+        T2{"Were notes<br/>written?"}
+        T3["Decision is forgotten<br/>by the next meeting"]
+        T4["Notes sit in a personal file<br/>Mentor cannot see them"]
+        T5["Mentor asks again:<br/>did you do what we agreed?"]
+        T1 --> T2
+        T2 -->|"Often not"| T3 --> T5
+        T2 -->|"Sometimes"| T4 --> T5
+    end
+    subgraph PROP["WHAT WE ARE PROPOSING"]
+        direction TB
+        P1["Meeting recorded<br/>against the project"]
+        P2["Decisions saved<br/>as minutes"]
+        P3["Each action gets an<br/>owner and a due date"]
+        P4["Open actions appear on<br/>the next meeting agenda"]
+        P5["Mentor sees what is done<br/>without asking"]
+        P1 --> P2 --> P3 --> P4 --> P5
+    end
+    NOW ==> PROP
+    classDef bad fill:#FDEDED,stroke:#C62828,color:#7F1D1D,stroke-width:1.5px
+    classDef good fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20,stroke-width:1.5px
+    classDef neutral fill:#F4F6F9,stroke:#5A6B85,color:#12243F
+    class T3,T4,T5 bad
+    class T1 neutral
+    class P1,P2,P3,P4,P5 good

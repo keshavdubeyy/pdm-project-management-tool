@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph SEM3["SEMESTER 3 — Weeks 1 to 16"]
+        direction TB
+        A1["Week 4<br/>Detailed Project Plan"]
+        A2["Week 6<br/>Domain Research Report"]
+        A3["Week 8<br/>Customer Validation Report"]
+        A4["Week 10<br/>Idea Validation Report"]
+        A5["Week 14<br/>Research Pack and<br/>Market Opportunity"]
+        A6["Week 16<br/>Actionable Problem Statement"]
+        A1 --> A2 --> A3 --> A4 --> A5 --> A6
+    end
+    subgraph SEM4["SEMESTER 4 — Weeks 17 to 28"]
+        direction TB
+        B1["Week 18<br/>Ideas and Screening Matrix"]
+        B2["Week 21<br/>Low-Fidelity Prototype"]
+        B3["Week 22<br/>Updated Plan and PRD"]
+        B4["Week 25<br/>Hi-Fidelity Prototype"]
+        B5["Week 26<br/>Validation Report"]
+        B6["Week 28<br/>Go-to-Market Strategy"]
+        B1 --> B2 --> B3 --> B4 --> B5 --> B6
+    end
+    SEM3 ==> SEM4
+    classDef s3 fill:#EAF1F8,stroke:#1F3864,color:#12243F,stroke-width:1.5px
+    classDef s4 fill:#E8F5E9,stroke:#2E7D32,color:#12243F,stroke-width:1.5px
+    class A1,A2,A3,A4,A5,A6 s3
+    class B1,B2,B3,B4,B5,B6 s4

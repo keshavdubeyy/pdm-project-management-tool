@@ -1,0 +1,22 @@
+flowchart TD
+    C["PROGRAMME COORDINATOR<br/>1 person<br/>Owns the calendar and allocation"]
+    M["FACULTY MENTORS<br/>4 mentoring lines<br/>6 to 8 teams each"]
+    S["STUDENT TEAMS<br/>22 teams, 41 students<br/>Sem 3 and Sem 4"]
+    A["PROJECT ARCHIVE<br/>22 completed projects<br/>Jan 2022 and July 2022 batches"]
+
+    C -->|"milestone calendar, deadlines"| M
+    C -->|"announcements"| S
+    M -->|"guidance, feedback, sign-off"| S
+    S -->|"deliverables, questions"| M
+    M -->|"progress of my teams"| C
+    S -->|"final work on completion"| A
+    A -->|"reference for later batches"| S
+
+    classDef coord fill:#1F3864,stroke:#0D1B33,color:#FFFFFF,stroke-width:2px
+    classDef mentor fill:#2E7D32,stroke:#1B5E20,color:#FFFFFF,stroke-width:2px
+    classDef student fill:#1565C0,stroke:#0D47A1,color:#FFFFFF,stroke-width:2px
+    classDef arch fill:#6A1B9A,stroke:#4A148C,color:#FFFFFF,stroke-width:2px
+    class C coord
+    class M mentor
+    class S student
+    class A arch

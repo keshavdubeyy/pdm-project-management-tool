@@ -1,0 +1,27 @@
+flowchart LR
+    subgraph WK["DURING THE WEEK"]
+        direction TB
+        W1["Check what is due<br/>Calendar is a PDF"]
+        W2["Split the work<br/>Agreed verbally"]
+        W3["Do the work"]
+        W4["Save the files<br/>Drive, laptop, Figma, chat"]
+        W1 --> W2 --> W3 --> W4
+    end
+    subgraph MT["AROUND THE MENTOR MEETING"]
+        direction TB
+        W6["Prepare an update<br/>Built from scratch each time"]
+        W7["Meeting and feedback"]
+        W8["Note the actions<br/>Often not written down"]
+        W6 --> W7 --> W8
+    end
+    subgraph SUB["WHEN A DELIVERABLE IS DUE"]
+        direction TB
+        W10["Assemble and submit<br/>No fixed channel"]
+        W11["Mentor accepts<br/>No record kept"]
+        W10 --> W11
+    end
+    WK --> MT --> SUB
+    classDef problem fill:#FDEDED,stroke:#C62828,color:#7F1D1D,stroke-width:1.5px
+    classDef normal fill:#F4F6F9,stroke:#5A6B85,color:#12243F
+    class W1,W2,W4,W6,W8,W10,W11 problem
+    class W3,W7 normal

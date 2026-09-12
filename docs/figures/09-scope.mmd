@@ -1,0 +1,34 @@
+flowchart TD
+    subgraph IN["WE WILL BUILD THIS"]
+        direction TB
+        I1["Milestone calendar and<br/>status for every team"]
+        I2["Deliverable submission<br/>and mentor sign-off"]
+        I3["Feedback, meeting minutes<br/>and action items"]
+        I4["Announcements and<br/>mentor group messaging"]
+        I5["Programme dashboard<br/>across all 22 projects"]
+        I6["Archive that keeps the<br/>working papers, not just the poster"]
+    end
+    subgraph LINK["WE WILL CONNECT TO THIS, NOT REBUILD IT"]
+        direction TB
+        E1["Google Drive and Docs"]
+        E2["Figma and Miro"]
+        E3["Google Meet and Zoom"]
+        E4["Institute email and login"]
+    end
+    subgraph OUT["WE WILL NOT BUILD THIS"]
+        direction TB
+        O1["Marks, grades or<br/>assessment records"]
+        O2["Video calling"]
+        O3["Document co-editing"]
+        O4["Attendance or hours tracking"]
+        O5["A replacement for WhatsApp"]
+    end
+    IN --> LINK
+    LINK -.-> OUT
+
+    classDef inside fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20,stroke-width:1.5px
+    classDef edge fill:#FFF4E5,stroke:#B26A00,color:#6B3E00,stroke-width:1.5px
+    classDef outside fill:#FDEDED,stroke:#C62828,color:#7F1D1D,stroke-width:1.5px
+    class I1,I2,I3,I4,I5,I6 inside
+    class E1,E2,E3,E4 edge
+    class O1,O2,O3,O4,O5 outside
