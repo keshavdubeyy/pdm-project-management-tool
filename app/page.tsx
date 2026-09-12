@@ -1,199 +1,517 @@
 "use client"
 
 import * as React from "react"
-import { Suspense } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { FolderLibraryIcon, Search01Icon, SearchRemoveIcon } from "@hugeicons/core-free-icons"
+import {
+  AlarmClockIcon,
+  ArrowRight01Icon,
+  CheckListIcon,
+  InboxIcon,
+  LegalHammerIcon,
+  UserGroupIcon,
+} from "@hugeicons/core-free-icons"
 
-import { BatchCard } from "@/components/batch-card"
-import { CreateBatchSheet } from "@/components/create-batch-sheet"
+import { MilestoneSheet } from "@/components/milestones/milestone-sheet"
+import {
+  DueBadge,
+  EmptyState,
+  MetricTile,
+  PageHeader,
+  PersonAvatar,
+  SectionHeading,
+} from "@/components/common"
+import { StatusLegend } from "@/components/status/status-legend"
+import { StatusPill } from "@/components/status/status-pill"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { timeAgo } from "@/lib/dates"
+import { projectsFor } from "@/lib/permissions"
 import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { canManageRecords } from "@/lib/permissions"
+  actionItemsFor,
+  measures,
+  milestoneViews,
+  needsAttention,
+  personById,
+  reviewQueue,
+  statusCounts,
+  upcomingFor,
+  type MilestoneView,
+} from "@/lib/selectors"
 import { useProjectsStore } from "@/lib/store"
+import { cn } from "@/lib/utils"
 
-type SortOrder = "newest" | "oldest"
-
-const SORT_LABELS: Record<SortOrder, string> = {
-  newest: "Newest batch first",
-  oldest: "Oldest batch first",
+export default function HomePage() {
+  const { actor } = useProjectsStore()
+  if (!actor) return null
+  if (actor.role === "student") return <StudentHome />
+  if (actor.role === "mentor") return <MentorHome />
+  return <CoordinatorHome />
 }
 
-function DirectoryContent() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { projects, batches, currentUser } = useProjectsStore()
+/* ---------------------------------------------------------------- student */
 
-  const q = searchParams.get("q") ?? ""
-  const sort: SortOrder = searchParams.get("sort") === "oldest" ? "oldest" : "newest"
+function StudentHome() {
+  const { db, actor, currentUser, week } = useProjectsStore()
+  const [selected, setSelected] = React.useState<MilestoneView | null>(null)
 
-  function updateParams(next: { q?: string; sort?: SortOrder }) {
-    const params = new URLSearchParams(searchParams.toString())
-    const nextQ = next.q ?? q
-    const nextSort = next.sort ?? sort
+  if (!actor || !currentUser) return null
+  const myProjects = projectsFor(db, actor)
+  const project = myProjects[0]
 
-    if (nextQ) params.set("q", nextQ)
-    else params.delete("q")
-
-    if (nextSort !== "newest") params.set("sort", nextSort)
-    else params.delete("sort")
-
-    const query = params.toString()
-    router.replace(query ? `/?${query}` : "/", { scroll: false })
+  if (!project) {
+    return (
+      <>
+        <PageHeader title={`Hello, ${currentUser.name.split(" ")[0]}`} />
+        <EmptyState
+          icon={UserGroupIcon}
+          title="You are not on a project yet"
+          body="Your project will appear here once the coordinator adds you to a team."
+        />
+      </>
+    )
   }
 
-  const visibleProjects = projects.filter(
-    (project) => !project.archived || currentUser.role === "coordinator"
-  )
-
-  const countsByBatch = React.useMemo(() => {
-    const map = new Map<string, { total: number; ongoing: number; completed: number }>()
-    for (const batch of batches) map.set(batch.id, { total: 0, ongoing: 0, completed: 0 })
-    for (const project of visibleProjects) {
-      const entry = map.get(project.batchId)
-      if (!entry) continue
-      entry.total += 1
-      if (project.status === "ongoing") entry.ongoing += 1
-      else entry.completed += 1
-    }
-    return map
-  }, [batches, visibleProjects])
-
-  const matchingBatches = React.useMemo(() => {
-    const query = q.trim().toLowerCase()
-    const filtered = query
-      ? batches.filter((batch) => batch.label.toLowerCase().includes(query))
-      : batches
-    return [...filtered].sort((a, b) =>
-      sort === "newest"
-        ? b.createdAt.localeCompare(a.createdAt)
-        : a.createdAt.localeCompare(b.createdAt)
-    )
-  }, [batches, q, sort])
-
-  const directoryQuery = searchParams.toString()
-  const directoryHref = directoryQuery ? `/?${directoryQuery}` : "/"
+  const upcoming = upcomingFor(db, project.id, 4)
+  const actions = actionItemsFor(db, currentUser.id)
+  const recentFeedback = db.reviews
+    .filter((r) => r.projectId === project.id)
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .slice(0, 3)
 
   return (
-    <div className="flex flex-col gap-6 px-8 py-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-xl font-medium">Project directory</h1>
-          <p className="text-sm text-muted-foreground">
-            {visibleProjects.length} {visibleProjects.length === 1 ? "project" : "projects"} across{" "}
-            {batches.length} {batches.length === 1 ? "batch" : "batches"}.
-          </p>
-        </div>
-        {canManageRecords(currentUser) && <CreateBatchSheet />}
+    <>
+      <PageHeader
+        title={`Hello, ${currentUser.name.split(" ")[0]}`}
+        description={`Week ${week} of 28 on ${project.title}`}
+        actions={
+          <Button variant="outline" nativeButton={false} render={<Link href={`/projects/${project.id}`} />}>
+            Open our project
+            <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" strokeWidth={2} />
+          </Button>
+        }
+      />
+
+      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        {/* What you owe */}
+        <section>
+          <SectionHeading hint="what your team owes">Due next</SectionHeading>
+          {upcoming.length === 0 ? (
+            <EmptyState title="Everything is accepted" body="Nothing is waiting on your team." />
+          ) : (
+            <ul className="space-y-2">
+              {upcoming.map((view) => (
+                <li key={view.instance.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelected(view)}
+                    className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/50"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-th text-muted-foreground uppercase">
+                        Week {view.dueWeek} · {view.template.phase}
+                      </p>
+                      <p className="mt-0.5 truncate text-subhead text-foreground">
+                        {view.template.title}
+                      </p>
+                      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <StatusPill status={view.status} size="sm" />
+                        <DueBadge dueDate={view.dueDate} hideIcon />
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-caption text-muted-foreground">
+                      {view.instance.completedDeliverables.length}/
+                      {view.template.deliverables.length}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* What you are owed — deliberately a separate block */}
+        <section className="space-y-6">
+          <div>
+            <SectionHeading count={actions.length}>Your actions</SectionHeading>
+            {actions.length === 0 ? (
+              <EmptyState title="Nothing open" body="Actions from meetings and reviews land here." className="py-6" />
+            ) : (
+              <ul className="space-y-1.5">
+                {actions.slice(0, 6).map((item) => (
+                  <li
+                    key={item.id}
+                    className="rounded-lg border border-border bg-card px-3 py-2"
+                  >
+                    <p className="text-meta">{item.text}</p>
+                    <p className="mt-0.5">
+                      <DueBadge dueDate={item.dueDate} hideIcon />
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div>
+            <SectionHeading>Recent feedback</SectionHeading>
+            {recentFeedback.length === 0 ? (
+              <EmptyState title="No feedback yet" className="py-6" />
+            ) : (
+              <ul className="space-y-2">
+                {recentFeedback.map((review) => {
+                  const reviewer = personById(db, review.reviewerId)
+                  return (
+                    <li
+                      key={review.id}
+                      className={cn(
+                        "rounded-lg border p-3",
+                        review.verdict === "accept"
+                          ? "border-status-accepted-br bg-status-accepted-bg"
+                          : "border-status-returned-br bg-status-returned-bg"
+                      )}
+                    >
+                      <p className="flex items-center gap-1.5 text-caption">
+                        <PersonAvatar person={reviewer} size="xs" />
+                        {reviewer?.name ?? "A mentor"} ·{" "}
+                        {review.verdict === "accept" ? "accepted" : "asked for changes"} ·{" "}
+                        {timeAgo(review.createdAt)}
+                      </p>
+                      <p className="mt-1 line-clamp-3 text-meta">{review.body}</p>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
+        </section>
       </div>
 
-      {batches.length > 0 && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative sm:max-w-sm sm:flex-1">
-            <HugeiconsIcon
-              icon={Search01Icon}
-              strokeWidth={2}
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              value={q}
-              onChange={(event) => updateParams({ q: event.target.value })}
-              placeholder="Search batches"
-              aria-label="Search batches"
-              className="pl-9"
-            />
-          </div>
-          <Select
-            items={SORT_LABELS}
-            value={sort}
-            onValueChange={(value) => updateParams({ sort: value as SortOrder })}
-          >
-            <SelectTrigger className="w-full sm:w-52" aria-label="Sort batches">
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest batch first</SelectItem>
-              <SelectItem value="oldest">Oldest batch first</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {batches.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <HugeiconsIcon icon={FolderLibraryIcon} strokeWidth={2} />
-            </EmptyMedia>
-            <EmptyTitle>No batches yet</EmptyTitle>
-            <EmptyDescription>
-              {canManageRecords(currentUser)
-                ? "Create a batch to start grouping projects by cohort."
-                : "The coordinator hasn't created a batch yet."}
-            </EmptyDescription>
-          </EmptyHeader>
-          {canManageRecords(currentUser) && (
-            <EmptyContent>
-              <CreateBatchSheet />
-            </EmptyContent>
-          )}
-        </Empty>
-      ) : matchingBatches.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <HugeiconsIcon icon={SearchRemoveIcon} strokeWidth={2} />
-            </EmptyMedia>
-            <EmptyTitle>No batches found</EmptyTitle>
-            <EmptyDescription>Try a different search term.</EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button variant="outline" onClick={() => updateParams({ q: "" })}>
-              Clear search
-            </Button>
-          </EmptyContent>
-        </Empty>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {matchingBatches.map((batch) => {
-            const counts = countsByBatch.get(batch.id) ?? { total: 0, ongoing: 0, completed: 0 }
-            return (
-              <BatchCard
-                key={batch.id}
-                batch={batch}
-                projectCount={counts.total}
-                ongoingCount={counts.ongoing}
-                completedCount={counts.completed}
-                backHref={directoryHref}
-              />
-            )
-          })}
-        </div>
-      )}
-    </div>
+      <MilestoneSheet
+        view={selected}
+        open={Boolean(selected)}
+        onOpenChange={(open) => !open && setSelected(null)}
+      />
+    </>
   )
 }
 
-export default function Page() {
+/* ----------------------------------------------------------------- mentor */
+
+function MentorHome() {
+  const { db, actor, currentUser } = useProjectsStore()
+  const [selected, setSelected] = React.useState<MilestoneView | null>(null)
+  if (!actor || !currentUser) return null
+
+  const myProjects = projectsFor(db, actor)
+  const queue = reviewQueue(db, actor)
+  const attention = needsAttention(db, actor)
+  const stats = measures(db, myProjects.map((p) => p.id))
+
   return (
-    <Suspense>
-      <DirectoryContent />
-    </Suspense>
+    <>
+      <PageHeader
+        title="My teams"
+        description={`${myProjects.length} ${myProjects.length === 1 ? "team" : "teams"} under your mentoring line.`}
+        actions={
+          <Button variant="outline" nativeButton={false} render={<Link href="/review" />}>
+            <HugeiconsIcon icon={InboxIcon} className="size-4" strokeWidth={2} />
+            Review queue
+            {queue.length > 0 && <Badge className="ml-1">{queue.length}</Badge>}
+          </Button>
+        }
+      />
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <MetricTile
+          label="Waiting on you"
+          value={String(queue.length)}
+          hint={queue.length ? "Oldest first in the queue" : "Nothing outstanding"}
+          tone={queue.length > 3 ? "warn" : "default"}
+        />
+        <MetricTile
+          label="Teams needing a look"
+          value={String(attention.length)}
+          hint="Overdue work, ageing actions or silence"
+          tone={attention.length ? "warn" : "good"}
+        />
+        <MetricTile
+          label="Actions closed"
+          value={stats.actionClosureRate === null ? "—" : `${Math.round(stats.actionClosureRate * 100)}%`}
+          hint="Across your teams"
+        />
+      </div>
+
+      {/* Three sections, always visible. No filter to discover. */}
+      <section>
+        <SectionHeading count={queue.length} hint="oldest first">
+          Needs your review
+        </SectionHeading>
+        {queue.length === 0 ? (
+          <EmptyState icon={LegalHammerIcon} title="All reviewed. Nice work." />
+        ) : (
+          <ul className="space-y-2">
+            {queue.slice(0, 5).map((view) => (
+              <QueueRow key={view.instance.id} view={view} onOpen={() => setSelected(view)} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <SectionHeading count={attention.length}>Worth a look</SectionHeading>
+        {attention.length === 0 ? (
+          <EmptyState title="Nothing is drifting" body="Every team has turned something in recently." />
+        ) : (
+          <ul className="space-y-2">
+            {attention.map(({ project, reasons }) => (
+              <li key={project.id}>
+                <Link
+                  href={`/projects/${project.id}`}
+                  className="flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-colors hover:bg-muted/50"
+                >
+                  <HugeiconsIcon
+                    icon={AlarmClockIcon}
+                    className="mt-0.5 size-4 shrink-0 text-status-returned-solid"
+                    strokeWidth={2}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-subhead">{teamNameFor(db, project.teamId)}</p>
+                    <p className="truncate text-caption text-muted-foreground">{project.title}</p>
+                    <ul className="mt-1.5 space-y-0.5">
+                      {reasons.map((reason) => (
+                        <li key={reason} className="text-meta text-muted-foreground">
+                          · {reason}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <SectionHeading count={myProjects.length}>All my teams</SectionHeading>
+        <ProjectRows projectIds={myProjects.map((p) => p.id)} />
+      </section>
+
+      <MilestoneSheet
+        view={selected}
+        open={Boolean(selected)}
+        onOpenChange={(open) => !open && setSelected(null)}
+      />
+    </>
   )
+}
+
+function QueueRow({ view, onOpen }: { view: MilestoneView; onOpen: () => void }) {
+  const { db } = useProjectsStore()
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/50"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-subhead">{view.template.title}</p>
+          <p className="truncate text-caption text-muted-foreground">
+            {teamNameFor(db, view.project.teamId)} · {view.project.title}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <StatusPill status={view.status} size="sm" />
+          <span className="text-caption text-muted-foreground">
+            {view.instance.submittedAt ? timeAgo(view.instance.submittedAt) : ""}
+          </span>
+        </div>
+      </button>
+    </li>
+  )
+}
+
+/* ------------------------------------------------------------ coordinator */
+
+function CoordinatorHome() {
+  const { db, actor, week } = useProjectsStore()
+  if (!actor) return null
+
+  const projects = projectsFor(db, actor)
+  const views = milestoneViews(db, projects.map((p) => p.id))
+  const counts = statusCounts(views)
+  const stats = measures(db)
+  const attention = needsAttention(db, actor)
+  const mentors = db.people.filter((p) => p.roles.includes("mentor"))
+
+  return (
+    <>
+      <PageHeader
+        title="Programme overview"
+        description={`${projects.length} projects, ${mentors.length} mentoring lines, week ${week} of 28.`}
+        actions={
+          <Button nativeButton={false} render={<Link href="/grid" />}>
+            Open the grid
+            <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" strokeWidth={2} />
+          </Button>
+        }
+      />
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricTile
+          label="On time so far"
+          value={stats.onTimeRate === null ? "—" : `${Math.round(stats.onTimeRate * 100)}%`}
+          hint={`${stats.dueSoFar} checkpoints due to date`}
+          tone={stats.onTimeRate !== null && stats.onTimeRate < 0.6 ? "warn" : "good"}
+        />
+        <MetricTile
+          label="Median time to feedback"
+          value={
+            stats.medianHoursToFeedback === null
+              ? "—"
+              : `${Math.round(stats.medianHoursToFeedback)}h`
+          }
+          hint="Submission to mentor response"
+        />
+        <MetricTile
+          label="Actions closed"
+          value={
+            stats.actionClosureRate === null ? "—" : `${Math.round(stats.actionClosureRate * 100)}%`
+          }
+          hint="Before the next meeting"
+        />
+        <MetricTile
+          label="Teams needing a look"
+          value={String(attention.length)}
+          hint={`of ${projects.length}`}
+          tone={attention.length > projects.length / 3 ? "warn" : "default"}
+        />
+      </div>
+
+      <section>
+        <SectionHeading hint="every checkpoint across the batch">Where the batch is</SectionHeading>
+        <StatusLegend counts={counts} />
+      </section>
+
+      <section>
+        <SectionHeading count={attention.length}>Worth a look</SectionHeading>
+        {attention.length === 0 ? (
+          <EmptyState title="Nothing is drifting" />
+        ) : (
+          <ul className="space-y-2">
+            {attention.slice(0, 8).map(({ project, reasons }) => (
+              <li key={project.id}>
+                <Link
+                  href={`/projects/${project.id}`}
+                  className="flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-colors hover:bg-muted/50"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-subhead">{teamNameFor(db, project.teamId)}</p>
+                    <p className="truncate text-caption text-muted-foreground">
+                      {mentorNames(db, project.mentorIds)} · {project.title}
+                    </p>
+                    <p className="mt-1 text-meta text-muted-foreground">{reasons.join(" · ")}</p>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <SectionHeading count={mentors.length}>Mentor load</SectionHeading>
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {mentors.map((mentor) => {
+            const load = db.projects.filter(
+              (p) => !p.archived && p.mentorIds.includes(mentor.id)
+            ).length
+            const outOfBand = load > 8 || load === 0
+            return (
+              <li
+                key={mentor.id}
+                className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5"
+              >
+                <PersonAvatar person={mentor} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-meta font-medium">{mentor.name}</p>
+                  <p className="truncate text-caption text-muted-foreground">
+                    {mentor.affiliation}
+                  </p>
+                </div>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-md px-2 py-0.5 text-meta font-semibold",
+                    outOfBand
+                      ? "bg-status-returned-bg text-status-returned-fg"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {load} {load === 1 ? "team" : "teams"}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+        <p className="mt-2 text-caption text-muted-foreground">
+          The programme describes the load as 6 to 8 teams each. Two lines sit outside that in the
+          data we hold, which is on the list to confirm.
+        </p>
+      </section>
+    </>
+  )
+}
+
+/* ------------------------------------------------------------------ bits */
+
+function ProjectRows({ projectIds }: { projectIds: string[] }) {
+  const { db } = useProjectsStore()
+  return (
+    <ul className="space-y-1.5">
+      {projectIds.map((projectId) => {
+        const project = db.projects.find((p) => p.id === projectId)
+        if (!project) return null
+        const views = milestoneViews(db, [projectId])
+        const next = views.find((v) => v.status !== "accepted")
+        const accepted = views.filter((v) => v.status === "accepted").length
+        return (
+          <li key={projectId}>
+            <Link
+              href={`/projects/${projectId}`}
+              className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-muted/50"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-meta font-medium">{teamNameFor(db, project.teamId)}</p>
+                <p className="truncate text-caption text-muted-foreground">{project.title}</p>
+              </div>
+              {next && (
+                <div className="hidden shrink-0 items-center gap-2 sm:flex">
+                  <StatusPill status={next.status} size="sm" />
+                  <span className="w-24 truncate text-caption text-muted-foreground">
+                    {next.template.title}
+                  </span>
+                </div>
+              )}
+              <span className="shrink-0 text-caption text-muted-foreground">
+                {accepted}/{views.length}
+              </span>
+            </Link>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+function teamNameFor(db: ReturnType<typeof useProjectsStore>["db"], teamId: string) {
+  return db.teams.find((t) => t.id === teamId)?.name ?? "Team"
+}
+
+function mentorNames(db: ReturnType<typeof useProjectsStore>["db"], mentorIds: string[]) {
+  return mentorIds
+    .map((id) => personById(db, id)?.name ?? "")
+    .filter(Boolean)
+    .join(", ")
 }

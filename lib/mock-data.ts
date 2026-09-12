@@ -1,12 +1,4 @@
-import type { Batch, Domain, Person, Project } from "@/lib/types"
-
-// Fixed demo identities used by the role switcher to simulate the three
-// audiences from the PRD without building real accounts.
-export const DEMO_USER_IDS = {
-  student: "u-student",
-  mentor: "u-mentor",
-  coordinator: "u-coordinator",
-} as const
+import type { Batch, Domain, Person, Project, Team } from "@/lib/types"
 
 // Real roster for the PDM 2025–2027 batch, sourced from the batch's project
 // registration form. Each project's mentorIds reflects the mentor actually
@@ -14,333 +6,330 @@ export const DEMO_USER_IDS = {
 // team preferred, which isn't tracked here.
 export const seedPeople: Person[] = [
   {
-    id: "u-student",
-    name: "You (Student)",
-    email: "you.student@pdm.edu",
-    role: "student",
-    rollNumber: "2024100041",
-  },
-  {
-    id: "u-mentor",
-    name: "You (Mentor)",
-    email: "you.mentor@pdm.edu",
-    role: "mentor",
-  },
-  {
-    id: "u-coordinator",
-    name: "You (Coordinator)",
-    email: "you.coordinator@pdm.edu",
-    role: "coordinator",
-  },
-  {
     id: "p-mentor-prakash",
     name: "Prakash Yalla",
     email: "prakash.yalla@pdm.edu",
-    role: "mentor",
+    roles: ["mentor"],
+    affiliation: "Professor of Practice",
   },
   {
     id: "p-mentor-raman",
     name: "Dr. Raman Saxena",
     email: "raman.saxena@pdm.edu",
-    role: "mentor",
+    // Listed on the programme site as "Professor & Program Coordinator", so
+    // this person holds both roles and switches between them.
+    roles: ["mentor", "coordinator"],
+    affiliation: "Professor · Programme Coordinator",
   },
   {
     id: "p-mentor-raghu",
     name: "Dr. Raghu Reddy",
     email: "raghu.reddy@pdm.edu",
-    role: "mentor",
+    roles: ["mentor"],
+    affiliation: "Associate Professor, SERC",
   },
   {
     id: "p-mentor-ramesh",
     name: "Ramesh Loganathan",
     email: "ramesh.loganathan@pdm.edu",
-    role: "mentor",
+    roles: ["mentor"],
+    affiliation: "Professor of Practice, Co-innovations",
+  },
+  {
+    // Named to us as a mentoring line but absent from the batch registration
+    // data and from the published faculty list. Seeded with no teams so the
+    // gap stays visible rather than being quietly filled in.
+    id: "p-mentor-manisha",
+    name: "Manisha",
+    email: "manisha@pdm.edu",
+    roles: ["mentor"],
+    affiliation: "Faculty mentor · allocation to be confirmed",
   },
   {
     id: "p-2024204015",
     name: "Yerrabachu Keerthy Rao",
     email: "2024204015@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2024204015",
   },
   {
     id: "p-2025204001",
     name: "Kalluri Lakshmi Prathyusha",
     email: "2025204001@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204001",
   },
   {
     id: "p-2025204002",
     name: "Sanapathi Kishore Naidu",
     email: "2025204002@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204002",
   },
   {
     id: "p-2025204003",
     name: "Nagam Chandrakanth Reddy",
     email: "2025204003@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204003",
   },
   {
     id: "p-2025204004",
     name: "Rahul Saha",
     email: "2025204004@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204004",
   },
   {
     id: "p-2025204005",
     name: "Dhawal Pawanarkar",
     email: "2025204005@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204005",
   },
   {
     id: "p-2025204006",
     name: "Shada Praneeth Reddy",
     email: "2025204006@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204006",
   },
   {
     id: "p-2025204007",
     name: "Devansh Singh",
     email: "2025204007@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204007",
   },
   {
     id: "p-2025204008",
     name: "Mohd Shahid Kaleem",
     email: "2025204008@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204008",
   },
   {
     id: "p-2025204009",
     name: "Ekansh Patidar",
     email: "2025204009@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204009",
   },
   {
     id: "p-2025204010",
     name: "Kushal Karan",
     email: "2025204010@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204010",
   },
   {
     id: "p-2025204011",
     name: "Harsh Jaiswal",
     email: "2025204011@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204011",
   },
   {
     id: "p-2025204012",
     name: "Vadali SS Bharadwaja",
     email: "2025204012@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204012",
   },
   {
     id: "p-2025204013",
     name: "Patil Varun Nitin",
     email: "2025204013@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204013",
   },
   {
     id: "p-2025204014",
     name: "Gaurav Goswami",
     email: "2025204014@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204014",
   },
   {
     id: "p-2025204015",
     name: "Anjali Yadav",
     email: "2025204015@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204015",
   },
   {
     id: "p-2025204016",
     name: "Prakash Bhabad",
     email: "2025204016@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204016",
   },
   {
     id: "p-2025204017",
     name: "Anukriti Gongle",
     email: "2025204017@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204017",
   },
   {
     id: "p-2025204018",
     name: "Anil Kumar",
     email: "2025204018@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204018",
   },
   {
     id: "p-2025204019",
     name: "K Lakshmi Sai Aasritha",
     email: "2025204019@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204019",
   },
   {
     id: "p-2025204020",
     name: "V Venkata Raghava Sai Srividya",
     email: "2025204020@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204020",
   },
   {
     id: "p-2025204021",
     name: "P. Sai Harsha Vardhan",
     email: "2025204021@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204021",
   },
   {
     id: "p-2025204022",
     name: "Paila Tejeswara Rao",
     email: "2025204022@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204022",
   },
   {
     id: "p-2025204023",
     name: "Panem Chaitanya Pavan Kumar",
     email: "2025204023@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204023",
   },
   {
     id: "p-2025204024",
     name: "Manali Gupta",
     email: "2025204024@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204024",
   },
   {
     id: "p-2025204025",
     name: "Rishabh singh",
     email: "2025204025@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204025",
   },
   {
     id: "p-2025204026",
     name: "Kedar Dalvi",
     email: "2025204026@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204026",
   },
   {
     id: "p-2025204027",
     name: "Kaushal Negi",
     email: "2025204027@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204027",
   },
   {
     id: "p-2025204028",
     name: "Vinit Jain",
     email: "2025204028@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204028",
   },
   {
     id: "p-2025204029",
     name: "Snigdha Pani",
     email: "2025204029@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204029",
   },
   {
     id: "p-2025204030",
     name: "Eshwar Prasad Pingili",
     email: "2025204030@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204030",
   },
   {
     id: "p-2025204031",
     name: "Neha Susan Manoj",
     email: "2025204031@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204031",
   },
   {
     id: "p-2025204033",
     name: "Deepti Koranga",
     email: "2025204033@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204033",
   },
   {
     id: "p-2025204034",
     name: "Metta Venkata Ramana Murthy",
     email: "2025204034@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204034",
   },
   {
     id: "p-2025204035",
     name: "Bhumika Mehndiratta",
     email: "2025204035@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204035",
   },
   {
     id: "p-2025204036",
     name: "Gargi Saini",
     email: "2025204036@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204036",
   },
   {
     id: "p-2025204037",
     name: "Rahul chand",
     email: "2025204037@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204037",
   },
   {
     id: "p-2025204039",
     name: "Samir Saurabh",
     email: "2025204039@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204039",
   },
   {
     id: "p-2025204040",
     name: "Peri Sri Charan",
     email: "2025204040@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204040",
   },
   {
     id: "p-2025204041",
     name: "Keshav Dubey",
     email: "2025204041@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204041",
   },
   {
     id: "p-2025204042",
     name: "Abhinav Borah",
     email: "2025204042@pdm.edu",
-    role: "student",
+    roles: ["student"],
     rollNumber: "2025204042",
   },
 ]
@@ -357,6 +346,9 @@ export const seedBatches: Batch[] = [
     label: "PDM 2025–2027",
     admissionYear: 2025,
     graduationYear: 2027,
+    // Week 1 of the final project. Every due date derives from this date.
+    startDate: "2026-08-03",
+    description: "Semester 3 and 4 final project. 22 teams, 4 mentoring lines.",
     archived: false,
     createdAt: daysAgo(60),
   },
@@ -373,15 +365,202 @@ export const seedDomains: Domain[] = [
 // Project ideas as submitted on the registration form. Both potential ideas
 // each team pitched are kept in full under `problem`, since the form does
 // not record which one was ultimately finalized with the mentor.
+/** Teams derived from the batch's project registration form. A team name
+ * is the members' surnames; none of the teams named themselves. */
+export const seedTeams: Team[] = [
+  {
+    id: "team-1",
+    batchId: "b-2025-2027",
+    name: "Nitin & Kaleem",
+    memberIds: ["p-2025204013", "p-2025204008"],
+    leadId: "p-2025204013",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-2",
+    batchId: "b-2025-2027",
+    name: "Dalvi & Jain",
+    memberIds: ["p-2025204026", "p-2025204028"],
+    leadId: "p-2025204026",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-3",
+    batchId: "b-2025-2027",
+    name: "Dubey & Aasritha",
+    memberIds: ["p-2025204041", "p-2025204019"],
+    leadId: "p-2025204041",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-4",
+    batchId: "b-2025-2027",
+    name: "chand & singh",
+    memberIds: ["p-2025204037", "p-2025204025"],
+    leadId: "p-2025204037",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-5",
+    batchId: "b-2025-2027",
+    name: "Gupta & Rao",
+    memberIds: ["p-2025204024", "p-2024204015"],
+    leadId: "p-2025204024",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-6",
+    batchId: "b-2025-2027",
+    name: "Pingili & Negi",
+    memberIds: ["p-2025204030", "p-2025204027"],
+    leadId: "p-2025204030",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-7",
+    batchId: "b-2025-2027",
+    name: "Reddy & Reddy",
+    memberIds: ["p-2025204006", "p-2025204003"],
+    leadId: "p-2025204006",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-8",
+    batchId: "b-2025-2027",
+    name: "Bharadwaja & Naidu",
+    memberIds: ["p-2025204012", "p-2025204002"],
+    leadId: "p-2025204012",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-9",
+    batchId: "b-2025-2027",
+    name: "Gongle & Pani",
+    memberIds: ["p-2025204017", "p-2025204029"],
+    leadId: "p-2025204017",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-10",
+    batchId: "b-2025-2027",
+    name: "Mehndiratta & Goswami",
+    memberIds: ["p-2025204035", "p-2025204014"],
+    leadId: "p-2025204035",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-11",
+    batchId: "b-2025-2027",
+    name: "Srividya",
+    memberIds: ["p-2025204020"],
+    leadId: "p-2025204020",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-12",
+    batchId: "b-2025-2027",
+    name: "Rao & Vardhan",
+    memberIds: ["p-2025204022", "p-2025204021"],
+    leadId: "p-2025204022",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-13",
+    batchId: "b-2025-2027",
+    name: "Saha & Jaiswal",
+    memberIds: ["p-2025204004", "p-2025204011"],
+    leadId: "p-2025204004",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-14",
+    batchId: "b-2025-2027",
+    name: "Borah & Singh",
+    memberIds: ["p-2025204042", "p-2025204007"],
+    leadId: "p-2025204042",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-15",
+    batchId: "b-2025-2027",
+    name: "Saini & Pawanarkar",
+    memberIds: ["p-2025204036", "p-2025204005"],
+    leadId: "p-2025204036",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-16",
+    batchId: "b-2025-2027",
+    name: "Manoj",
+    memberIds: ["p-2025204031"],
+    leadId: "p-2025204031",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-17",
+    batchId: "b-2025-2027",
+    name: "Kumar",
+    memberIds: ["p-2025204023"],
+    leadId: "p-2025204023",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-18",
+    batchId: "b-2025-2027",
+    name: "Karan & Kumar",
+    memberIds: ["p-2025204010", "p-2025204018"],
+    leadId: "p-2025204010",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-19",
+    batchId: "b-2025-2027",
+    name: "Yadav & Murthy",
+    memberIds: ["p-2025204015", "p-2025204034"],
+    leadId: "p-2025204015",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-20",
+    batchId: "b-2025-2027",
+    name: "Koranga & Bhabad",
+    memberIds: ["p-2025204033", "p-2025204016"],
+    leadId: "p-2025204033",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-21",
+    batchId: "b-2025-2027",
+    name: "Charan & Prathyusha",
+    memberIds: ["p-2025204040", "p-2025204001"],
+    leadId: "p-2025204040",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+  {
+    id: "team-22",
+    batchId: "b-2025-2027",
+    name: "Patidar & Saurabh",
+    memberIds: ["p-2025204009", "p-2025204039"],
+    leadId: "p-2025204009",
+    createdAt: "2026-07-20T00:00:00.000Z",
+  },
+]
+
 export const seedProjects: Project[] = [
   {
     id: "proj-1",
     title: "Everything-for-rent platform",
     description:
       "an app that lets people easily rent useful items locally for short periods instead of buying them outright.",
+    teamId: "team-1",
     teamMemberIds: ["p-2025204013", "p-2025204008"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-prakash"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -399,9 +578,15 @@ export const seedProjects: Project[] = [
     title: "Financial Caregiving Platform for Aging Parents",
     description:
       "As families become geographically distributed, adult children increasingly help manage their aging parents' finances remotely.",
+    teamId: "team-2",
     teamMemberIds: ["p-2025204026", "p-2025204028"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raman"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -420,9 +605,15 @@ export const seedProjects: Project[] = [
       "Outpatient consultations extend well beyond the clinical encounter itself.",
     description:
       "Doctors in independent and small-clinic settings must simultaneously manage documentation, maintain records, prepare prescriptions, review diagnostic reports, and coordinate follow-ups, often across disconnected…",
+    teamId: "team-3",
     teamMemberIds: ["p-2025204041", "p-2025204019"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raghu"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -441,9 +632,15 @@ export const seedProjects: Project[] = [
       "PetSensei is a personalized pet care companion that guides pet owners through every stage…",
     description:
       "of their pet's life with timely advice, trusted recommendations, and proactive care reminders.",
+    teamId: "team-4",
     teamMemberIds: ["p-2025204037", "p-2025204025"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raman"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -460,9 +657,15 @@ export const seedProjects: Project[] = [
     id: "proj-5",
     title: "Fraud detection using AI",
     description: "Fraud detection using AI",
+    teamId: "team-5",
     teamMemberIds: ["p-2025204024", "p-2024204015"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-prakash"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem: "Idea 1:\n\nFraud detection using AI",
@@ -480,9 +683,15 @@ export const seedProjects: Project[] = [
       "AI System to diagnose and reduce workspace friction for radiologists",
     description:
       "AI System to diagnose and reduce workspace friction for radiologists",
+    teamId: "team-6",
     teamMemberIds: ["p-2025204030", "p-2025204027"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-prakash"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -500,9 +709,15 @@ export const seedProjects: Project[] = [
     title: "Human-AI Performance Manager",
     description:
       "Exploring how productivity, collaboration quality, and decision-making effectiveness can be measured and improved in teams where humans and AI agents work together as contributors.",
+    teamId: "team-7",
     teamMemberIds: ["p-2025204006", "p-2025204003"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raman"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -520,9 +735,15 @@ export const seedProjects: Project[] = [
     title:
       "Traffic enforcement in India remains fragmented and largely dependent on manual…",
     description: "monitoring and multiple disconnected systems.",
+    teamId: "team-8",
     teamMemberIds: ["p-2025204012", "p-2025204002"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raghu"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -541,9 +762,15 @@ export const seedProjects: Project[] = [
       "An AI-powered Operating System for Freelance Photography Businesses.",
     description:
       "An AI-powered Operating System for Freelance Photography Businesses.",
+    teamId: "team-9",
     teamMemberIds: ["p-2025204017", "p-2025204029"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raman"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -561,9 +788,15 @@ export const seedProjects: Project[] = [
     title: "Preserving Memories of a physical object in a digitalise format",
     description:
       "Preserving Memories of a physical object in a digitalise format",
+    teamId: "team-10",
     teamMemberIds: ["p-2025204035", "p-2025204014"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-prakash"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -581,9 +814,15 @@ export const seedProjects: Project[] = [
     title: "Enterprise Revenue Intelligence & Assurance",
     description:
       "A broader business solution focused on helping enterprises improve revenue realization, financial efficiency, and operational performance.",
+    teamId: "team-11",
     teamMemberIds: ["p-2025204020"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raman"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -601,9 +840,15 @@ export const seedProjects: Project[] = [
     title: "AI Voice Agent Platform",
     description:
       "The Problem: - Businesses spend significant time and money on repetitive outbound and inbound calling activities.",
+    teamId: "team-12",
     teamMemberIds: ["p-2025204022", "p-2025204021"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raman"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -620,9 +865,15 @@ export const seedProjects: Project[] = [
     id: "proj-13",
     title: "AI Operating Copilot for Micro & Small Businesses",
     description: "AI Operating Copilot for Micro & Small Businesses",
+    teamId: "team-13",
     teamMemberIds: ["p-2025204004", "p-2025204011"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-prakash"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -641,9 +892,15 @@ export const seedProjects: Project[] = [
       "Intelligence Layer for AI Agents which respects constraints, adheres to compliance and…",
     description:
       "keeps track of decision points to prevent context drift and easy rollback to previous state.",
+    teamId: "team-14",
     teamMemberIds: ["p-2025204042", "p-2025204007"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-prakash"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -661,9 +918,15 @@ export const seedProjects: Project[] = [
     title: "Intelligent Shipment Clustering for Urban Logistics",
     description:
       "A logistics optimization platform that aggregates fragmented delivery demand from multiple businesses within the same geographic zone and consolidates them into shared, route-optimized vehicle runs.",
+    teamId: "team-15",
     teamMemberIds: ["p-2025204036", "p-2025204005"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raghu"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -682,9 +945,15 @@ export const seedProjects: Project[] = [
       "Exploring a platform that reimagines the technical events ecosystem—either by…",
     description:
       "streamlining end-to-end event management or by helping participants build meaningful professional connections before, during, and after events.",
+    teamId: "team-16",
     teamMemberIds: ["p-2025204031"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raman"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -703,9 +972,15 @@ export const seedProjects: Project[] = [
       "Design and develop an AI enabled wearable companion that can understand a user's daily…",
     description:
       "interactions and activities to provide contextual assistance and personalized insights.",
+    teamId: "team-17",
     teamMemberIds: ["p-2025204023"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raghu"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -724,9 +999,15 @@ export const seedProjects: Project[] = [
       "Understand how product teams collect customer feedback and decide which features to…",
     description:
       "build, and explore ways to make this process easier and more efficient.",
+    teamId: "team-18",
     teamMemberIds: ["p-2025204010", "p-2025204018"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raghu"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -744,9 +1025,15 @@ export const seedProjects: Project[] = [
     title: "Improving Decision-Making in Early-Stage Investments",
     description:
       "Early-stage investors find it difficult to evaluate startups efficiently because critical information is scattered across multiple sources.",
+    teamId: "team-19",
     teamMemberIds: ["p-2025204015", "p-2025204034"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raman"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -764,9 +1051,15 @@ export const seedProjects: Project[] = [
     title:
       "UPI and digital payments have made transactions effortless, but they have not made…",
     description: "financial decision-making any easier.",
+    teamId: "team-20",
     teamMemberIds: ["p-2025204033", "p-2025204016"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raghu"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -785,9 +1078,15 @@ export const seedProjects: Project[] = [
       "Multilingual, low-learning-curve claims coordination platform that helps claimants…",
     description:
       "Insurance claimants often struggle to complete and track claims because documents, communications, approvals and responsibilities are distributed across multiple parties and systems.",
+    teamId: "team-21",
     teamMemberIds: ["p-2025204040", "p-2025204001"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raman"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:
@@ -806,9 +1105,15 @@ export const seedProjects: Project[] = [
       "AI-Powered Creator–Brand Collaboration and Campaign Intelligence Platform",
     description:
       "We propose to develop an AI-powered platform that connects content creators with brands for relevant marketing collaborations while providing intelligent recommendations to both stakeholders.",
+    teamId: "team-22",
     teamMemberIds: ["p-2025204009", "p-2025204039"],
     batchId: "b-2025-2027",
     mentorIds: ["p-mentor-raman"],
+    // The registration form records a preferred mentor as well as the
+    // assigned one. We do not hold those values yet, so this stays null
+    // until the coordinator fills it in rather than being invented.
+    preferredMentorId: null,
+    visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
     problem:

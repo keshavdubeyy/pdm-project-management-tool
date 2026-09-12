@@ -4,9 +4,57 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ---------------------------------------------------------------------------
+   PDM Project Space — design tokens
+
+   Colour follows the Radix 12-step model: step 3 fills a surface, step 7 draws
+   its border, step 12 writes on it. Step 11 is not used for text on a step-3
+   fill because it lands around 4.2:1, under the 4.5:1 needed at pill sizes.
+
+   Status colour is never the only signal. Every status carries a glyph and a
+   word as well, because the pale accepted and overdue fills are effectively
+   the same colour under deuteranopia.
+--------------------------------------------------------------------------- */
+
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: var(--font-sans);
+
+    /* Type scale, named by role rather than size. */
+    --text-display: 1.75rem;
+    --text-display--line-height: 2.125rem;
+    --text-display--font-weight: 600;
+    --text-display--letter-spacing: -0.015em;
+    --text-title: 1.25rem;
+    --text-title--line-height: 1.75rem;
+    --text-title--font-weight: 600;
+    --text-title--letter-spacing: -0.01em;
+    --text-section: 1rem;
+    --text-section--line-height: 1.5rem;
+    --text-section--font-weight: 600;
+    --text-subhead: 0.875rem;
+    --text-subhead--line-height: 1.25rem;
+    --text-subhead--font-weight: 600;
+    --text-body: 0.875rem;
+    --text-body--line-height: 1.3125rem;
+    --text-meta: 0.8125rem;
+    --text-meta--line-height: 1.125rem;
+    --text-th: 0.75rem;
+    --text-th--line-height: 1rem;
+    --text-th--font-weight: 500;
+    --text-th--letter-spacing: 0.02em;
+    --text-caption: 0.75rem;
+    --text-caption--line-height: 1rem;
+    --text-kpi: 1.875rem;
+    --text-kpi--line-height: 2.125rem;
+    --text-kpi--font-weight: 600;
+    --text-kpi--letter-spacing: -0.02em;
+
+    /* Motion. Productive easing — nothing here is meant to be noticed. */
+    --ease-standard: cubic-bezier(0.2, 0, 0.38, 0.9);
+    --ease-entrance: cubic-bezier(0, 0, 0.38, 0.9);
+    --ease-exit: cubic-bezier(0.2, 0, 1, 0.9);
+
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -23,6 +71,7 @@
     --color-ring: var(--ring);
     --color-input: var(--input);
     --color-border: var(--border);
+    --color-border-strong: var(--border-strong);
     --color-destructive: var(--destructive);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
@@ -38,6 +87,37 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
+
+    /* Status surfaces, exposed as utilities: bg-status-accepted-bg etc. */
+    --color-status-not_started-bg: var(--status-not_started-bg);
+    --color-status-not_started-br: var(--status-not_started-br);
+    --color-status-not_started-fg: var(--status-not_started-fg);
+    --color-status-not_started-solid: var(--status-not_started-solid);
+    --color-status-in_progress-bg: var(--status-in_progress-bg);
+    --color-status-in_progress-br: var(--status-in_progress-br);
+    --color-status-in_progress-fg: var(--status-in_progress-fg);
+    --color-status-in_progress-solid: var(--status-in_progress-solid);
+    --color-status-submitted-bg: var(--status-submitted-bg);
+    --color-status-submitted-br: var(--status-submitted-br);
+    --color-status-submitted-fg: var(--status-submitted-fg);
+    --color-status-submitted-solid: var(--status-submitted-solid);
+    --color-status-under_review-bg: var(--status-under_review-bg);
+    --color-status-under_review-br: var(--status-under_review-br);
+    --color-status-under_review-fg: var(--status-under_review-fg);
+    --color-status-under_review-solid: var(--status-under_review-solid);
+    --color-status-returned-bg: var(--status-returned-bg);
+    --color-status-returned-br: var(--status-returned-br);
+    --color-status-returned-fg: var(--status-returned-fg);
+    --color-status-returned-solid: var(--status-returned-solid);
+    --color-status-accepted-bg: var(--status-accepted-bg);
+    --color-status-accepted-br: var(--status-accepted-br);
+    --color-status-accepted-fg: var(--status-accepted-fg);
+    --color-status-accepted-solid: var(--status-accepted-solid);
+    --color-status-overdue-bg: var(--status-overdue-bg);
+    --color-status-overdue-br: var(--status-overdue-br);
+    --color-status-overdue-fg: var(--status-overdue-fg);
+    --color-status-overdue-solid: var(--status-overdue-solid);
+
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -48,82 +128,187 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    /* Slate, not pure neutral. Pure white plus pure grey reads clinical on a
+       projector; a fractionally cool ground sits better under blue. */
+    --background: oklch(0.9925 0.0015 264);
+    --foreground: oklch(0.223 0.0115 258);
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
+    --card-foreground: oklch(0.223 0.0115 258);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
+    --popover-foreground: oklch(0.223 0.0115 258);
     --primary: oklch(0.488 0.243 264.376);
-    --primary-foreground: oklch(0.97 0.014 254.604);
-    --secondary: oklch(0.967 0.001 286.375);
-    --secondary-foreground: oklch(0.21 0.006 285.885);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0.005 260);
+    --secondary: oklch(0.9605 0.0035 264);
+    --secondary-foreground: oklch(0.278 0.011 258);
+    --muted: oklch(0.9605 0.0035 264);
+    --muted-foreground: oklch(0.524 0.0135 258);
+    --accent: oklch(0.9405 0.0055 264);
+    --accent-foreground: oklch(0.246 0.012 258);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.809 0.105 251.813);
-    --chart-2: oklch(0.623 0.214 259.815);
-    --chart-3: oklch(0.546 0.245 262.881);
-    --chart-4: oklch(0.488 0.243 264.376);
-    --chart-5: oklch(0.424 0.199 265.638);
+    /* Decorative dividers. */
+    --border: oklch(0.9025 0.0055 264);
+    /* Boundaries that have to be seen: inputs, checkboxes, cell edges.
+       Clears 3:1 against the page, which the divider colour does not. */
+    --border-strong: oklch(0.688 0.0135 258);
+    --input: oklch(0.688 0.0135 258);
+    --ring: oklch(0.488 0.243 264.376);
+    --chart-1: oklch(0.623 0.214 259.815);
+    --chart-2: oklch(0.68 0.149 162.48);
+    --chart-3: oklch(0.705 0.187 47.604);
+    --chart-4: oklch(0.558 0.222 293.09);
+    --chart-5: oklch(0.637 0.237 25.331);
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.546 0.245 262.881);
-    --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar: oklch(0.9785 0.002 264);
+    --sidebar-foreground: oklch(0.223 0.0115 258);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0.005 260);
+    --sidebar-accent: oklch(0.9405 0.0055 264);
+    --sidebar-accent-foreground: oklch(0.246 0.012 258);
+    --sidebar-border: oklch(0.9025 0.0055 264);
+    --sidebar-ring: oklch(0.488 0.243 264.376);
+
+    /* Seven states. Hue does the fast reading, lightness does the accessible
+       reading, and the glyph does the honest reading. */
+    --status-not_started-bg: #f0f0f3;
+    --status-not_started-br: #cdced6;
+    --status-not_started-fg: #1c2024;
+    --status-not_started-solid: #8b8d98;
+    --status-in_progress-bg: #e6f4fe;
+    --status-in_progress-br: #8ec8f6;
+    --status-in_progress-fg: #113264;
+    --status-in_progress-solid: #0090ff;
+    --status-submitted-bg: #f4f0fe;
+    --status-submitted-br: #c2b5f5;
+    --status-submitted-fg: #2f265f;
+    --status-submitted-solid: #6e56cf;
+    --status-under_review-bg: #fff7c2;
+    --status-under_review-br: #e9c162;
+    --status-under_review-fg: #4f3422;
+    --status-under_review-solid: #ffc53d;
+    --status-returned-bg: #ffefd6;
+    --status-returned-br: #f5ae73;
+    --status-returned-fg: #582d1d;
+    --status-returned-solid: #f76b15;
+    --status-accepted-bg: #e6f6eb;
+    --status-accepted-br: #8eceaa;
+    --status-accepted-fg: #193b2d;
+    --status-accepted-solid: #30a46c;
+    --status-overdue-bg: #feebec;
+    --status-overdue-br: #f4a9aa;
+    --status-overdue-fg: #641723;
+    --status-overdue-solid: #e5484d;
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.424 0.199 265.638);
-    --primary-foreground: oklch(0.97 0.014 254.604);
-    --secondary: oklch(0.274 0.006 286.033);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
+    --background: oklch(0.1795 0.0045 264);
+    --foreground: oklch(0.949 0.003 264);
+    --card: oklch(0.2185 0.005 264);
+    --card-foreground: oklch(0.949 0.003 264);
+    --popover: oklch(0.2465 0.006 264);
+    --popover-foreground: oklch(0.949 0.003 264);
+    --primary: oklch(0.623 0.214 259.815);
+    --primary-foreground: oklch(0.1795 0.0045 264);
+    --secondary: oklch(0.2725 0.007 264);
+    --secondary-foreground: oklch(0.949 0.003 264);
+    --muted: oklch(0.2725 0.007 264);
+    --muted-foreground: oklch(0.7455 0.011 260);
+    --accent: oklch(0.3035 0.008 264);
+    --accent-foreground: oklch(0.949 0.003 264);
     --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.809 0.105 251.813);
-    --chart-2: oklch(0.623 0.214 259.815);
-    --chart-3: oklch(0.546 0.245 262.881);
-    --chart-4: oklch(0.488 0.243 264.376);
-    --chart-5: oklch(0.424 0.199 265.638);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
+    --border: oklch(0.3365 0.0095 262);
+    --border-strong: oklch(0.5215 0.0145 260);
+    --input: oklch(0.5215 0.0145 260);
+    --ring: oklch(0.623 0.214 259.815);
+    --chart-1: oklch(0.623 0.214 259.815);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.75 0.183 55.934);
+    --chart-4: oklch(0.627 0.265 303.9);
+    --chart-5: oklch(0.645 0.246 16.439);
+    --sidebar: oklch(0.2005 0.005 264);
+    --sidebar-foreground: oklch(0.949 0.003 264);
     --sidebar-primary: oklch(0.623 0.214 259.815);
-    --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --sidebar-primary-foreground: oklch(0.1795 0.0045 264);
+    --sidebar-accent: oklch(0.3035 0.008 264);
+    --sidebar-accent-foreground: oklch(0.949 0.003 264);
+    --sidebar-border: oklch(0.3365 0.0095 262);
+    --sidebar-ring: oklch(0.623 0.214 259.815);
+
+    --status-not_started-bg: #212225;
+    --status-not_started-br: #43484e;
+    --status-not_started-fg: #edeef0;
+    --status-not_started-solid: #696e77;
+    --status-in_progress-bg: #0d2847;
+    --status-in_progress-br: #205d9e;
+    --status-in_progress-fg: #c2e6ff;
+    --status-in_progress-solid: #0090ff;
+    --status-submitted-bg: #291f43;
+    --status-submitted-br: #56468b;
+    --status-submitted-fg: #e2ddfe;
+    --status-submitted-solid: #6e56cf;
+    --status-under_review-bg: #302008;
+    --status-under_review-br: #714f19;
+    --status-under_review-fg: #ffe7b3;
+    --status-under_review-solid: #ffc53d;
+    --status-returned-bg: #331e0b;
+    --status-returned-br: #7e451d;
+    --status-returned-fg: #ffe0c2;
+    --status-returned-solid: #f76b15;
+    --status-accepted-bg: #132d21;
+    --status-accepted-br: #28684a;
+    --status-accepted-fg: #b1f1cb;
+    --status-accepted-solid: #30a46c;
+    --status-overdue-bg: #3b1219;
+    --status-overdue-br: #8c333a;
+    --status-overdue-fg: #ffd1d9;
+    --status-overdue-solid: #e5484d;
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+    * {
+        @apply border-border outline-ring/50;
     }
-  body {
-    @apply bg-background text-foreground;
+    body {
+        @apply bg-background text-foreground;
     }
-  html {
-    @apply font-sans;
+    html {
+        @apply font-sans;
+        /* A data app. Digits must not wobble between rows. */
+        font-variant-numeric: tabular-nums;
+        font-optical-sizing: auto;
+    }
+    /* shadcn's base sets a 50% alpha ring, which does not reach 3:1.
+       Focus has to be visible on every surface, so override it. */
+    :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+    }
+    /* Nothing focused should hide behind the sticky header. */
+    [id] {
+        scroll-margin-top: 5rem;
+    }
+}
+
+@layer utilities {
+    /* Proportional figures where digits sit inside prose. */
+    .tnum-off {
+        font-variant-numeric: normal;
+    }
+    /* The grid's crosshair. Tracking a row across twelve columns is the whole
+       reason this exists — it replaces zebra striping, which solves the same
+       problem less precisely. */
+    .grid-crosshair [data-cell]:hover {
+        outline: 2px solid var(--ring);
+        outline-offset: -2px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 }
