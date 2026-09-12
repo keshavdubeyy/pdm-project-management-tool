@@ -2,7 +2,7 @@
 
 Where each of the forty must-have features from [`02-feature-catalogue-moscow.md`](./02-feature-catalogue-moscow.md) lives in the running app, and how to see it working.
 
-Sign in at `/signin` by picking a person. Sessions are held per browser tab, so open a second tab and sign in as somebody else to watch work move between two people.
+Sign in at `/signin` by typing a few letters of a name. Sessions are held per browser tab, so open a second tab and sign in as somebody else to watch work move between two people.
 
 ## Accounts and access
 
@@ -11,7 +11,7 @@ Sign in at `/signin` by picking a person. Sessions are held per browser tab, so 
 | A1 | Three roles | `lib/types.ts`, sidebar | The sidebar changes with the role. A student never sees a greyed-out coordinator item |
 | A2 | Permission checks on every action, not just hidden buttons | `lib/permissions.ts`, enforced inside `lib/store.tsx` | Every mutation runs the check before it writes. Hiding a button is not the control |
 | A3 | Real login | `/signin`, `lib/session.ts` | Session is per tab, in `sessionStorage`. A new tab starts from the last identity used |
-| A4 | Mentor rights come from allocation, not a role flag | `projectsFor`, `isMentorOf` | Sign in as Prakash Yalla: the review queue holds his six teams and nobody else's |
+| A4 | Mentor rights come from allocation, not a role flag | `projectsFor`, `isMentorOf` | Sign in as Prakash Yalla: Projects holds his six teams and nobody else's |
 | A5 | One person, both roles | Account menu, "Acting as" | Dr. Raman Saxena is both a mentor and the coordinator. Switching changes what is permitted, not only what is shown |
 
 ## Batch, teams and allocation
@@ -19,7 +19,7 @@ Sign in at `/signin` by picking a person. Sessions are held per browser tab, so 
 | Ref | Feature | Where it is | How to check it |
 |---|---|---|---|
 | B1 | Batches | `/admin` → Milestone calendar | Start date drives every due date in the batch |
-| B2 | Student and mentor directory | `/admin` → Roster, `/directory` | 41 students, 22 teams, 5 mentoring lines |
+| B2 | Student and mentor directory | `/admin` → Roster, `/projects` | 41 students, 22 teams, 5 mentoring lines |
 | B3 | Teams with a named lead | `/admin` → Roster → Edit | Three of the 22 are individual projects and are labelled as such |
 | B4 | Project record per team | `/projects/[id]` | — |
 | B5 | Preferred and assigned mentor recorded separately | `/admin` → Mentor allocation | Both are editable; where they differ the project shows "reassigned" |
@@ -28,12 +28,12 @@ Sign in at `/signin` by picking a person. Sessions are held per browser tab, so 
 
 | Ref | Feature | Where it is | How to check it |
 |---|---|---|---|
-| C1 | The twelve checkpoints as editable data | `/admin` → Milestone calendar | Add a checkpoint and a new column appears in the grid for every team |
+| C1 | The twelve checkpoints as editable data | `/admin` → Milestone calendar | Add a checkpoint and a new column appears under Checkpoints for every team |
 | C2 | Every team has its own copy | `lib/seed.ts`, `milestoneViews` | 22 × 12 = 264 instances |
 | C3 | The status flow | `lib/status.ts`, `ALLOWED_TRANSITIONS` | Overdue is computed from the calendar rather than set by anyone |
 | C4 | Week arithmetic | `lib/dates.ts` | The header reads "Week N of 28", derived from the batch start date |
 | C5 | Deliverables as a checklist | Checkpoint slide-over | Week 14 carries ten separate artefacts |
-| C6 | What is due next | Student home, project rail | Four checkpoints, nearest first |
+| C6 | What is due next | Today, and the project rail | Four checkpoints, nearest first |
 
 ## Deliverables
 
@@ -65,17 +65,17 @@ Sign in at `/signin` by picking a person. Sessions are held per browser tab, so 
 
 | Ref | Feature | Where it is | How to check it |
 |---|---|---|---|
-| G1 | Announcements with a chosen audience | `/announcements` | The live count under each option shows the blast radius before sending; the batch-wide option asks again |
+| G1 | Announcements with a chosen audience | `/messages` | The live count under each option shows the blast radius before sending; the batch-wide option asks again |
 | G2 | A mentor's teams as one group | Same screen, "All my teams" | One action reaches all of a mentoring line |
 
 ## Dashboards
 
 | Ref | Feature | Where it is | How to check it |
 |---|---|---|---|
-| H1 | The batch grid | `/grid` | 22 rows, 12 columns, frozen first column, arrow-key navigation |
+| H1 | The batch grid | `/checkpoints` | 22 rows, 12 columns, frozen first column, arrow-key navigation |
 | H2 | Drill down from a cell | Click or press Enter on a cell | Opens that checkpoint beside the grid |
 | H3 | Filter by mentor, status and text | Grid header and legend | The legend doubles as the filter |
-| H4 | A mentor's own board | `/` as a mentor | Needs your review, worth a look, all my teams |
+| H4 | A mentor's own board | `/` as a mentor | Waiting on you, and what is drifting. The full list of their teams lives once, under Projects |
 
 ## Notifications and platform
 
@@ -84,7 +84,7 @@ Sign in at `/signin` by picking a person. Sessions are held per browser tab, so 
 | I1 | Deadline reminders | `lib/store.tsx`, generated on load | A week out and the day before. Keyed by checkpoint and date, so running again changes nothing |
 | I2 | The mentor is told when a team turns work in | On submit | Appears in the bell within a second, in any open tab |
 | I3 | The team is told when a mentor reviews | On accept or return | Deep-links straight to the checkpoint |
-| J1 | Search | `/directory`, and ⌘K anywhere | Grouped results: pages, projects, role switching |
+| J1 | Search | `/projects`, and ⌘K anywhere | Grouped results: pages, projects, role switching |
 | J2 | Nothing is lost on reload | `lib/db.ts` | Data in `localStorage`, shared across tabs, broadcast on write |
 | J3 | Coordinator area | `/admin` | Allocation, calendar, roster, audit trail |
 | J4 | Milestone template editor | `/admin` → Milestone calendar | Change the calendar without a new release |
@@ -101,7 +101,7 @@ Two limits are worth stating plainly rather than discovering:
 
 ## Checked end to end
 
-A scripted run drives two tabs as two different people and verifies twenty things, including: a student turning in a checkpoint, the mentor's queue picking it up in the other tab, opening it moving the checkpoint into review on its own, returning it with a required reason, the reason and its category being stored, an action being raised for the team automatically, the student's tab updating without a reload, the student not being offered an Accept button, and every grid cell carrying a spoken label. All twenty pass.
+A scripted run drives two tabs as two different people and verifies twenty-one things, including: a student turning in a checkpoint, the mentor's queue picking it up in the other tab, opening it moving the checkpoint into review on its own, returning it with a required reason, the reason and its category being stored, an action being raised for the team automatically, the student's tab updating without a reload, the student not being offered an Accept button, and every grid cell carrying a spoken label. All twenty-one pass.
 
 ## Where things moved
 
