@@ -67,7 +67,7 @@ export function MilestoneRail({
               type="button"
               onClick={() => onSelect(view)}
               className={cn(
-                "mb-2 min-w-0 flex-1 rounded-lg border px-3 py-2.5 text-left transition-colors",
+                "mb-2 min-w-0 flex-1 rounded-sm border px-3 py-2.5 text-left transition-colors",
                 selected
                   ? "border-primary/40 bg-primary/[0.04]"
                   : "border-transparent hover:border-border hover:bg-muted/50"

@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Delete02Icon, PlusSignIcon } from "@hugeicons/core-free-icons"
 
 import { EmptyState, PageHeader, PersonAvatar, SectionHeading } from "@/components/common"
+import { PersonCombobox } from "@/components/person-combobox"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -97,7 +98,7 @@ function AllocationTab() {
           return (
             <div
               key={mentor.id}
-              className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5"
+              className="flex items-center gap-3 rounded-sm border border-border bg-card px-3 py-2.5"
             >
               <PersonAvatar person={mentor} size="sm" />
               <div className="min-w-0 flex-1">
@@ -117,7 +118,7 @@ function AllocationTab() {
           return (
             <li
               key={project.id}
-              className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5"
+              className="flex flex-wrap items-center gap-3 rounded-sm border border-border bg-card px-3 py-2.5"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-meta font-medium">{team?.name}</p>
@@ -125,65 +126,39 @@ function AllocationTab() {
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-caption text-muted-foreground">Assigned</span>
-                <Select
-                  value={project.mentorIds[0] ?? ""}
-                  onValueChange={(value) => {
+                <span className="shrink-0 text-caption text-muted-foreground">Assigned</span>
+                <PersonCombobox
+                  people={mentors}
+                  value={project.mentorIds[0] ?? null}
+                  onChange={(value) => {
                     if (!value) return
                     report(
                       updateAllocation(project.id, [value], project.preferredMentorId),
                       "Allocation updated"
                     )
                   }}
-                >
-                  <SelectTrigger size="sm" className="w-48">
-                    <SelectValue>
-                      {(value) => mentors.find((m) => m.id === value)?.name ?? "Unassigned"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mentors.map((mentor) => (
-                      <SelectItem key={mentor.id} value={mentor.id}>
-                        {mentor.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  emptyLabel="Unassigned"
+                  placeholder="Find a mentor…"
+                  className="w-48"
+                />
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-caption text-muted-foreground">Asked for</span>
-                <Select
-                  value={project.preferredMentorId ?? "none"}
-                  onValueChange={(value) =>
+                <span className="shrink-0 text-caption text-muted-foreground">Asked for</span>
+                <PersonCombobox
+                  people={mentors}
+                  value={project.preferredMentorId}
+                  onChange={(value) =>
                     report(
-                      updateAllocation(
-                        project.id,
-                        project.mentorIds,
-                        value === "none" ? null : value
-                      ),
+                      updateAllocation(project.id, project.mentorIds, value),
                       "Preference recorded"
                     )
                   }
-                >
-                  <SelectTrigger size="sm" className="w-48">
-                    <SelectValue>
-                      {(value) =>
-                        value === "none"
-                          ? "Not recorded"
-                          : (mentors.find((m) => m.id === value)?.name ?? "Not recorded")
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Not recorded</SelectItem>
-                    {mentors.map((mentor) => (
-                      <SelectItem key={mentor.id} value={mentor.id}>
-                        {mentor.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  allowEmpty
+                  emptyLabel="Not recorded"
+                  placeholder="Find a mentor…"
+                  className="w-48"
+                />
               </div>
 
               {project.preferredMentorId &&
@@ -235,7 +210,7 @@ function CalendarTab() {
         {template.map((item) => (
           <li
             key={item.id}
-            className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5"
+            className="flex flex-wrap items-center gap-3 rounded-sm border border-border bg-card px-3 py-2.5"
           >
             <span className="w-16 shrink-0 text-meta font-semibold">W{item.dueWeek}</span>
             <div className="min-w-0 flex-1">
@@ -414,7 +389,7 @@ function RosterTab() {
         {teams.map((team) => {
           const project = db.projects.find((p) => p.teamId === team.id)
           return (
-            <li key={team.id} className="rounded-lg border border-border bg-card px-3 py-2.5">
+            <li key={team.id} className="rounded-sm border border-border bg-card px-3 py-2.5">
               <div className="flex items-center justify-between gap-2">
                 <p className="truncate text-meta font-medium">{team.name}</p>
                 <span className="flex shrink-0 items-center gap-1">
@@ -457,7 +432,7 @@ function RosterTab() {
             {unassigned.map((person) => (
               <li
                 key={person.id}
-                className="flex items-center gap-1.5 rounded-md border border-border px-2 py-1"
+                className="flex items-center gap-1.5 rounded-sm border border-border px-2 py-1"
               >
                 <PersonAvatar person={person} size="xs" />
                 <span className="text-caption">{person.name}</span>
@@ -517,28 +492,16 @@ function TeamDialog({
           </div>
           <div className="space-y-1.5">
             <Label>Who speaks for the team</Label>
-            <Select
-              value={leadId ?? "none"}
-              onValueChange={(value) => setLeadId(value === "none" ? null : value)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue>
-                  {(value) =>
-                    value === "none"
-                      ? "Nobody named"
-                      : (personById(db, String(value))?.name ?? "Nobody named")
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nobody named</SelectItem>
-                {team.memberIds.map((memberId) => (
-                  <SelectItem key={memberId} value={memberId}>
-                    {personById(db, memberId)?.name ?? memberId}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <PersonCombobox
+              people={team.memberIds
+                .map((id) => personById(db, id))
+                .filter((p): p is NonNullable<typeof p> => Boolean(p))}
+              value={leadId}
+              onChange={setLeadId}
+              allowEmpty
+              emptyLabel="Nobody named"
+              placeholder="Find a member…"
+            />
           </div>
         </div>
 
@@ -576,7 +539,7 @@ function AuditTab() {
           body="Changes made from now on will appear here."
         />
       ) : (
-        <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+        <ul className="divide-y divide-border rounded-sm border border-border bg-card">
           {db.audit.slice(0, 80).map((event) => (
             <li key={event.id} className="flex flex-wrap items-baseline gap-2 px-3 py-2">
               <span className="text-caption text-muted-foreground">

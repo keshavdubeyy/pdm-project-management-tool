@@ -42,7 +42,7 @@ export function StatusLegend({
         )
 
         const classes = cn(
-          "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-opacity",
+          "inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-xs font-medium transition-opacity",
           meta.bg,
           meta.border,
           meta.fg,

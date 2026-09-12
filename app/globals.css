@@ -5,52 +5,57 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ---------------------------------------------------------------------------
-   PDM Project Space — design tokens
+   PDM Project Space — Studio wall
 
-   Colour follows the Radix 12-step model: step 3 fills a surface, step 7 draws
-   its border, step 12 writes on it. Step 11 is not used for text on a step-3
-   fill because it lands around 4.2:1, under the 4.5:1 needed at pill sizes.
+   A design programme's own tool, so it is allowed to look designed. Warm paper
+   ground, a near-black ink, one acid accent, and almost no radius. Display type
+   does the shouting; the body face stays quiet underneath it.
 
-   Status colour is never the only signal. Every status carries a glyph and a
-   word as well, because the pale accepted and overdue fills are effectively
-   the same colour under deuteranopia.
+   Status keeps its three signals — glyph, word, colour, in that order of
+   reliability. The pale accepted and overdue fills are near-identical under
+   deuteranopia, so colour is never alone.
 --------------------------------------------------------------------------- */
 
 @theme inline {
-    --font-heading: var(--font-sans);
+    --font-display: var(--font-display);
+    --font-heading: var(--font-display);
     --font-sans: var(--font-sans);
 
-    /* Type scale, named by role rather than size. */
-    --text-display: 1.75rem;
-    --text-display--line-height: 2.125rem;
-    --text-display--font-weight: 600;
-    --text-display--letter-spacing: -0.015em;
-    --text-title: 1.25rem;
-    --text-title--line-height: 1.75rem;
-    --text-title--font-weight: 600;
-    --text-title--letter-spacing: -0.01em;
-    --text-section: 1rem;
-    --text-section--line-height: 1.5rem;
-    --text-section--font-weight: 600;
+    /* Display sizes carry the personality; body sizes stay out of the way. */
+    --text-hero: 4.5rem;
+    --text-hero--line-height: 0.95;
+    --text-hero--font-weight: 800;
+    --text-hero--letter-spacing: -0.045em;
+    --text-display: 2.25rem;
+    --text-display--line-height: 1;
+    --text-display--font-weight: 800;
+    --text-display--letter-spacing: -0.035em;
+    --text-title: 1.5rem;
+    --text-title--line-height: 1.15;
+    --text-title--font-weight: 700;
+    --text-title--letter-spacing: -0.025em;
+    --text-section: 1.0625rem;
+    --text-section--line-height: 1.3;
+    --text-section--font-weight: 700;
+    --text-section--letter-spacing: -0.015em;
     --text-subhead: 0.875rem;
     --text-subhead--line-height: 1.25rem;
     --text-subhead--font-weight: 600;
     --text-body: 0.875rem;
-    --text-body--line-height: 1.3125rem;
+    --text-body--line-height: 1.35rem;
     --text-meta: 0.8125rem;
-    --text-meta--line-height: 1.125rem;
-    --text-th: 0.75rem;
+    --text-meta--line-height: 1.15rem;
+    --text-th: 0.6875rem;
     --text-th--line-height: 1rem;
-    --text-th--font-weight: 500;
-    --text-th--letter-spacing: 0.02em;
+    --text-th--font-weight: 700;
+    --text-th--letter-spacing: 0.1em;
     --text-caption: 0.75rem;
     --text-caption--line-height: 1rem;
-    --text-kpi: 1.875rem;
-    --text-kpi--line-height: 2.125rem;
-    --text-kpi--font-weight: 600;
-    --text-kpi--letter-spacing: -0.02em;
+    --text-stat: 1.875rem;
+    --text-stat--line-height: 1;
+    --text-stat--font-weight: 700;
+    --text-stat--letter-spacing: -0.03em;
 
-    /* Motion. Productive easing — nothing here is meant to be noticed. */
     --ease-standard: cubic-bezier(0.2, 0, 0.38, 0.9);
     --ease-entrance: cubic-bezier(0, 0, 0.38, 0.9);
     --ease-exit: cubic-bezier(0.2, 0, 1, 0.9);
@@ -88,7 +93,10 @@
     --color-foreground: var(--foreground);
     --color-background: var(--background);
 
-    /* Status surfaces, exposed as utilities: bg-status-accepted-bg etc. */
+    /* The accent. Used sparingly and never as a background for body text. */
+    --color-lime: var(--lime);
+    --color-lime-ink: var(--lime-ink);
+
     --color-status-not_started-bg: var(--status-not_started-bg);
     --color-status-not_started-br: var(--status-not_started-br);
     --color-status-not_started-fg: var(--status-not_started-fg);
@@ -118,184 +126,191 @@
     --color-status-overdue-fg: var(--status-overdue-fg);
     --color-status-overdue-solid: var(--status-overdue-solid);
 
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    /* Almost square. The old 10px radius is what made everything look the same. */
+    --radius-sm: 2px;
+    --radius-md: 3px;
+    --radius-lg: 3px;
+    --radius-xl: 4px;
+    --radius-2xl: 5px;
+    --radius-3xl: 6px;
+    --radius-4xl: 3px;
 }
 
 :root {
-    /* Slate, not pure neutral. Pure white plus pure grey reads clinical on a
-       projector; a fractionally cool ground sits better under blue. */
-    --background: oklch(0.9925 0.0015 264);
-    --foreground: oklch(0.223 0.0115 258);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.223 0.0115 258);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.223 0.0115 258);
-    --primary: oklch(0.488 0.243 264.376);
-    --primary-foreground: oklch(0.985 0.005 260);
-    --secondary: oklch(0.9605 0.0035 264);
-    --secondary-foreground: oklch(0.278 0.011 258);
-    --muted: oklch(0.9605 0.0035 264);
-    --muted-foreground: oklch(0.524 0.0135 258);
-    --accent: oklch(0.9405 0.0055 264);
-    --accent-foreground: oklch(0.246 0.012 258);
-    --destructive: oklch(0.577 0.245 27.325);
-    /* Decorative dividers. */
-    --border: oklch(0.9025 0.0055 264);
-    /* Boundaries that have to be seen: inputs, checkboxes, cell edges.
-       Clears 3:1 against the page, which the divider colour does not. */
-    --border-strong: oklch(0.688 0.0135 258);
-    --input: oklch(0.688 0.0135 258);
-    --ring: oklch(0.488 0.243 264.376);
-    --chart-1: oklch(0.623 0.214 259.815);
-    --chart-2: oklch(0.68 0.149 162.48);
-    --chart-3: oklch(0.705 0.187 47.604);
-    --chart-4: oklch(0.558 0.222 293.09);
-    --chart-5: oklch(0.637 0.237 25.331);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.9785 0.002 264);
-    --sidebar-foreground: oklch(0.223 0.0115 258);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0.005 260);
-    --sidebar-accent: oklch(0.9405 0.0055 264);
-    --sidebar-accent-foreground: oklch(0.246 0.012 258);
-    --sidebar-border: oklch(0.9025 0.0055 264);
-    --sidebar-ring: oklch(0.488 0.243 264.376);
+    --background: #fbfaf7;
+    --foreground: #14120f;
+    --card: #ffffff;
+    --card-foreground: #14120f;
+    --popover: #ffffff;
+    --popover-foreground: #14120f;
+    --primary: #14120f;
+    --primary-foreground: #fbfaf7;
+    --secondary: #f0ede5;
+    --secondary-foreground: #14120f;
+    --muted: #f3f0e9;
+    --muted-foreground: #6f6a5f;
+    --accent: #e8e4db;
+    --accent-foreground: #14120f;
+    --destructive: #b03c38;
+    --border: #e2ddd2;
+    --border-strong: #8a857a;
+    --input: #8a857a;
+    --ring: #14120f;
+    --radius: 3px;
 
-    /* Seven states. Hue does the fast reading, lightness does the accessible
-       reading, and the glyph does the honest reading. */
-    --status-not_started-bg: #f0f0f3;
-    --status-not_started-br: #cdced6;
-    --status-not_started-fg: #1c2024;
-    --status-not_started-solid: #8b8d98;
-    --status-in_progress-bg: #e6f4fe;
-    --status-in_progress-br: #8ec8f6;
-    --status-in_progress-fg: #113264;
-    --status-in_progress-solid: #0090ff;
-    --status-submitted-bg: #f4f0fe;
-    --status-submitted-br: #c2b5f5;
-    --status-submitted-fg: #2f265f;
-    --status-submitted-solid: #6e56cf;
-    --status-under_review-bg: #fff7c2;
-    --status-under_review-br: #e9c162;
-    --status-under_review-fg: #4f3422;
-    --status-under_review-solid: #ffc53d;
-    --status-returned-bg: #ffefd6;
-    --status-returned-br: #f5ae73;
-    --status-returned-fg: #582d1d;
-    --status-returned-solid: #f76b15;
-    --status-accepted-bg: #e6f6eb;
-    --status-accepted-br: #8eceaa;
-    --status-accepted-fg: #193b2d;
-    --status-accepted-solid: #30a46c;
-    --status-overdue-bg: #feebec;
-    --status-overdue-br: #f4a9aa;
-    --status-overdue-fg: #641723;
-    --status-overdue-solid: #e5484d;
+    --lime: #d8ff3e;
+    --lime-ink: #14120f;
+
+    --chart-1: #14120f;
+    --chart-2: #1f7a52;
+    --chart-3: #c86a3c;
+    --chart-4: #6b57c4;
+    --chart-5: #d9a441;
+
+    --sidebar: #14120f;
+    --sidebar-foreground: #f3f1ec;
+    --sidebar-primary: #d8ff3e;
+    --sidebar-primary-foreground: #14120f;
+    --sidebar-accent: #262219;
+    --sidebar-accent-foreground: #f3f1ec;
+    --sidebar-border: #2e2a22;
+    --sidebar-ring: #d8ff3e;
+
+    --status-not_started-bg: #f0ede5;
+    --status-not_started-br: #d8d2c5;
+    --status-not_started-fg: #514c43;
+    --status-not_started-solid: #ddd8cc;
+    --status-in_progress-bg: #e6eff7;
+    --status-in_progress-br: #a8c6de;
+    --status-in_progress-fg: #1d4a72;
+    --status-in_progress-solid: #2f6fa8;
+    --status-submitted-bg: #ece8fa;
+    --status-submitted-br: #bcb0e8;
+    --status-submitted-fg: #3b2f7a;
+    --status-submitted-solid: #6b57c4;
+    --status-under_review-bg: #fbf0d5;
+    --status-under_review-br: #e5c887;
+    --status-under_review-fg: #6b4a0c;
+    --status-under_review-solid: #c08a1a;
+    --status-returned-bg: #fbe9dd;
+    --status-returned-br: #e8b189;
+    --status-returned-fg: #7d3d17;
+    --status-returned-solid: #c86a3c;
+    --status-accepted-bg: #e2f0e7;
+    --status-accepted-br: #a3ccb4;
+    --status-accepted-fg: #17543a;
+    --status-accepted-solid: #1f7a52;
+    --status-overdue-bg: #fae9e8;
+    --status-overdue-br: #e5aba8;
+    --status-overdue-fg: #7c2b28;
+    --status-overdue-solid: #b03c38;
 }
 
 .dark {
-    --background: oklch(0.1795 0.0045 264);
-    --foreground: oklch(0.949 0.003 264);
-    --card: oklch(0.2185 0.005 264);
-    --card-foreground: oklch(0.949 0.003 264);
-    --popover: oklch(0.2465 0.006 264);
-    --popover-foreground: oklch(0.949 0.003 264);
-    --primary: oklch(0.623 0.214 259.815);
-    --primary-foreground: oklch(0.1795 0.0045 264);
-    --secondary: oklch(0.2725 0.007 264);
-    --secondary-foreground: oklch(0.949 0.003 264);
-    --muted: oklch(0.2725 0.007 264);
-    --muted-foreground: oklch(0.7455 0.011 260);
-    --accent: oklch(0.3035 0.008 264);
-    --accent-foreground: oklch(0.949 0.003 264);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(0.3365 0.0095 262);
-    --border-strong: oklch(0.5215 0.0145 260);
-    --input: oklch(0.5215 0.0145 260);
-    --ring: oklch(0.623 0.214 259.815);
-    --chart-1: oklch(0.623 0.214 259.815);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.75 0.183 55.934);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.2005 0.005 264);
-    --sidebar-foreground: oklch(0.949 0.003 264);
-    --sidebar-primary: oklch(0.623 0.214 259.815);
-    --sidebar-primary-foreground: oklch(0.1795 0.0045 264);
-    --sidebar-accent: oklch(0.3035 0.008 264);
-    --sidebar-accent-foreground: oklch(0.949 0.003 264);
-    --sidebar-border: oklch(0.3365 0.0095 262);
-    --sidebar-ring: oklch(0.623 0.214 259.815);
+    --background: #14120f;
+    --foreground: #f3f1ec;
+    --card: #1b1814;
+    --card-foreground: #f3f1ec;
+    --popover: #211d18;
+    --popover-foreground: #f3f1ec;
+    --primary: #d8ff3e;
+    --primary-foreground: #14120f;
+    --secondary: #262219;
+    --secondary-foreground: #f3f1ec;
+    --muted: #241f1a;
+    --muted-foreground: #a9a397;
+    --accent: #2e2a22;
+    --accent-foreground: #f3f1ec;
+    --destructive: #e07570;
+    --border: #2e2a22;
+    --border-strong: #6b665b;
+    --input: #6b665b;
+    --ring: #d8ff3e;
 
-    --status-not_started-bg: #212225;
-    --status-not_started-br: #43484e;
-    --status-not_started-fg: #edeef0;
-    --status-not_started-solid: #696e77;
-    --status-in_progress-bg: #0d2847;
-    --status-in_progress-br: #205d9e;
-    --status-in_progress-fg: #c2e6ff;
-    --status-in_progress-solid: #0090ff;
-    --status-submitted-bg: #291f43;
-    --status-submitted-br: #56468b;
-    --status-submitted-fg: #e2ddfe;
-    --status-submitted-solid: #6e56cf;
-    --status-under_review-bg: #302008;
-    --status-under_review-br: #714f19;
-    --status-under_review-fg: #ffe7b3;
-    --status-under_review-solid: #ffc53d;
-    --status-returned-bg: #331e0b;
-    --status-returned-br: #7e451d;
-    --status-returned-fg: #ffe0c2;
-    --status-returned-solid: #f76b15;
-    --status-accepted-bg: #132d21;
-    --status-accepted-br: #28684a;
-    --status-accepted-fg: #b1f1cb;
-    --status-accepted-solid: #30a46c;
-    --status-overdue-bg: #3b1219;
-    --status-overdue-br: #8c333a;
-    --status-overdue-fg: #ffd1d9;
-    --status-overdue-solid: #e5484d;
+    --lime: #d8ff3e;
+    --lime-ink: #14120f;
+
+    --chart-1: #d8ff3e;
+    --chart-2: #55b483;
+    --chart-3: #e08a55;
+    --chart-4: #9b88e0;
+    --chart-5: #e5bb5c;
+
+    --sidebar: #100e0b;
+    --sidebar-foreground: #f3f1ec;
+    --sidebar-primary: #d8ff3e;
+    --sidebar-primary-foreground: #14120f;
+    --sidebar-accent: #262219;
+    --sidebar-accent-foreground: #f3f1ec;
+    --sidebar-border: #2e2a22;
+    --sidebar-ring: #d8ff3e;
+
+    --status-not_started-bg: #242019;
+    --status-not_started-br: #403a30;
+    --status-not_started-fg: #c3bdb1;
+    --status-not_started-solid: #2b2620;
+    --status-in_progress-bg: #14263a;
+    --status-in_progress-br: #2b4d6f;
+    --status-in_progress-fg: #b3d3ec;
+    --status-in_progress-solid: #6ba3d6;
+    --status-submitted-bg: #221b3d;
+    --status-submitted-br: #453873;
+    --status-submitted-fg: #cfc3f5;
+    --status-submitted-solid: #9b88e0;
+    --status-under_review-bg: #2e2410;
+    --status-under_review-br: #5c4718;
+    --status-under_review-fg: #f0d79a;
+    --status-under_review-solid: #d9a441;
+    --status-returned-bg: #2f1d11;
+    --status-returned-br: #5e3a20;
+    --status-returned-fg: #f2c4a2;
+    --status-returned-solid: #e08a55;
+    --status-accepted-bg: #13291e;
+    --status-accepted-br: #27543c;
+    --status-accepted-fg: #a8dcc0;
+    --status-accepted-solid: #55b483;
+    --status-overdue-bg: #2e1614;
+    --status-overdue-br: #5c2c29;
+    --status-overdue-fg: #efb0ac;
+    --status-overdue-solid: #e07570;
 }
 
 @layer base {
     * {
-        @apply border-border outline-ring/50;
+        @apply border-border;
     }
     body {
         @apply bg-background text-foreground;
     }
     html {
         @apply font-sans;
-        /* A data app. Digits must not wobble between rows. */
         font-variant-numeric: tabular-nums;
         font-optical-sizing: auto;
     }
-    /* shadcn's base sets a 50% alpha ring, which does not reach 3:1.
-       Focus has to be visible on every surface, so override it. */
+    /* Display type is for headings and numbers, never for reading. */
+    h1,
+    h2,
+    h3 {
+        font-family: var(--font-display), system-ui, sans-serif;
+    }
     :focus-visible {
         outline: 2px solid var(--ring);
         outline-offset: 2px;
     }
-    /* Nothing focused should hide behind the sticky header. */
     [id] {
         scroll-margin-top: 5rem;
     }
 }
 
 @layer utilities {
-    /* Proportional figures where digits sit inside prose. */
+    .font-display {
+        font-family: var(--font-display), system-ui, sans-serif;
+    }
     .tnum-off {
         font-variant-numeric: normal;
     }
-    /* The grid's crosshair. Tracking a row across twelve columns is the whole
-       reason this exists — it replaces zebra striping, which solves the same
-       problem less precisely. */
+    /* Tracking a row across twelve columns. Replaces zebra striping, which
+       solves the same problem less precisely. */
     .grid-crosshair [data-cell]:hover {
         outline: 2px solid var(--ring);
         outline-offset: -2px;

@@ -76,7 +76,7 @@ export default function AnnouncementsPage() {
               <li
                 key={announcement.id}
                 className={cn(
-                  "rounded-xl border bg-card p-4",
+                  "rounded-sm border bg-card p-4",
                   announcement.pinned ? "border-primary/30" : "border-border"
                 )}
                 onMouseEnter={() => {
@@ -238,7 +238,7 @@ function Composer() {
                 return (
                   <Label
                     key={option.kind}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-md border border-transparent px-2 py-1.5 text-meta font-normal hover:bg-muted/60"
+                    className="flex cursor-pointer items-center gap-2.5 rounded-sm border border-transparent px-2 py-1.5 text-meta font-normal hover:bg-muted/60"
                   >
                     <RadioGroupItem value={option.kind} />
                     <span className="flex-1">{option.label}</span>
@@ -254,7 +254,7 @@ function Composer() {
               <select
                 value={teamId || myTeams[0]?.id}
                 onChange={(event) => setTeamId(event.target.value)}
-                className="h-8 w-full rounded-md border border-input bg-background px-2 text-meta"
+                className="h-8 w-full rounded-sm border border-input bg-background px-2 text-meta"
               >
                 {myTeams.map((team) => (
                   <option key={team.id} value={team.id}>
@@ -271,7 +271,7 @@ function Composer() {
           </label>
 
           {broad && (
-            <p className="rounded-lg border border-status-under_review-br bg-status-under_review-bg px-3 py-2 text-caption text-status-under_review-fg">
+            <p className="rounded-sm border border-status-under_review-br bg-status-under_review-bg px-3 py-2 text-caption text-status-under_review-fg">
               This reaches all {reach} people in the batch.
             </p>
           )}

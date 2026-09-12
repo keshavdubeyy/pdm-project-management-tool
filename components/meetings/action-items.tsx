@@ -85,7 +85,7 @@ export function ActionItemList({
               <li
                 key={item.id}
                 className={cn(
-                  "group flex items-start gap-2.5 rounded-lg border px-3 py-2",
+                  "group flex items-start gap-2.5 rounded-sm border px-3 py-2",
                   overdue
                     ? "border-status-overdue-br bg-status-overdue-bg"
                     : "border-border bg-card"
@@ -164,7 +164,7 @@ export function ActionItemList({
 
       {allowAdd &&
         (adding ? (
-          <div className="space-y-2 rounded-lg border border-dashed border-border p-3">
+          <div className="space-y-2 rounded-sm border border-dashed border-border p-3">
             <Input
               value={text}
               onChange={(event) => setText(event.target.value)}

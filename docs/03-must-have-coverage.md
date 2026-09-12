@@ -102,3 +102,26 @@ Two limits are worth stating plainly rather than discovering:
 ## Checked end to end
 
 A scripted run drives two tabs as two different people and verifies twenty things, including: a student turning in a checkpoint, the mentor's queue picking it up in the other tab, opening it moving the checkpoint into review on its own, returning it with a required reason, the reason and its category being stored, an action being raised for the team automatically, the student's tab updating without a reload, the student not being offered an Accept button, and every grid cell carrying a spoken label. All twenty pass.
+
+## Where things moved
+
+The interface was rebuilt in the direction chosen at review ("Studio wall"), and the
+navigation was restructured at the same time. Four routes folded into three:
+
+| Was | Now | Why |
+|---|---|---|
+| `/` with a different name per role | **Today** | The first item was called "My work", "My teams" or "Programme" depending on who you were, so nobody could be told where to click. Same four words for everyone; only the scope differs |
+| `/directory`, `/review`, and the mentor home's "all my teams" | **Projects** | The same teams were listed three times. One register, with the question you are asking as a chip above it |
+| `/grid` | **Checkpoints** | A student now gets their own twelve here rather than nothing |
+| `/announcements` | **Messages** | — |
+| `/actions` | folded into **Today** | A student's actions belong beside what is due, not on a page of their own |
+
+Two other changes came out of the same review:
+
+**Permissions are stated, not discovered.** A panel at the foot of the rail says what
+this role may do and what it may not, in the words a person would use. It reads from
+`lib/nav.ts`, the same file the navigation reads, so the two cannot drift.
+
+**Pick a person by typing.** Sign-in was forty-five names scrolling; mentor allocation
+was forty-four stacked dropdowns. Both are now one field you type three letters into
+(`components/person-combobox.tsx`).

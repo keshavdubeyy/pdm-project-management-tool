@@ -102,7 +102,7 @@ export function MilestoneSheet({
           )}
 
           {instance.dueWeekOverride && (
-            <p className="rounded-lg border border-status-under_review-br bg-status-under_review-bg px-3 py-2 text-caption text-status-under_review-fg">
+            <p className="rounded-sm border border-status-under_review-br bg-status-under_review-bg px-3 py-2 text-caption text-status-under_review-fg">
               <span className="font-semibold">Date moved. </span>
               Originally week {template.dueWeek}, now week {instance.dueWeekOverride}.{" "}
               {instance.dueWeekOverrideReason}
@@ -121,7 +121,7 @@ export function MilestoneSheet({
                   <li key={deliverable}>
                     <label
                       className={cn(
-                        "flex cursor-pointer items-start gap-2.5 rounded-md px-2 py-1.5 text-meta transition-colors",
+                        "flex cursor-pointer items-start gap-2.5 rounded-sm px-2 py-1.5 text-meta transition-colors",
                         isTeam && "hover:bg-muted/60",
                         !isTeam && "cursor-default"
                       )}
@@ -164,7 +164,7 @@ export function MilestoneSheet({
               </div>
             )}
             {isTeam && (
-              <div className="mt-3 rounded-lg border border-dashed border-border p-3">
+              <div className="mt-3 rounded-sm border border-dashed border-border p-3">
                 <AddArtefact projectId={project.id} milestoneInstanceId={instance.id} />
               </div>
             )}
@@ -210,7 +210,7 @@ export function MilestoneSheet({
                     <li
                       key={review.id}
                       className={cn(
-                        "rounded-lg border p-3",
+                        "rounded-sm border p-3",
                         review.verdict === "accept"
                           ? "border-status-accepted-br bg-status-accepted-bg"
                           : "border-status-returned-br bg-status-returned-bg"
@@ -290,7 +290,7 @@ function FeedbackFollowUp({ review }: { review: import("@/lib/types").Review }) 
 
   if (review.addressedAt) {
     return (
-      <div className="mt-2 rounded-md bg-background/60 p-2">
+      <div className="mt-2 rounded-sm bg-background/60 p-2">
         <p className="text-caption font-medium">The team says:</p>
         <p className="text-meta">{review.addressedNote}</p>
         {canConfirm && (
@@ -372,7 +372,7 @@ function SubmitDialog({ view, artefactIds }: { view: MilestoneView; artefactIds:
         </DialogHeader>
 
         <div className="space-y-3">
-          <div className="rounded-lg border border-border bg-muted/40 p-3">
+          <div className="rounded-sm border border-border bg-muted/40 p-3">
             <p className="text-caption text-muted-foreground">
               {artefactIds.length} {artefactIds.length === 1 ? "link" : "links"} attached
             </p>
@@ -456,7 +456,7 @@ function ReviewDialog({ view, verdict }: { view: MilestoneView; verdict: "accept
                 {(Object.keys(RETURN_CATEGORY_LABEL) as ReturnCategory[]).map((key) => (
                   <Label
                     key={key}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-meta font-normal hover:bg-muted/60"
+                    className="flex cursor-pointer items-center gap-2.5 rounded-sm px-2 py-1.5 text-meta font-normal hover:bg-muted/60"
                   >
                     <RadioGroupItem value={key} />
                     {RETURN_CATEGORY_LABEL[key]}

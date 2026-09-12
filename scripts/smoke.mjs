@@ -43,9 +43,9 @@ const IGNORE = [
 ]
 
 const ROUTES = {
-  coordinator: ["/", "/grid", "/review", "/measures", "/announcements", "/admin", "/directory"],
-  mentor: ["/", "/review", "/grid", "/announcements", "/directory"],
-  student: ["/", "/actions", "/announcements", "/directory"],
+  coordinator: ["/", "/projects", "/checkpoints", "/messages", "/measures", "/admin"],
+  mentor: ["/", "/projects", "/checkpoints", "/messages"],
+  student: ["/", "/projects", "/checkpoints", "/messages"],
 }
 
 const WHO = {
@@ -81,17 +81,36 @@ page.on("requestfailed", (request) => note(`request failed — ${request.url().s
 
 async function signIn(fragment) {
   await page.goto(`${BASE}/signin`, { waitUntil: "networkidle2" })
-  await page.waitForSelector("input", { timeout: 20000 })
-  await page.type("input", fragment, { delay: 5 })
-  await wait(400)
-  const ok = await page.evaluate(() => {
-    const first = document.querySelector("ul button")
-    if (!first) return false
-    first.click()
+  await page.waitForSelector("button", { timeout: 20000 })
+  await wait(500)
+  // open the person combobox, type, take the first match
+  await page.evaluate(() => {
+    const trigger = Array.from(document.querySelectorAll("button")).find((b) =>
+      (b.textContent ?? "").includes("Pick a person")
+    )
+    trigger?.click()
+  })
+  await wait(500)
+  await page.keyboard.type(fragment, { delay: 8 })
+  await wait(500)
+  const picked = await page.evaluate(() => {
+    const option = document.querySelector('[cmdk-item]')
+    if (!option) return false
+    option.click()
     return true
   })
-  if (!ok) note(`could not sign in as "${fragment}"`)
-  await wait(1200)
+  if (!picked) note(`could not find "${fragment}" in the sign-in combobox`)
+  await wait(500)
+  const went = await page.evaluate(() => {
+    const go = Array.from(document.querySelectorAll("button")).find(
+      (b) => (b.textContent ?? "").trim() === "Continue"
+    )
+    if (!go) return false
+    go.click()
+    return true
+  })
+  if (!went) note(`could not continue as "${fragment}"`)
+  await wait(1300)
 }
 
 /** Click something, give it a beat to mount, then press Escape. */
@@ -216,6 +235,8 @@ for (const [role, routes] of Object.entries(ROUTES)) {
 // The project workspace and its tabs, which live behind a dynamic route.
 context = "student project workspace"
 await signIn(WHO.student)
+await page.goto(`${BASE}/projects`, { waitUntil: "networkidle2" })
+await wait(900)
 const projectHref = await page.evaluate(
   () =>
     Array.from(document.querySelectorAll("a"))

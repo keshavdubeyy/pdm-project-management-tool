@@ -165,7 +165,7 @@ export default function ProjectPage() {
                       <li
                         key={review.id}
                         className={cn(
-                          "rounded-xl border p-4",
+                          "rounded-sm border p-4",
                           review.verdict === "accept"
                             ? "border-status-accepted-br bg-status-accepted-bg"
                             : "border-status-returned-br bg-status-returned-bg"
@@ -184,7 +184,7 @@ export default function ProjectPage() {
                         </div>
                         <p className="mt-2 text-meta whitespace-pre-line">{review.body}</p>
                         {review.addressedNote && (
-                          <div className="mt-2 rounded-md bg-background/60 p-2">
+                          <div className="mt-2 rounded-sm bg-background/60 p-2">
                             <p className="text-caption font-medium">The team said:</p>
                             <p className="text-meta">{review.addressedNote}</p>
                           </div>
@@ -224,7 +224,7 @@ export default function ProjectPage() {
                 </div>
               )}
               {isTeam && (
-                <div className="mt-4 rounded-xl border border-dashed border-border p-4">
+                <div className="mt-4 rounded-sm border border-dashed border-border p-4">
                   <p className="mb-3 text-subhead">Add a link</p>
                   <AddArtefact projectId={project.id} />
                 </div>

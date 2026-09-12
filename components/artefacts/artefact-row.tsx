@@ -40,7 +40,7 @@ export function ArtefactRow({
     <>
       <div
         className={cn(
-          "flex items-center gap-3 rounded-lg border border-border bg-card px-3",
+          "flex items-center gap-3 rounded-sm border border-border bg-card px-3",
           compact ? "py-2" : "py-2.5"
         )}
       >
@@ -100,7 +100,7 @@ export function ArtefactRow({
             <DialogHeader>
               <DialogTitle>{artefact.label}</DialogTitle>
             </DialogHeader>
-            <div className="aspect-[4/3] w-full overflow-hidden rounded-lg border border-border bg-muted">
+            <div className="aspect-[4/3] w-full overflow-hidden rounded-sm border border-border bg-muted">
               <iframe
                 src={embed}
                 title={artefact.label}

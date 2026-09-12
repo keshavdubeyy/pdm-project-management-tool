@@ -13,7 +13,8 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:3000 and pick who you are. There are no passwords: the
+Then open http://localhost:3000 and pick who you are — type three letters into the
+field rather than scrolling a list. There are no passwords: the
 sign-in list is the real roster, and the point is to be able to move between people
 quickly while testing.
 
@@ -58,6 +59,7 @@ evidence that the route works.
 | `lib/db.ts` | Persistence and the cross-tab broadcast |
 | `lib/links.ts` | Recognising where a pasted link lives |
 | `app/globals.css` | The design tokens |
+| `lib/nav.ts` | Navigation and what each role may do — one source for the rail and the palette |
 
 ## Documentation
 

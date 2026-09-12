@@ -2,160 +2,130 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Search01Icon, UserGroupIcon } from "@hugeicons/core-free-icons"
 
-import { PersonAvatar } from "@/components/common"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { PersonCombobox } from "@/components/person-combobox"
+import { Button } from "@/components/ui/button"
 import { ROLE_LABEL } from "@/lib/permissions"
 import { useProjectsStore } from "@/lib/store"
 import type { Person } from "@/lib/types"
-import { cn } from "@/lib/utils"
 
 /** Signing in.
  *
- * There are no passwords here on purpose. The identities are the real roster,
- * and the point of the screen is to let one person move between them quickly
- * while testing — a student in this tab, their mentor in the next. Sessions
- * are per-tab, so signing in here does not sign anyone out anywhere else.
+ * One field you type three letters into, rather than forty-five names to
+ * scroll. There are no passwords on purpose: the identities are the real
+ * roster, and the point is to move between them quickly while testing.
+ * Sessions belong to a tab, so signing in here logs nobody out anywhere else.
  */
 export default function SignInPage() {
   const router = useRouter()
   const { db, signIn, ready } = useProjectsStore()
-  const [query, setQuery] = React.useState("")
+  const [personId, setPersonId] = React.useState<string | null>(null)
 
-  const groups = React.useMemo(() => {
-    const q = query.trim().toLowerCase()
-    const match = (p: Person) =>
-      !q ||
-      p.name.toLowerCase().includes(q) ||
-      p.email.toLowerCase().includes(q) ||
-      (p.rollNumber ?? "").includes(q)
+  const people = React.useMemo(() => {
+    const rank = (p: Person) =>
+      p.roles.includes("coordinator") ? 0 : p.roles.includes("mentor") ? 1 : 2
+    return [...db.people].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
+  }, [db.people])
 
-    const faculty = db.people.filter(
-      (p) => (p.roles.includes("mentor") || p.roles.includes("coordinator")) && match(p)
-    )
-    const students = db.people.filter((p) => p.roles.includes("student") && match(p))
-    return { faculty, students }
-  }, [db.people, query])
+  const describe = React.useCallback(
+    (person: Person) => {
+      if (person.roles.includes("mentor") || person.roles.includes("coordinator")) {
+        const load = db.projects.filter((p) => p.mentorIds.includes(person.id)).length
+        return `${person.roles.map((r) => ROLE_LABEL[r]).join(" · ")}${load ? ` · ${load} teams` : ""}`
+      }
+      const project = db.projects.find((p) => p.teamMemberIds.includes(person.id))
+      const team = project ? db.teams.find((t) => t.id === project.teamId) : undefined
+      return [person.rollNumber, team?.name].filter(Boolean).join(" · ")
+    },
+    [db.projects, db.teams]
+  )
 
-  const enter = (person: Person) => {
-    signIn(person.id)
+  const enter = () => {
+    if (!personId) return
+    signIn(personId)
     router.push("/")
   }
 
   if (!ready) return null
 
+  const suggestions = [
+    people.find((p) => p.roles.includes("coordinator")),
+    people.find((p) => p.roles.includes("mentor") && !p.roles.includes("coordinator")),
+    people.find((p) => p.roles.includes("student")),
+  ].filter(Boolean) as Person[]
+
   return (
-    <div className="mx-auto flex min-h-svh w-full max-w-4xl flex-col justify-center px-4 py-10">
-      <div className="mb-6 flex items-center gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-color.svg" alt="" className="h-9 w-auto dark:hidden" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-white.svg" alt="" className="hidden h-9 w-auto dark:block" />
-      </div>
-
-      <h1 className="text-display text-foreground">Sign in to PDM Project Space</h1>
-      <p className="mt-2 max-w-xl text-body text-muted-foreground">
-        Pick who you are. This tab remembers your choice on its own, so you can open a second tab,
-        sign in as someone else, and watch work move between them.
-      </p>
-
-      <div className="relative mt-6">
-        <HugeiconsIcon
-          icon={Search01Icon}
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-          strokeWidth={2}
-        />
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search by name or roll number…"
-          className="pl-9"
-          autoFocus
-        />
-      </div>
-
-      <ScrollArea className="mt-4 max-h-[52vh] rounded-xl border border-border">
-        {groups.faculty.length > 0 && (
-          <PeopleGroup label="Faculty" people={groups.faculty} db={db} onPick={enter} />
-        )}
-        {groups.students.length > 0 && (
-          <PeopleGroup label="Students" people={groups.students} db={db} onPick={enter} />
-        )}
-        {groups.faculty.length === 0 && groups.students.length === 0 && (
-          <p className="px-4 py-8 text-center text-meta text-muted-foreground">
-            Nobody matches “{query}”.
+    <div className="min-h-svh bg-background">
+      <div className="mx-auto grid min-h-svh w-full max-w-5xl items-center gap-10 px-6 py-12 lg:grid-cols-[1.1fr_1fr]">
+        <div>
+          <p className="text-th text-muted-foreground uppercase">IIIT Hyderabad</p>
+          <h1 className="font-display mt-3 text-hero text-foreground">
+            PDM
+            <br />
+            Project
+            <br />
+            Space
+          </h1>
+          <p className="mt-6 max-w-sm text-body text-muted-foreground">
+            Twenty-two teams, four mentoring lines, twelve checkpoints across twenty-eight weeks.
           </p>
-        )}
-      </ScrollArea>
+        </div>
 
-      <p className="mt-4 text-caption text-muted-foreground">
-        A prototype for review. Data lives in this browser only, and the sign-in list stands in for
-        institute accounts.
-      </p>
-    </div>
-  )
-}
+        <div className="rounded-sm border border-border bg-card p-6">
+          <h2 className="font-display text-title">Who are you?</h2>
+          <p className="mt-1.5 text-meta text-muted-foreground">
+            Type a few letters. This tab remembers your choice on its own, so you can open a second
+            tab as someone else and watch work move between you.
+          </p>
 
-function PeopleGroup({
-  label,
-  people,
-  db,
-  onPick,
-}: {
-  label: string
-  people: Person[]
-  db: ReturnType<typeof useProjectsStore>["db"]
-  onPick: (person: Person) => void
-}) {
-  return (
-    <div>
-      <p className="sticky top-0 z-10 border-b border-border bg-muted/60 px-3 py-1.5 text-th text-muted-foreground uppercase backdrop-blur">
-        {label}
-        <span className="ml-1.5 normal-case">({people.length})</span>
-      </p>
-      <ul className="divide-y divide-border">
-        {people.map((person) => {
-          const project = db.projects.find((p) => p.teamMemberIds.includes(person.id))
-          const team = project ? db.teams.find((t) => t.id === project.teamId) : undefined
-          const mentoring = db.projects.filter((p) => p.mentorIds.includes(person.id)).length
+          <div className="mt-5 space-y-3">
+            <PersonCombobox
+              people={people}
+              value={personId}
+              onChange={setPersonId}
+              placeholder="Name or roll number…"
+              emptyLabel="Pick a person"
+              describe={describe}
+              className="h-11 text-body"
+            />
 
-          return (
-            <li key={person.id}>
-              <button
-                type="button"
-                onClick={() => onPick(person)}
-                className={cn(
-                  "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors",
-                  "hover:bg-muted/70 focus-visible:bg-muted/70"
-                )}
-              >
-                <PersonAvatar person={person} size="sm" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-meta font-medium text-foreground">
-                    {person.name}
+            <Button className="h-11 w-full" disabled={!personId} onClick={enter}>
+              Continue
+            </Button>
+          </div>
+
+          <div className="mt-6 border-t border-border pt-4">
+            <p className="text-th text-muted-foreground uppercase">Or start as</p>
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {suggestions.map((person) => (
+                <button
+                  key={person.id}
+                  type="button"
+                  onClick={() => {
+                    signIn(person.id)
+                    router.push("/")
+                  }}
+                  className="rounded-sm border border-border px-2.5 py-1.5 text-meta transition-colors hover:bg-muted"
+                >
+                  <span className="font-medium">{person.name}</span>
+                  <span className="ml-1.5 text-caption text-muted-foreground">
+                    {person.roles.includes("coordinator")
+                      ? "coordinator"
+                      : person.roles.includes("mentor")
+                        ? "mentor"
+                        : "student"}
                   </span>
-                  <span className="block truncate text-caption text-muted-foreground">
-                    {person.affiliation ?? person.rollNumber ?? person.email}
-                    {team && ` · ${team.name}`}
-                    {mentoring > 0 && ` · ${mentoring} team${mentoring === 1 ? "" : "s"}`}
-                  </span>
-                </span>
-                <span className="flex shrink-0 gap-1">
-                  {person.roles.map((role) => (
-                    <Badge key={role} variant="outline" className="text-[10px]">
-                      {role === "coordinator" ? "Coordinator" : ROLE_LABEL[role].replace("Faculty ", "")}
-                    </Badge>
-                  ))}
-                </span>
-              </button>
-            </li>
-          )
-        })}
-      </ul>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <p className="mt-5 text-caption text-muted-foreground">
+            A prototype for review. Data stays in this browser, and this list stands in for
+            institute accounts.
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

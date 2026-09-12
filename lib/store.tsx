@@ -412,7 +412,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
             kind: "submission",
             title: `${found.project.title.slice(0, 48)} turned in ${item?.title ?? "a checkpoint"}`,
             body: attempt > 1 ? `Resubmission, attempt ${attempt}.` : "Waiting on your review.",
-            href: "/review",
+            href: "/projects?filter=waiting",
             createdAt: now,
           })
         },
@@ -903,7 +903,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
               kind: "announcement",
               title: announcement.title,
               body: announcement.body.slice(0, 110),
-              href: "/announcements",
+              href: "/messages",
               createdAt: now,
             }
           )

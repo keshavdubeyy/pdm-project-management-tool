@@ -41,7 +41,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="min-w-0 overflow-x-hidden">
         <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-4 supports-backdrop-filter:bg-background/70 supports-backdrop-filter:backdrop-blur">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="data-vertical:h-4 data-vertical:self-auto" />
@@ -52,7 +52,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
             <AccountMenu />
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">{children}</main>
+        <main className="flex min-w-0 flex-1 flex-col gap-6 overflow-x-hidden p-4 md:p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )
@@ -61,7 +61,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
 function WeekIndicator() {
   const { week, batch } = useProjectsStore()
   return (
-    <Link href="/grid" className="flex min-w-0 items-baseline gap-2 rounded-md px-1 py-0.5">
+    <Link href="/checkpoints" className="flex min-w-0 items-baseline gap-2 rounded-md px-1 py-0.5">
       <span className="truncate text-meta font-medium text-foreground">{batch.label}</span>
       <span className="hidden shrink-0 text-caption text-muted-foreground sm:inline">
         Week {week} of 28

@@ -62,7 +62,7 @@ export default function DesignSystemPage() {
           never appears on its own.
         </p>
 
-        <div className="overflow-hidden rounded-xl border border-border">
+        <div className="overflow-hidden rounded-sm border border-border">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-border bg-muted/50">
@@ -131,7 +131,7 @@ export default function DesignSystemPage() {
           are tabular everywhere: a column of dates that wobbles row to row is unreadable at
           twenty-two rows.
         </p>
-        <div className="space-y-3 rounded-xl border border-border bg-card p-5">
+        <div className="space-y-3 rounded-sm border border-border bg-card p-5">
           <p className="text-display">Display · 28/34 · a page that is mostly one number</p>
           <p className="text-title">Title · 20/28 · the name of the screen</p>
           <p className="text-section">Section · 16/24 · a block within a screen</p>
@@ -178,7 +178,7 @@ export default function DesignSystemPage() {
           ].map(({ icon, label }) => (
             <li
               key={label}
-              className="flex items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2.5"
+              className="flex items-center gap-2.5 rounded-sm border border-border bg-card px-3 py-2.5"
             >
               <HugeiconsIcon icon={icon} className="size-4 text-foreground" strokeWidth={2} />
               <span className="text-meta">{label}</span>
@@ -197,7 +197,7 @@ export default function DesignSystemPage() {
           relative part only appears inside a week, where it is the half that actually changes what
           somebody does today. The full date is always in the tooltip.
         </p>
-        <div className="space-y-2 rounded-xl border border-border bg-card p-5">
+        <div className="space-y-2 rounded-sm border border-border bg-card p-5">
           <DueBadge dueDate={addDays(today, -2)} hideIcon />
           <DueBadge dueDate={today} hideIcon />
           <DueBadge dueDate={addDays(today, 1)} hideIcon />

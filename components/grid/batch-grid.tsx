@@ -105,7 +105,7 @@ export function BatchGrid({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card">
+    <div className="w-full max-w-full overflow-x-auto rounded-sm border border-border bg-card">
       <div
         role="grid"
         aria-label={`Every project against every checkpoint. ${rows.length} projects, ${columns.length} checkpoints.`}

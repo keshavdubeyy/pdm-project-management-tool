@@ -222,7 +222,7 @@ export function buildSeedDatabase(): Database {
             kind: "submission",
             title: `${project.title.slice(0, 44)} turned in ${item.title}`,
             body: "Waiting on your review.",
-            href: `/review`,
+            href: `/projects?filter=waiting`,
             createdAt: submittedAt,
           })
         } else if (roll < 0.34) {

@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Bricolage_Grotesque, Public_Sans } from "next/font/google"
 
 import "./globals.css"
 import { AppFrame } from "@/components/shell/app-frame"
@@ -9,11 +9,20 @@ import { Toaster } from "@/components/ui/toast"
 import { ProjectsProvider } from "@/lib/store"
 import { cn } from "@/lib/utils"
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
-
-const fontMono = Geist_Mono({
+/** Display face. Does the shouting — headings, counts, the one big number. */
+const display = Bricolage_Grotesque({
   subsets: ["latin"],
-  variable: "--font-mono",
+  weight: ["500", "700", "800"],
+  variable: "--font-display",
+  display: "swap",
+})
+
+/** Body face. Stays out of the way underneath it. */
+const sans = Public_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
+  display: "swap",
 })
 
 export const metadata: Metadata = {
@@ -31,7 +40,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", geist.variable)}
+      className={cn("antialiased font-sans", display.variable, sans.variable)}
     >
       <body>
         <ThemeProvider>

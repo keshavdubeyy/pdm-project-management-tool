@@ -61,9 +61,9 @@ export function CommandPalette() {
   const pages = React.useMemo(() => {
     if (!actor) return []
     const common = [
-      { label: "Milestone grid", href: "/grid", icon: Grid02Icon },
-      { label: "Announcements", href: "/announcements", icon: Megaphone01Icon },
-      { label: "Project directory", href: "/directory", icon: MilestoneIcon },
+      { label: "Milestone grid", href: "/checkpoints", icon: Grid02Icon },
+      { label: "Announcements", href: "/messages", icon: Megaphone01Icon },
+      { label: "Project directory", href: "/projects", icon: MilestoneIcon },
       { label: "Design system", href: "/design-system", icon: SparklesIcon },
     ]
     if (actor.role === "student") {
@@ -72,13 +72,13 @@ export function CommandPalette() {
     if (actor.role === "mentor") {
       return [
         { label: "My teams", href: "/", icon: UserGroupIcon },
-        { label: "Review queue", href: "/review", icon: InboxIcon },
+        { label: "Review queue", href: "/projects?filter=waiting", icon: InboxIcon },
         ...common,
       ]
     }
     return [
       { label: "Programme overview", href: "/", icon: UserGroupIcon },
-      { label: "Review queue", href: "/review", icon: InboxIcon },
+      { label: "Review queue", href: "/projects?filter=waiting", icon: InboxIcon },
       { label: "Measures", href: "/measures", icon: Grid02Icon },
       { label: "Programme settings", href: "/admin", icon: Settings02Icon },
       ...common,

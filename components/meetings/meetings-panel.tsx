@@ -63,7 +63,7 @@ export function MeetingsPanel({ project }: { project: Project }) {
           Open since the last meeting
         </SectionHeading>
         {open.length === 0 ? (
-          <div className="flex items-center gap-2.5 rounded-lg border border-status-accepted-br bg-status-accepted-bg px-3 py-2.5 text-meta text-status-accepted-fg">
+          <div className="flex items-center gap-2.5 rounded-sm border border-status-accepted-br bg-status-accepted-bg px-3 py-2.5 text-meta text-status-accepted-fg">
             <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4" strokeWidth={2} />
             Nothing carried over. Everything agreed last time is done.
           </div>
@@ -127,7 +127,7 @@ function MeetingCard({ meeting, project }: { meeting: Meeting; project: Project 
     : false
 
   return (
-    <li className="rounded-xl border border-border bg-card">
+    <li className="rounded-sm border border-border bg-card">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2.5">
         <HugeiconsIcon
           icon={CalendarClockIcon}
@@ -248,7 +248,7 @@ function MinutesEditor({
   const [next, setNext] = React.useState(initial?.next ?? "")
 
   return (
-    <div className="space-y-3 rounded-lg border border-dashed border-border p-3">
+    <div className="space-y-3 rounded-sm border border-dashed border-border p-3">
       <p className="flex items-center gap-1.5 text-th text-muted-foreground uppercase">
         <HugeiconsIcon icon={NoteEditIcon} className="size-3.5" strokeWidth={2} />
         Minutes
@@ -378,7 +378,7 @@ function NewMeetingDialog({ project }: { project: Project }) {
                 return (
                   <label
                     key={personId}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1 text-meta hover:bg-muted/60"
+                    className="flex cursor-pointer items-center gap-2.5 rounded-sm px-2 py-1 text-meta hover:bg-muted/60"
                   >
                     <Checkbox
                       checked={attendees.includes(personId)}

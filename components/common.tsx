@@ -27,7 +27,7 @@ export function PageHeader({
     <div className="flex flex-col gap-3 border-b border-border pb-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
-          <h1 className="text-title text-foreground">{title}</h1>
+          <h1 className="font-display text-title text-foreground">{title}</h1>
           {description && <p className="max-w-2xl text-meta text-muted-foreground">{description}</p>}
         </div>
         {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
@@ -51,7 +51,7 @@ export function SectionHeading({
   return (
     <div className="flex items-center justify-between gap-3 pb-2">
       <div className="flex items-baseline gap-2">
-        <h2 className="text-section text-foreground">{children}</h2>
+        <h2 className="font-display text-section text-foreground">{children}</h2>
         {count !== undefined && (
           <span className="text-meta font-medium text-muted-foreground">{count}</span>
         )}
@@ -80,7 +80,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-6 py-10 text-center",
+        "flex flex-col items-center justify-center rounded-sm border border-dashed border-border px-6 py-10 text-center",
         className
       )}
     >
@@ -229,11 +229,11 @@ export function MetricTile({
   tone?: "default" | "good" | "warn"
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-sm border border-border bg-card p-4">
       <p className="text-th text-muted-foreground uppercase">{label}</p>
       <p
         className={cn(
-          "mt-1.5 text-kpi",
+          "font-display mt-1.5 text-stat",
           tone === "good" && "text-status-accepted-fg",
           tone === "warn" && "text-status-returned-fg"
         )}
@@ -254,7 +254,7 @@ export function InlineHint({ children }: { children: React.ReactNode }) {
 /** A note the reviewer should read as an open question rather than a claim. */
 export function ToValidate({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-lg border border-status-under_review-br bg-status-under_review-bg px-3 py-2 text-caption text-status-under_review-fg">
+    <p className="rounded-sm border border-status-under_review-br bg-status-under_review-bg px-3 py-2 text-caption text-status-under_review-fg">
       <span className="font-semibold">Still to confirm with faculty. </span>
       {children}
     </p>
