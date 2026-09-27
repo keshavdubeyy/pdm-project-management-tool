@@ -59,20 +59,14 @@ export default function SignInPage() {
       <div className="mx-auto grid min-h-svh w-full max-w-5xl items-center gap-10 px-6 py-12 lg:grid-cols-[1.1fr_1fr]">
         <div>
           <p className="text-th text-muted-foreground uppercase">IIIT Hyderabad</p>
-          <h1 className="font-display mt-3 text-hero text-foreground">
-            PDM
-            <br />
-            Project
-            <br />
-            Space
-          </h1>
-          <p className="mt-6 max-w-sm text-body text-muted-foreground">
+          <h1 className="mt-2 text-page text-foreground">PDM Project Space</h1>
+          <p className="mt-3 max-w-sm text-body text-muted-foreground">
             Twenty-two teams, four mentoring lines, twelve checkpoints across twenty-eight weeks.
           </p>
         </div>
 
-        <div className="rounded-sm border border-border bg-card p-6">
-          <h2 className="font-display text-title">Who are you?</h2>
+        <div className="rounded-xl border border-border bg-card p-6">
+          <h2 className="text-title text-foreground">Who are you?</h2>
           <p className="mt-1.5 text-meta text-muted-foreground">
             Type a few letters. This tab remembers your choice on its own, so you can open a second
             tab as someone else and watch work move between you.
@@ -105,7 +99,7 @@ export default function SignInPage() {
                     signIn(person.id)
                     router.push("/")
                   }}
-                  className="rounded-sm border border-border px-2.5 py-1.5 text-meta transition-colors hover:bg-muted"
+                  className="rounded-lg border border-border px-2.5 py-1.5 text-meta transition-colors hover:bg-muted"
                 >
                   <span className="font-medium">{person.name}</span>
                   <span className="ml-1.5 text-caption text-muted-foreground">

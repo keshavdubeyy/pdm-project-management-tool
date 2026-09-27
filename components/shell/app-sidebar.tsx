@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { CancelCircleIcon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons"
 
 import {
   Sidebar,
@@ -43,11 +44,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="px-3 pt-4 pb-2 group-data-[collapsible=icon]:px-1.5">
         <Link href="/" className="block">
-          <span className="font-display block text-[19px] leading-[0.95] font-extrabold tracking-[-0.03em] text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-            PDM
-            <span className="block text-sidebar-primary">Project Space</span>
+          <span className="block group-data-[collapsible=icon]:hidden">
+            <span className="block text-section text-sidebar-foreground">PDM Project Space</span>
+            <span className="mt-0.5 block text-caption text-muted-foreground">IIIT Hyderabad</span>
           </span>
-          <span className="font-display hidden text-[15px] font-extrabold text-sidebar-primary group-data-[collapsible=icon]:block">
+          <span
+            aria-hidden
+            className="hidden size-7 place-items-center rounded-lg bg-sidebar-primary text-caption font-semibold text-sidebar-primary-foreground group-data-[collapsible=icon]:grid"
+          >
             P
           </span>
         </Link>
@@ -67,9 +71,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       tooltip={item.label}
                       render={<Link href={item.href} />}
                       className={cn(
-                        "rounded-sm font-medium",
-                        "data-active:bg-sidebar-primary data-active:text-sidebar-primary-foreground",
-                        "data-active:hover:bg-sidebar-primary data-active:hover:text-sidebar-primary-foreground"
+                        "rounded-lg font-medium",
+                        "transition-colors duration-fast-01 ease-standard",
+                        // Carbon's side-nav convention: a tinted fill plus a
+                        // solid rule in the accent down the leading edge, so
+                        // "where am I" survives greyscale and a projector.
+                        "data-active:bg-primary-subtle data-active:text-primary-subtle-foreground",
+                        "data-active:shadow-[inset_3px_0_0_0_var(--primary)]",
+                        "data-active:hover:bg-primary-subtle data-active:hover:text-primary-subtle-foreground"
                       )}
                     >
                       <HugeiconsIcon icon={item.icon} strokeWidth={2} />
@@ -77,8 +86,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       {item.scope && (
                         <span
                           className={cn(
-                            "text-caption font-semibold tabular-nums",
-                            active ? "opacity-70" : "text-sidebar-foreground/45"
+                            "text-caption font-medium tabular-nums",
+                            active ? "opacity-80" : "text-muted-foreground"
                           )}
                         >
                           {item.scope}
@@ -95,24 +104,38 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       {/* What you are allowed to do, stated rather than discovered. */}
       <SidebarFooter className="pb-12 group-data-[collapsible=icon]:hidden">
-        <div className="rounded-sm border border-sidebar-border p-3">
-          <p className="text-th text-sidebar-primary uppercase">Your reach</p>
+        <div className="rounded-xl border border-sidebar-border bg-card p-3">
+          <p className="text-th text-muted-foreground uppercase">Your permissions</p>
           <p className="mt-1.5 text-meta font-semibold text-sidebar-foreground">
             {reach.headline}
           </p>
-          <ul className="mt-2 space-y-1">
+          <ul className="mt-2.5 space-y-1.5">
             {reach.can.slice(0, 2).map((line) => (
-              <li key={line} className="flex gap-1.5 text-caption text-sidebar-foreground/75">
-                <span aria-hidden className="text-sidebar-primary">
-                  +
+              <li key={line} className="flex items-start gap-2 text-caption text-foreground">
+                <HugeiconsIcon
+                  icon={CheckmarkCircle02Icon}
+                  className="mt-px size-3.5 shrink-0 text-status-accepted-solid"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+                <span>
+                  <span className="sr-only">You can: </span>
+                  {line}
                 </span>
-                <span>{line}</span>
               </li>
             ))}
             {reach.cannot.map((line) => (
-              <li key={line} className="flex gap-1.5 text-caption text-sidebar-foreground/40">
-                <span aria-hidden>–</span>
-                <span>{line}</span>
+              <li key={line} className="flex items-start gap-2 text-caption text-muted-foreground">
+                <HugeiconsIcon
+                  icon={CancelCircleIcon}
+                  className="mt-px size-3.5 shrink-0 text-status-overdue-solid"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+                <span>
+                  <span className="sr-only">You cannot: </span>
+                  {line}
+                </span>
               </li>
             ))}
           </ul>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Bricolage_Grotesque, Public_Sans } from "next/font/google"
+import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
 import { AppFrame } from "@/components/shell/app-frame"
@@ -9,21 +9,13 @@ import { Toaster } from "@/components/ui/toast"
 import { ProjectsProvider } from "@/lib/store"
 import { cn } from "@/lib/utils"
 
-/** Display face. Does the shouting — headings, counts, the one big number. */
-const display = Bricolage_Grotesque({
-  subsets: ["latin"],
-  weight: ["500", "700", "800"],
-  variable: "--font-display",
-  display: "swap",
-})
+/** One face for the whole interface, as on master. Geist carries tabular
+ *  figures, which twenty-two rows of dates and counts depend on. */
+const sans = Geist({ subsets: ["latin"], variable: "--font-sans" })
 
-/** Body face. Stays out of the way underneath it. */
-const sans = Public_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-sans",
-  display: "swap",
-})
+/** For identifiers, timestamps and pasted links — anything read character by
+ *  character rather than as a word. */
+const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
 
 export const metadata: Metadata = {
   title: "PDM Project Space",
@@ -40,7 +32,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased font-sans", display.variable, sans.variable)}
+      className={cn("antialiased font-sans", sans.variable, mono.variable)}
     >
       <body>
         <ThemeProvider>

@@ -5,60 +5,113 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ---------------------------------------------------------------------------
-   PDM Project Space — Studio wall
+   PDM Project Space — design tokens
 
-   A design programme's own tool, so it is allowed to look designed. Warm paper
-   ground, a near-black ink, one acid accent, and almost no radius. Display type
-   does the shouting; the body face stays quiet underneath it.
+   This is a management tool for a university programme. Faculty, the programme
+   coordinator and master's students use it in supervision meetings, often
+   projected in a room, so the interface is meant to be legible and
+   unremarkable: the work is the subject, not the screen.
 
-   Status keeps its three signals — glyph, word, colour, in that order of
+   The palette is `master`'s indigo, refined. Same hue family, less chroma, more
+   contrast (7.64:1 on white rather than 6.83:1), sitting on a warm off-white
+   ground rather than pure white. The warmth is where the paper feeling comes
+   from; the blue is where continuity with the existing system comes from.
+   Precedent for a cool institutional accent on a warm neutral ramp: Yale,
+   Oxford, Michigan.
+
+   Surfaces form a ladder by lightness — ground, card, popover — so a card can
+   be separated by a 1px border and needs no shadow. Shadows are reserved for
+   things that genuinely float above the page (Atlassian's rule; Carbon's is
+   the same for tiles).
+
+   Status carries three signals — glyph, word, colour, in that order of
    reliability. The pale accepted and overdue fills are near-identical under
    deuteranopia, so colour is never alone.
+
+   Every value here is checked by `npm run contrast`, which reads this file.
 --------------------------------------------------------------------------- */
 
 @theme inline {
-    --font-display: var(--font-display);
-    --font-heading: var(--font-display);
     --font-sans: var(--font-sans);
+    --font-mono: var(--font-mono);
+    --font-heading: var(--font-sans);
 
-    /* Display sizes carry the personality; body sizes stay out of the way. */
-    --text-hero: 4.5rem;
-    --text-hero--line-height: 0.95;
-    --text-hero--font-weight: 800;
-    --text-hero--letter-spacing: -0.045em;
-    --text-display: 2.25rem;
-    --text-display--line-height: 1;
-    --text-display--font-weight: 800;
-    --text-display--letter-spacing: -0.035em;
-    --text-title: 1.5rem;
-    --text-title--line-height: 1.15;
-    --text-title--font-weight: 700;
-    --text-title--letter-spacing: -0.025em;
-    --text-section: 1.0625rem;
-    --text-section--line-height: 1.3;
-    --text-section--font-weight: 700;
-    --text-section--letter-spacing: -0.015em;
-    --text-subhead: 0.875rem;
-    --text-subhead--line-height: 1.25rem;
-    --text-subhead--font-weight: 600;
-    --text-body: 0.875rem;
-    --text-body--line-height: 1.35rem;
-    --text-meta: 0.8125rem;
-    --text-meta--line-height: 1.15rem;
-    --text-th: 0.6875rem;
-    --text-th--line-height: 1rem;
-    --text-th--font-weight: 700;
-    --text-th--letter-spacing: 0.1em;
+    /* Type. Carbon's productive set transposed onto Geist. Nothing above
+       28px: large display type is expressive, and this is not an expressive
+       product. Tracking is positive at small sizes and ~zero from 16px up. */
+    --text-label: 0.75rem;
+    --text-label--line-height: 1rem;
+    --text-label--font-weight: 500;
+    --text-label--letter-spacing: 0.02em;
     --text-caption: 0.75rem;
     --text-caption--line-height: 1rem;
-    --text-stat: 1.875rem;
-    --text-stat--line-height: 1;
-    --text-stat--font-weight: 700;
-    --text-stat--letter-spacing: -0.03em;
+    /* The smallest step. A count inside a chip, a second line inside a grid
+       cell — never a sentence. */
+    --text-micro: 0.6875rem;
+    --text-micro--line-height: 0.875rem;
+    --text-th: 0.75rem;
+    --text-th--line-height: 1rem;
+    --text-th--font-weight: 600;
+    --text-th--letter-spacing: 0.04em;
+    --text-meta: 0.8125rem;
+    --text-meta--line-height: 1.125rem;
+    --text-body: 0.875rem;
+    --text-body--line-height: 1.25rem;
+    --text-body--letter-spacing: 0.01em;
+    --text-body-lg: 1rem;
+    --text-body-lg--line-height: 1.5rem;
+    --text-subhead: 0.875rem;
+    --text-subhead--line-height: 1.125rem;
+    --text-subhead--font-weight: 600;
+    --text-section: 1rem;
+    --text-section--line-height: 1.375rem;
+    --text-section--font-weight: 600;
+    --text-section--letter-spacing: 0em;
+    --text-title: 1.25rem;
+    --text-title--line-height: 1.75rem;
+    --text-title--font-weight: 600;
+    --text-title--letter-spacing: 0em;
+    --text-page: 1.75rem;
+    --text-page--line-height: 2.25rem;
+    --text-page--font-weight: 600;
+    --text-page--letter-spacing: -0.005em;
+    --text-stat: 1.75rem;
+    --text-stat--line-height: 2rem;
+    --text-stat--font-weight: 600;
+    --text-stat--letter-spacing: -0.005em;
 
+    /* Radius. Atlassian's semantics with explicit values, so a pill and a
+       card are not the same shape. A single radius — whether 26px or 3px —
+       flattens the hierarchy radius exists to express. */
+    --radius-sm: 2px;
+    --radius-md: 4px;
+    --radius-lg: 6px;
+    --radius-xl: 8px;
+    --radius-2xl: 10px;
+    --radius-3xl: 10px;
+    --radius-4xl: 12px;
+
+    /* Motion. The three curves are Carbon's productive set, read from the
+       @carbon/motion source. The durations are Carbon's bands reconciled
+       against Atlassian's shipped tokens (@atlaskit/tokens), which name the
+       same moments: list-item hover 50ms, popup 150/100, modal 250/200. */
     --ease-standard: cubic-bezier(0.2, 0, 0.38, 0.9);
     --ease-entrance: cubic-bezier(0, 0, 0.38, 0.9);
     --ease-exit: cubic-bezier(0.2, 0, 1, 0.9);
+
+
+    /* Elevation. Only the two floating levels get a shadow, tinted with the
+       warm ink so it reads as shade rather than soot. */
+    --shadow-raised:
+        0 1px 1px oklch(0.26 0.014 80 / 0.1), 0 0 1px oklch(0.26 0.014 80 / 0.14);
+    --shadow-overlay:
+        0 4px 8px oklch(0.26 0.014 80 / 0.1), 0 0 1px oklch(0.26 0.014 80 / 0.16);
+    --shadow-modal:
+        0 8px 16px oklch(0.26 0.014 80 / 0.12), 0 0 1px oklch(0.26 0.014 80 / 0.18);
+
+    /* Density. Carbon publishes the only citable row heights; md is 40px. */
+    --spacing-row: 2.5rem;
+    --spacing-row-compact: 2rem;
 
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
@@ -86,6 +139,10 @@
     --color-secondary: var(--secondary);
     --color-primary-foreground: var(--primary-foreground);
     --color-primary: var(--primary);
+    --color-primary-hover: var(--primary-hover);
+    --color-primary-subtle: var(--primary-subtle);
+    --color-primary-subtle-foreground: var(--primary-subtle-foreground);
+    --color-link: var(--link);
     --color-popover-foreground: var(--popover-foreground);
     --color-popover: var(--popover);
     --color-card-foreground: var(--card-foreground);
@@ -93,10 +150,7 @@
     --color-foreground: var(--foreground);
     --color-background: var(--background);
 
-    /* The accent. Used sparingly and never as a background for body text. */
-    --color-lime: var(--lime);
-    --color-lime-ink: var(--lime-ink);
-
+    --color-progress-track: var(--progress-track);
     --color-status-not_started-bg: var(--status-not_started-bg);
     --color-status-not_started-br: var(--status-not_started-br);
     --color-status-not_started-fg: var(--status-not_started-fg);
@@ -125,154 +179,223 @@
     --color-status-overdue-br: var(--status-overdue-br);
     --color-status-overdue-fg: var(--status-overdue-fg);
     --color-status-overdue-solid: var(--status-overdue-solid);
-
-    /* Almost square. The old 10px radius is what made everything look the same. */
-    --radius-sm: 2px;
-    --radius-md: 3px;
-    --radius-lg: 3px;
-    --radius-xl: 4px;
-    --radius-2xl: 5px;
-    --radius-3xl: 6px;
-    --radius-4xl: 3px;
 }
 
 :root {
-    --background: #fbfaf7;
-    --foreground: #14120f;
-    --card: #ffffff;
-    --card-foreground: #14120f;
-    --popover: #ffffff;
-    --popover-foreground: #14120f;
-    --primary: #14120f;
-    --primary-foreground: #fbfaf7;
-    --secondary: #f0ede5;
-    --secondary-foreground: #14120f;
-    --muted: #f3f0e9;
-    --muted-foreground: #6f6a5f;
-    --accent: #e8e4db;
-    --accent-foreground: #14120f;
-    --destructive: #b03c38;
-    --border: #e2ddd2;
-    --border-strong: #8a857a;
-    --input: #8a857a;
-    --ring: #14120f;
-    --radius: 3px;
+    /* Surfaces climb in lightness: ground, card, popover. */
+    --background: oklch(0.988 0.0025 85);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.205 0.012 264);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.205 0.012 264);
+    --foreground: oklch(0.205 0.012 264);
+    --muted: oklch(0.962 0.002 85);
+    --muted-foreground: oklch(0.52 0.01 85);
+    --secondary: oklch(0.962 0.002 85);
+    --secondary-foreground: oklch(0.205 0.012 264);
+    --accent: oklch(0.945 0.004 85);
+    --accent-foreground: oklch(0.205 0.012 264);
 
-    --lime: #d8ff3e;
-    --lime-ink: #14120f;
+    --border: oklch(0.906 0.005 85);
+    --border-strong: oklch(0.785 0.006 85);
+    --input: oklch(0.64 0.007 85);
 
-    --chart-1: #14120f;
-    --chart-2: #1f7a52;
-    --chart-3: #c86a3c;
-    --chart-4: #6b57c4;
-    --chart-5: #d9a441;
+    /* master's indigo at -16% chroma and -7% lightness. Same blue, more
+       contrast: 7.64:1 on white, and pure white now reaches 7.64:1 on it. */
+    --primary: oklch(0.455 0.205 262);
+    --primary-foreground: oklch(1 0 0);
+    --primary-hover: oklch(0.4 0.175 262);
+    --primary-subtle: oklch(0.96 0.016 262);
+    --primary-subtle-foreground: oklch(0.4 0.175 262);
+    --link: oklch(0.455 0.205 262);
+    --ring: oklch(0.455 0.205 262);
 
-    --sidebar: #14120f;
-    --sidebar-foreground: #f3f1ec;
-    --sidebar-primary: #d8ff3e;
-    --sidebar-primary-foreground: #14120f;
-    --sidebar-accent: #262219;
-    --sidebar-accent-foreground: #f3f1ec;
-    --sidebar-border: #2e2a22;
-    --sidebar-ring: #d8ff3e;
+    --destructive: oklch(0.48 0.175 25);
+    --destructive-foreground: oklch(1 0 0);
 
-    --status-not_started-bg: #f0ede5;
-    --status-not_started-br: #d8d2c5;
-    --status-not_started-fg: #514c43;
-    --status-not_started-solid: #ddd8cc;
-    --status-in_progress-bg: #e6eff7;
-    --status-in_progress-br: #a8c6de;
-    --status-in_progress-fg: #1d4a72;
-    --status-in_progress-solid: #2f6fa8;
-    --status-submitted-bg: #ece8fa;
-    --status-submitted-br: #bcb0e8;
-    --status-submitted-fg: #3b2f7a;
-    --status-submitted-solid: #6b57c4;
-    --status-under_review-bg: #fbf0d5;
-    --status-under_review-br: #e5c887;
-    --status-under_review-fg: #6b4a0c;
-    --status-under_review-solid: #c08a1a;
-    --status-returned-bg: #fbe9dd;
-    --status-returned-br: #e8b189;
-    --status-returned-fg: #7d3d17;
-    --status-returned-solid: #c86a3c;
-    --status-accepted-bg: #e2f0e7;
-    --status-accepted-br: #a3ccb4;
-    --status-accepted-fg: #17543a;
-    --status-accepted-solid: #1f7a52;
-    --status-overdue-bg: #fae9e8;
-    --status-overdue-br: #e5aba8;
-    --status-overdue-fg: #7c2b28;
-    --status-overdue-solid: #b03c38;
+    --radius: 6px;
+
+    /* The rail stays light. A near-black sidebar makes navigation the loudest
+       thing on a projected screen, which is exactly backwards. */
+    --sidebar: oklch(0.974 0.003 85);
+    --sidebar-foreground: oklch(0.205 0.012 264);
+    --sidebar-primary: oklch(0.455 0.205 262);
+    --sidebar-primary-foreground: oklch(1 0 0);
+    --sidebar-accent: oklch(0.935 0.006 85);
+    --sidebar-accent-foreground: oklch(0.205 0.012 264);
+    --sidebar-border: oklch(0.906 0.005 85);
+    --sidebar-ring: oklch(0.455 0.205 262);
+
+    /* One hue, five steps, monotonic in lightness, all inside sRGB. For
+       ordered data only — a category needs the status colours instead. */
+    --chart-1: oklch(0.76 0.095 258);
+    --chart-2: oklch(0.66 0.145 260);
+    --chart-3: oklch(0.56 0.185 261);
+    --chart-4: oklch(0.455 0.205 262);
+    --chart-5: oklch(0.355 0.16 264);
+
+    /* Status. Each -fg clears 4.5:1 on its own -bg and on a card. Each -solid
+       clears 3:1 on the ground — it draws dots, bars and glyphs, never text. */
+    --progress-track: oklch(0.925 0.004 85);
+
+    --status-not_started-fg: oklch(0.5 0.008 85);
+    --status-not_started-bg: oklch(0.962 0.002 85);
+    --status-not_started-br: oklch(0.885 0.004 85);
+    --status-not_started-solid: oklch(0.655 0.008 85);
+
+    --status-in_progress-fg: oklch(0.47 0.115 245);
+    --status-in_progress-bg: oklch(0.966 0.014 245);
+    --status-in_progress-br: oklch(0.815 0.052 245);
+    --status-in_progress-solid: oklch(0.56 0.125 245);
+
+    --status-submitted-fg: oklch(0.46 0.15 285);
+    --status-submitted-bg: oklch(0.962 0.016 285);
+    --status-submitted-br: oklch(0.805 0.058 285);
+    --status-submitted-solid: oklch(0.545 0.155 285);
+
+    --status-under_review-fg: oklch(0.515 0.108 72);
+    --status-under_review-bg: oklch(0.966 0.016 72);
+    --status-under_review-br: oklch(0.87 0.052 72);
+    --status-under_review-solid: oklch(0.615 0.13 70);
+
+    --status-returned-fg: oklch(0.52 0.145 42);
+    --status-returned-bg: oklch(0.966 0.017 42);
+    --status-returned-br: oklch(0.858 0.058 42);
+    --status-returned-solid: oklch(0.62 0.165 42);
+
+    --status-accepted-fg: oklch(0.47 0.105 160);
+    --status-accepted-bg: oklch(0.964 0.014 160);
+    --status-accepted-br: oklch(0.812 0.045 160);
+    --status-accepted-solid: oklch(0.56 0.115 160);
+
+    --status-overdue-fg: oklch(0.48 0.168 22);
+    --status-overdue-bg: oklch(0.964 0.014 22);
+    --status-overdue-br: oklch(0.822 0.062 22);
+    --status-overdue-solid: oklch(0.56 0.185 22);
 }
 
 .dark {
-    --background: #14120f;
-    --foreground: #f3f1ec;
-    --card: #1b1814;
-    --card-foreground: #f3f1ec;
-    --popover: #211d18;
-    --popover-foreground: #f3f1ec;
-    --primary: #d8ff3e;
-    --primary-foreground: #14120f;
-    --secondary: #262219;
-    --secondary-foreground: #f3f1ec;
-    --muted: #241f1a;
-    --muted-foreground: #a9a397;
-    --accent: #2e2a22;
-    --accent-foreground: #f3f1ec;
-    --destructive: #e07570;
-    --border: #2e2a22;
-    --border-strong: #6b665b;
-    --input: #6b665b;
-    --ring: #d8ff3e;
+    /* Warm-tinted dark, so it is recognisably the same system. Elevation is
+       carried by lightness, not shadow. */
+    --background: oklch(0.178 0.005 85);
+    --card: oklch(0.238 0.005 85);
+    --card-foreground: oklch(0.962 0.004 85);
+    --popover: oklch(0.265 0.005 85);
+    --popover-foreground: oklch(0.962 0.004 85);
+    --foreground: oklch(0.962 0.004 85);
+    --muted: oklch(0.29 0.005 85);
+    --muted-foreground: oklch(0.735 0.008 85);
+    --secondary: oklch(0.29 0.005 85);
+    --secondary-foreground: oklch(0.962 0.004 85);
+    --accent: oklch(0.325 0.005 85);
+    --accent-foreground: oklch(0.962 0.004 85);
 
-    --lime: #d8ff3e;
-    --lime-ink: #14120f;
+    --border: oklch(0.315 0.006 85);
+    --border-strong: oklch(0.43 0.006 85);
+    --input: oklch(0.525 0.007 85);
 
-    --chart-1: #d8ff3e;
-    --chart-2: #55b483;
-    --chart-3: #e08a55;
-    --chart-4: #9b88e0;
-    --chart-5: #e5bb5c;
+    /* master's dark primary sat at ~1.9:1 against its own ground, under the
+       3:1 floor for a UI component. Lifted until the button reads. */
+    --primary: oklch(0.56 0.195 262);
+    --primary-foreground: oklch(1 0 0);
+    --primary-hover: oklch(0.625 0.175 262);
+    --primary-subtle: oklch(0.3 0.062 262);
+    --primary-subtle-foreground: oklch(0.78 0.105 262);
+    --link: oklch(0.72 0.13 262);
+    --ring: oklch(0.66 0.16 262);
 
-    --sidebar: #100e0b;
-    --sidebar-foreground: #f3f1ec;
-    --sidebar-primary: #d8ff3e;
-    --sidebar-primary-foreground: #14120f;
-    --sidebar-accent: #262219;
-    --sidebar-accent-foreground: #f3f1ec;
-    --sidebar-border: #2e2a22;
-    --sidebar-ring: #d8ff3e;
+    --destructive: oklch(0.68 0.165 25);
+    --destructive-foreground: oklch(0.175 0.01 25);
 
-    --status-not_started-bg: #242019;
-    --status-not_started-br: #403a30;
-    --status-not_started-fg: #c3bdb1;
-    --status-not_started-solid: #2b2620;
-    --status-in_progress-bg: #14263a;
-    --status-in_progress-br: #2b4d6f;
-    --status-in_progress-fg: #b3d3ec;
-    --status-in_progress-solid: #6ba3d6;
-    --status-submitted-bg: #221b3d;
-    --status-submitted-br: #453873;
-    --status-submitted-fg: #cfc3f5;
-    --status-submitted-solid: #9b88e0;
-    --status-under_review-bg: #2e2410;
-    --status-under_review-br: #5c4718;
-    --status-under_review-fg: #f0d79a;
-    --status-under_review-solid: #d9a441;
-    --status-returned-bg: #2f1d11;
-    --status-returned-br: #5e3a20;
-    --status-returned-fg: #f2c4a2;
-    --status-returned-solid: #e08a55;
-    --status-accepted-bg: #13291e;
-    --status-accepted-br: #27543c;
-    --status-accepted-fg: #a8dcc0;
-    --status-accepted-solid: #55b483;
-    --status-overdue-bg: #2e1614;
-    --status-overdue-br: #5c2c29;
-    --status-overdue-fg: #efb0ac;
-    --status-overdue-solid: #e07570;
+    --sidebar: oklch(0.15 0.005 85);
+    --sidebar-foreground: oklch(0.962 0.004 85);
+    --sidebar-primary: oklch(0.66 0.16 262);
+    --sidebar-primary-foreground: oklch(0.178 0.005 85);
+    --sidebar-accent: oklch(0.28 0.005 85);
+    --sidebar-accent-foreground: oklch(0.962 0.004 85);
+    --sidebar-border: oklch(0.3 0.006 85);
+    --sidebar-ring: oklch(0.66 0.16 262);
+
+    --chart-1: oklch(0.8 0.09 258);
+    --chart-2: oklch(0.72 0.13 260);
+    --chart-3: oklch(0.64 0.165 261);
+    --chart-4: oklch(0.56 0.185 262);
+    --chart-5: oklch(0.47 0.17 264);
+
+    --progress-track: oklch(0.315 0.006 85);
+
+    --status-not_started-fg: oklch(0.76 0.008 85);
+    --status-not_started-bg: oklch(0.29 0.005 85);
+    --status-not_started-br: oklch(0.375 0.006 85);
+    --status-not_started-solid: oklch(0.52 0.008 85);
+
+    --status-in_progress-fg: oklch(0.79 0.09 245);
+    --status-in_progress-bg: oklch(0.3 0.048 248);
+    --status-in_progress-br: oklch(0.405 0.075 248);
+    --status-in_progress-solid: oklch(0.66 0.12 245);
+
+    --status-submitted-fg: oklch(0.79 0.095 285);
+    --status-submitted-bg: oklch(0.298 0.058 285);
+    --status-submitted-br: oklch(0.405 0.085 285);
+    --status-submitted-solid: oklch(0.66 0.135 285);
+
+    --status-under_review-fg: oklch(0.82 0.095 78);
+    --status-under_review-bg: oklch(0.3 0.042 72);
+    --status-under_review-br: oklch(0.405 0.065 72);
+    --status-under_review-solid: oklch(0.74 0.13 78);
+
+    --status-returned-fg: oklch(0.8 0.095 45);
+    --status-returned-bg: oklch(0.3 0.055 42);
+    --status-returned-br: oklch(0.405 0.08 42);
+    --status-returned-solid: oklch(0.69 0.145 45);
+
+    --status-accepted-fg: oklch(0.79 0.085 160);
+    --status-accepted-bg: oklch(0.298 0.045 162);
+    --status-accepted-br: oklch(0.403 0.062 162);
+    --status-accepted-solid: oklch(0.67 0.11 160);
+
+    --status-overdue-fg: oklch(0.78 0.105 22);
+    --status-overdue-bg: oklch(0.3 0.06 22);
+    --status-overdue-br: oklch(0.407 0.088 22);
+    --status-overdue-solid: oklch(0.65 0.165 22);
+}
+
+/* Durations. Carbon's productive bands, reconciled with Atlassian's shipped
+   tokens for the moments both systems name. `duration-*` is not a Tailwind
+   theme namespace, so each of these is declared once here and wrapped in a
+   utility, rather than repeated as a magic number in a component. */
+:root {
+    --duration-fast-01: 50ms;
+    --duration-fast-02: 70ms;
+    --duration-enter-sm: 150ms;
+    --duration-exit-sm: 100ms;
+    --duration-enter-lg: 240ms;
+    --duration-exit-lg: 200ms;
+}
+
+@utility duration-fast-01 {
+    --tw-duration: var(--duration-fast-01);
+    transition-duration: var(--duration-fast-01);
+}
+@utility duration-fast-02 {
+    --tw-duration: var(--duration-fast-02);
+    transition-duration: var(--duration-fast-02);
+}
+@utility duration-enter-sm {
+    --tw-duration: var(--duration-enter-sm);
+    transition-duration: var(--duration-enter-sm);
+}
+@utility duration-exit-sm {
+    --tw-duration: var(--duration-exit-sm);
+    transition-duration: var(--duration-exit-sm);
+}
+@utility duration-enter-lg {
+    --tw-duration: var(--duration-enter-lg);
+    transition-duration: var(--duration-enter-lg);
+}
+@utility duration-exit-lg {
+    --tw-duration: var(--duration-exit-lg);
+    transition-duration: var(--duration-exit-lg);
 }
 
 @layer base {
@@ -284,18 +407,19 @@
     }
     html {
         @apply font-sans;
+        /* Geist has tabular figures but does not use them by default. A column
+           of dates that shifts between rows is unreadable at twenty-two rows. */
         font-variant-numeric: tabular-nums;
+        font-feature-settings: "tnum" 1;
         font-optical-sizing: auto;
     }
-    /* Display type is for headings and numbers, never for reading. */
-    h1,
-    h2,
-    h3 {
-        font-family: var(--font-display), system-ui, sans-serif;
-    }
+    /* The outer ring states where focus is; the inner halo keeps it visible
+       when it lands on a coloured status pill. Structure borrowed from GOV.UK,
+       whose point was that an indicator has to work on any background. */
     :focus-visible {
         outline: 2px solid var(--ring);
         outline-offset: 2px;
+        box-shadow: 0 0 0 2px var(--card);
     }
     [id] {
         scroll-margin-top: 5rem;
@@ -303,9 +427,6 @@
 }
 
 @layer utilities {
-    .font-display {
-        font-family: var(--font-display), system-ui, sans-serif;
-    }
     .tnum-off {
         font-variant-numeric: normal;
     }
@@ -317,13 +438,20 @@
     }
 }
 
+/* Reduce the motion, do not remove it. Killing every transition outright also
+   removes the short fades that tell someone a panel opened; what needs to go
+   is movement and scaling. So: colour and opacity still cross-fade, quickly;
+   transforms do not run at all. */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
-        animation-duration: 0.01ms !important;
+        animation-duration: 1ms !important;
+        animation-delay: 0ms !important;
         animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+        transition-property: opacity, background-color, border-color, color, fill,
+            stroke !important;
+        transition-duration: 70ms !important;
         scroll-behavior: auto !important;
     }
 }

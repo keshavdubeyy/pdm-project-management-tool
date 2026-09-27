@@ -53,7 +53,7 @@ export function PersonCombobox({
           <button
             type="button"
             className={cn(
-              "flex h-8 w-full items-center gap-2 rounded-sm border border-border bg-card px-2.5 text-left text-meta transition-colors hover:bg-muted",
+              "flex h-8 w-full items-center gap-2 rounded-lg border border-border bg-card px-2.5 text-left text-meta transition-colors hover:bg-muted",
               className
             )}
           />

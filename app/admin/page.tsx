@@ -98,7 +98,7 @@ function AllocationTab() {
           return (
             <div
               key={mentor.id}
-              className="flex items-center gap-3 rounded-sm border border-border bg-card px-3 py-2.5"
+              className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5"
             >
               <PersonAvatar person={mentor} size="sm" />
               <div className="min-w-0 flex-1">
@@ -118,7 +118,7 @@ function AllocationTab() {
           return (
             <li
               key={project.id}
-              className="flex flex-wrap items-center gap-3 rounded-sm border border-border bg-card px-3 py-2.5"
+              className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-meta font-medium">{team?.name}</p>
@@ -163,7 +163,7 @@ function AllocationTab() {
 
               {project.preferredMentorId &&
                 !project.mentorIds.includes(project.preferredMentorId) && (
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge variant="outline" className="text-micro">
                     reassigned
                   </Badge>
                 )}
@@ -210,7 +210,7 @@ function CalendarTab() {
         {template.map((item) => (
           <li
             key={item.id}
-            className="flex flex-wrap items-center gap-3 rounded-sm border border-border bg-card px-3 py-2.5"
+            className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5"
           >
             <span className="w-16 shrink-0 text-meta font-semibold">W{item.dueWeek}</span>
             <div className="min-w-0 flex-1">
@@ -389,11 +389,11 @@ function RosterTab() {
         {teams.map((team) => {
           const project = db.projects.find((p) => p.teamId === team.id)
           return (
-            <li key={team.id} className="rounded-sm border border-border bg-card px-3 py-2.5">
+            <li key={team.id} className="rounded-xl border border-border bg-card px-3 py-2.5">
               <div className="flex items-center justify-between gap-2">
                 <p className="truncate text-meta font-medium">{team.name}</p>
                 <span className="flex shrink-0 items-center gap-1">
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge variant="outline" className="text-micro">
                     {team.memberIds.length === 1 ? "Individual" : `${team.memberIds.length} members`}
                   </Badge>
                   <Button size="xs" variant="ghost" onClick={() => setEditing(team)}>
@@ -432,7 +432,7 @@ function RosterTab() {
             {unassigned.map((person) => (
               <li
                 key={person.id}
-                className="flex items-center gap-1.5 rounded-sm border border-border px-2 py-1"
+                className="flex items-center gap-1.5 rounded-lg border border-border px-2 py-1"
               >
                 <PersonAvatar person={person} size="xs" />
                 <span className="text-caption">{person.name}</span>
@@ -539,7 +539,7 @@ function AuditTab() {
           body="Changes made from now on will appear here."
         />
       ) : (
-        <ul className="divide-y divide-border rounded-sm border border-border bg-card">
+        <ul className="divide-y divide-border rounded-xl border border-border bg-card">
           {db.audit.slice(0, 80).map((event) => (
             <li key={event.id} className="flex flex-wrap items-baseline gap-2 px-3 py-2">
               <span className="text-caption text-muted-foreground">

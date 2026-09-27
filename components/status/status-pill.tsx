@@ -24,8 +24,8 @@ export function StatusPill({
   return (
     <span
       className={cn(
-        "inline-flex w-fit shrink-0 items-center gap-1.5 rounded-sm border font-medium whitespace-nowrap",
-        size === "sm" ? "px-1.5 py-px text-[11px]" : "px-2 py-0.5 text-xs",
+        "inline-flex w-fit shrink-0 items-center gap-1.5 rounded-md border font-medium whitespace-nowrap",
+        size === "sm" ? "px-1.5 py-px text-micro" : "px-2 py-0.5 text-caption",
         meta.bg,
         meta.border,
         meta.fg,

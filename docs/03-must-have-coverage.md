@@ -105,8 +105,7 @@ A scripted run drives two tabs as two different people and verifies twenty-one t
 
 ## Where things moved
 
-The interface was rebuilt in the direction chosen at review ("Studio wall"), and the
-navigation was restructured at the same time. Four routes folded into three:
+The navigation was restructured at review. Four routes folded into three:
 
 | Was | Now | Why |
 |---|---|---|
@@ -125,3 +124,26 @@ this role may do and what it may not, in the words a person would use. It reads 
 **Pick a person by typing.** Sign-in was forty-five names scrolling; mentor allocation
 was forty-four stacked dropdowns. Both are now one field you type three letters into
 (`components/person-combobox.tsx`).
+
+## The design system
+
+The interface uses one token file, `app/globals.css`, and a style guide at
+`/design-system` built from the real components rather than from screenshots.
+
+The palette is the project's original indigo, refined: sixteen per cent less chroma and
+seven per cent darker, which raises it from 6.8:1 on white to 7.6:1. It sits on a warm
+off-white ground rather than pure white — the same pairing of a cool institutional accent
+with a warm neutral ramp that Yale, Oxford and Michigan publish. Radius is graduated by
+role (4px a pill, 6px a control, 8px a panel, 12px a card) rather than one value applied
+to everything. A card carries a border and no shadow; a shadow means the surface is
+floating and will go away.
+
+Motion is three easing curves from IBM Carbon's productive set and six durations
+reconciled against Atlassian's shipped tokens. Overlays animate; nothing inside a data
+view does. With reduced motion switched on, colour and opacity still cross-fade in 70ms
+and everything that moves or scales stops.
+
+`npm run contrast` recomputes every contrast rule from the token file and fails if one
+drifts — forty-two checks, all passing, covering body and muted text on every surface,
+text on a primary button, input boundaries at 3:1, the focus ring, and for all seven
+statuses both the label on its own fill and the glyph on the ground.

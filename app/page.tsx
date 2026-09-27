@@ -39,7 +39,8 @@ export default function TodayPage() {
 
 /* -------------------------------------------------------------- shared */
 
-/** The one number, at the size that says it is the one number. */
+/** The figure the page is about, with its supporting counts beside it. Sized
+ * to be read across a meeting room, not to be looked at. */
 function Headline({
   value,
   unit,
@@ -54,19 +55,21 @@ function Headline({
   return (
     <div className="flex flex-wrap items-end gap-x-7 gap-y-4 border-b border-border pb-6">
       <div>
-        <p className="font-display text-hero py-1 text-foreground">
+        <p className="text-stat text-foreground">
           {value}
-          {unit && <span className="ml-1 text-[0.34em] font-bold tracking-normal">{unit}</span>}
+          {unit && (
+            <span className="ml-1.5 text-section font-medium text-muted-foreground">{unit}</span>
+          )}
         </p>
-        <p className="mt-2 text-subhead">{caption}</p>
+        <p className="mt-1 text-body text-muted-foreground">{caption}</p>
       </div>
       {aside && aside.length > 0 && (
         <>
-          <span aria-hidden className="hidden h-14 w-px bg-border sm:block" />
-          <div className="flex flex-wrap gap-7 pb-1">
+          <span aria-hidden className="hidden h-10 w-px bg-border sm:block" />
+          <div className="flex flex-wrap gap-7 pb-0.5">
             {aside.map((item) => (
               <div key={item.caption}>
-                <p className="font-display text-stat">{item.value}</p>
+                <p className="text-title text-foreground">{item.value}</p>
                 <p className="mt-1 text-caption text-muted-foreground">{item.caption}</p>
               </div>
             ))}
@@ -77,8 +80,8 @@ function Headline({
   )
 }
 
-/** The row you are meant to act on. Dark, so it cannot be mistaken for the
- * list underneath it. */
+/** The row you are meant to act on. Tinted and led by the accent, so it reads
+ * as the next thing to do without inverting into a black slab. */
 function LoudRow({
   eyebrow,
   title,
@@ -99,30 +102,25 @@ function LoudRow({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-4 rounded-sm px-4 py-3.5 text-left transition-colors",
+        "flex w-full items-center gap-4 rounded-lg border px-4 py-3 text-left",
+        "transition-colors duration-fast-02 ease-standard",
         tone === "loud"
-          ? "bg-foreground text-background hover:bg-foreground/90"
-          : "border border-border hover:bg-muted"
+          ? "border-primary/25 bg-primary-subtle hover:border-primary/40"
+          : "border-border bg-card hover:bg-muted"
       )}
     >
       <span className="shrink-0">{eyebrow}</span>
       <span className="min-w-0 flex-1">
-        <span className="font-display block truncate text-[17px] font-bold tracking-[-0.02em]">
-          {title}
-        </span>
-        <span
-          className={cn(
-            "mt-0.5 block truncate text-caption",
-            tone === "loud" ? "text-background/65" : "text-muted-foreground"
-          )}
-        >
-          {meta}
-        </span>
+        <span className="block truncate text-subhead text-foreground">{title}</span>
+        <span className="mt-0.5 block truncate text-caption text-muted-foreground">{meta}</span>
       </span>
       <span
         className={cn(
-          "shrink-0 rounded-sm px-3.5 py-2 text-meta font-bold whitespace-nowrap",
-          tone === "loud" ? "bg-lime text-lime-ink" : "border border-foreground"
+          "shrink-0 rounded-lg px-3 py-1.5 text-meta font-medium whitespace-nowrap",
+          "transition-colors duration-fast-02 ease-standard",
+          tone === "loud"
+            ? "bg-primary text-primary-foreground"
+            : "border border-border-strong text-foreground"
         )}
       >
         {action}
@@ -230,7 +228,7 @@ function StudentToday() {
                   <li
                     key={review.id}
                     className={cn(
-                      "rounded-sm border-l-2 py-2 pl-3",
+                      "rounded-lg border-l-2 px-3 py-2",
                       review.verdict === "accept"
                         ? "border-status-accepted-solid bg-status-accepted-bg"
                         : "border-status-returned-solid bg-status-returned-bg"
@@ -330,7 +328,7 @@ function MentorToday() {
               <li key={project.id}>
                 <Link
                   href={`/projects/${project.id}`}
-                  className="flex items-start gap-3 rounded-sm border border-border px-4 py-3 transition-colors hover:bg-muted"
+                  className="flex items-start gap-3 rounded-xl border border-border px-4 py-3 transition-colors hover:bg-muted"
                 >
                   <HugeiconsIcon
                     icon={AlarmClockIcon}
@@ -338,7 +336,7 @@ function MentorToday() {
                     strokeWidth={2}
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="font-display block truncate text-[15px] font-bold tracking-[-0.02em]">
+                    <span className="block truncate text-subhead text-foreground">
                       {teamName(db, project.teamId)}
                     </span>
                     <span className="block text-caption text-muted-foreground">
@@ -408,10 +406,10 @@ function CoordinatorToday() {
               <li key={project.id}>
                 <Link
                   href={`/projects/${project.id}`}
-                  className="flex items-center gap-4 rounded-sm border border-border px-4 py-3 transition-colors hover:bg-muted"
+                  className="flex items-center gap-4 rounded-xl border border-border px-4 py-3 transition-colors hover:bg-muted"
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="font-display block truncate text-[15px] font-bold tracking-[-0.02em]">
+                    <span className="block truncate text-subhead text-foreground">
                       {teamName(db, project.teamId)}
                     </span>
                     <span className="block truncate text-caption text-muted-foreground">
@@ -442,7 +440,7 @@ function CoordinatorToday() {
             return (
               <li
                 key={mentor.id}
-                className="flex items-center gap-3 rounded-sm border border-border px-3 py-2.5"
+                className="flex items-center gap-3 rounded-xl border border-border px-3 py-2.5"
               >
                 <PersonAvatar person={mentor} size="sm" />
                 <span className="min-w-0 flex-1">
@@ -451,7 +449,7 @@ function CoordinatorToday() {
                     {mentor.affiliation}
                   </span>
                 </span>
-                <span className="font-display shrink-0 text-[17px] font-bold tabular-nums">
+                <span className="shrink-0 text-title text-foreground">
                   {load}
                 </span>
               </li>

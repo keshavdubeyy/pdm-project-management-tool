@@ -36,13 +36,13 @@ export function StatusLegend({
             <HugeiconsIcon icon={meta.icon} className={cn("size-3.5", meta.solid)} strokeWidth={2.2} aria-hidden />
             <span>{meta.shortLabel}</span>
             {count !== undefined && (
-              <span className="text-[11px] font-semibold opacity-70">{count}</span>
+              <span className="text-micro font-semibold opacity-70">{count}</span>
             )}
           </>
         )
 
         const classes = cn(
-          "inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-xs font-medium transition-opacity",
+          "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-opacity",
           meta.bg,
           meta.border,
           meta.fg,

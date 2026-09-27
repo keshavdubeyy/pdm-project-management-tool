@@ -89,17 +89,14 @@ export default function MeasuresPage() {
         </SectionHeading>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {headline.map((item) => (
-            <div key={item.ref} className="relative">
-              <span className="absolute top-3 right-3 text-caption font-semibold text-muted-foreground/60">
-                {item.ref}
-              </span>
-              <MetricTile
-                label={item.label}
-                value={item.value}
-                hint={`${item.hint} · target ${item.target}`}
-                tone={item.value === "No data yet" ? "default" : item.tone}
-              />
-            </div>
+            <MetricTile
+              key={item.ref}
+              ref={item.ref}
+              label={item.label}
+              value={item.value}
+              hint={`${item.hint} · target ${item.target}`}
+              tone={item.value === "No data yet" ? "default" : item.tone}
+            />
           ))}
         </div>
       </section>

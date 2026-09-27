@@ -105,7 +105,7 @@ export function BatchGrid({
   }
 
   return (
-    <div className="w-full max-w-full overflow-x-auto rounded-sm border border-border bg-card">
+    <div className="w-full max-w-full overflow-x-auto rounded-xl border border-border bg-card">
       <div
         role="grid"
         aria-label={`Every project against every checkpoint. ${rows.length} projects, ${columns.length} checkpoints.`}
@@ -143,7 +143,7 @@ export function BatchGrid({
                     <span className="block text-th font-semibold text-foreground">
                       W{column.dueWeek}
                     </span>
-                    <span className="mt-0.5 block truncate text-[10px] leading-tight text-muted-foreground">
+                    <span className="mt-0.5 block truncate text-micro text-muted-foreground">
                       {shortTitle(column.title)}
                     </span>
                   </TooltipTrigger>

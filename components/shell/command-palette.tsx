@@ -4,14 +4,10 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  Grid02Icon,
   InboxIcon,
-  Megaphone01Icon,
   MilestoneIcon,
   Search01Icon,
-  Settings02Icon,
   SparklesIcon,
-  UserGroupIcon,
   UserSwitchIcon,
 } from "@hugeicons/core-free-icons"
 
@@ -28,7 +24,9 @@ import {
   CommandShortcut,
 } from "@/components/ui/command"
 import { Kbd } from "@/components/ui/kbd"
+import { navFor } from "@/lib/nav"
 import { ROLE_LABEL, projectsFor } from "@/lib/permissions"
+import { reviewQueue } from "@/lib/selectors"
 import { useProjectsStore } from "@/lib/store"
 
 /** Everything reachable from one keystroke.
@@ -58,32 +56,22 @@ export function CommandPalette() {
 
   const myProjects = actor ? projectsFor(db, actor) : []
 
+  // Read straight from lib/nav.ts, so the palette can never offer a different
+  // set of words from the rail beside it. The two extras below are shortcuts
+  // rather than places: a pre-filtered view, and the style guide.
   const pages = React.useMemo(() => {
     if (!actor) return []
-    const common = [
-      { label: "Milestone grid", href: "/checkpoints", icon: Grid02Icon },
-      { label: "Announcements", href: "/messages", icon: Megaphone01Icon },
-      { label: "Project directory", href: "/projects", icon: MilestoneIcon },
-      { label: "Design system", href: "/design-system", icon: SparklesIcon },
-    ]
-    if (actor.role === "student") {
-      return [{ label: "My work", href: "/", icon: UserGroupIcon }, ...common]
+    const counts = {
+      projects: projectsFor(db, actor).length,
+      waiting: reviewQueue(db, actor).length,
     }
-    if (actor.role === "mentor") {
-      return [
-        { label: "My teams", href: "/", icon: UserGroupIcon },
-        { label: "Review queue", href: "/projects?filter=waiting", icon: InboxIcon },
-        ...common,
-      ]
-    }
-    return [
-      { label: "Programme overview", href: "/", icon: UserGroupIcon },
-      { label: "Review queue", href: "/projects?filter=waiting", icon: InboxIcon },
-      { label: "Measures", href: "/measures", icon: Grid02Icon },
-      { label: "Programme settings", href: "/admin", icon: Settings02Icon },
-      ...common,
-    ]
-  }, [actor])
+    const fromNav = navFor(actor.role, counts).flatMap((group) => group.items)
+    const extras =
+      actor.role === "student"
+        ? []
+        : [{ label: "Waiting on you", href: "/projects?filter=waiting", icon: InboxIcon }]
+    return [...fromNav, ...extras, { label: "Design system", href: "/design-system", icon: SparklesIcon }]
+  }, [actor, db])
 
   return (
     <>
@@ -108,7 +96,7 @@ export function CommandPalette() {
             <CommandInput placeholder="Search teams, projects and pages…" />
             <CommandList>
             <CommandEmpty>
-              No matches. Try a team name, a project title, or a page like “grid”.
+              No matches. Try a team name, a project title, or a page like “Checkpoints”.
             </CommandEmpty>
 
             <CommandGroup heading="Go to">

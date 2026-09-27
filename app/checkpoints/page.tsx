@@ -54,9 +54,9 @@ function OwnCheckpoints() {
         description={`${project.title} · twelve checkpoints across twenty-eight weeks.`}
         meta={
           <div className="flex items-baseline gap-3">
-            <span className="font-display text-stat">
+            <span className="text-stat text-foreground">
               {accepted}
-              <span className="text-[0.5em] font-medium text-muted-foreground">/12</span>
+              <span className="text-section font-medium text-muted-foreground">/12</span>
             </span>
             <span className="text-meta text-muted-foreground">accepted · week {week} of 28</span>
           </div>
@@ -146,7 +146,7 @@ function EveryoneGrid() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Filter by team…"
-              className="h-8 w-48 rounded-sm"
+              className="h-8 w-48 rounded-lg"
             />
             {isCoordinator(actor) && (
               <PersonCombobox
@@ -167,7 +167,7 @@ function EveryoneGrid() {
                   setMentorId(null)
                   setQuery("")
                 }}
-                className="rounded-sm px-2 py-1 text-meta text-muted-foreground hover:bg-muted"
+                className="rounded-lg px-2 py-1 text-meta text-muted-foreground hover:bg-muted"
               >
                 Clear
               </button>

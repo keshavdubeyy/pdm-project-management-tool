@@ -104,9 +104,10 @@ export default function ProjectsPage() {
                   type="button"
                   onClick={() => setFilter(chip.key)}
                   className={cn(
-                    "rounded-sm border px-2.5 py-1 text-meta font-medium transition-colors",
+                    "rounded-lg border px-2.5 py-1 text-meta font-medium",
+                    "transition-colors duration-fast-02 ease-standard",
                     filter === chip.key
-                      ? "border-foreground bg-foreground text-background"
+                      ? "border-primary bg-primary text-primary-foreground"
                       : "border-border text-muted-foreground hover:bg-muted"
                   )}
                 >
@@ -127,7 +128,7 @@ export default function ProjectsPage() {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Filter…"
-                  className="h-8 w-48 rounded-sm pl-8"
+                  className="h-8 w-48 rounded-lg pl-8"
                 />
               </div>
               {isCoordinator(actor) && (
@@ -152,7 +153,7 @@ export default function ProjectsPage() {
           body="Try a different chip, or clear the filter."
         />
       ) : (
-        <div className="overflow-hidden rounded-sm border border-border bg-card">
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
           {rows.map((row, index) => {
             const open = canViewProject(actor, row.project, db)
             const inner = (
@@ -165,7 +166,7 @@ export default function ProjectsPage() {
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <p className="font-display truncate text-[15px] font-bold tracking-[-0.02em]">
+                    <p className="truncate text-subhead text-foreground">
                       {row.team?.name ?? "Team"}
                     </p>
                     {!open && (
@@ -179,11 +180,7 @@ export default function ProjectsPage() {
                   <p className="truncate text-caption text-muted-foreground">{row.project.title}</p>
                 </div>
 
-                <ProgressCells
-                  views={row.views}
-                  onSelect={open ? setSelected : undefined}
-                  height="h-5"
-                />
+                <ProgressCells views={row.views} onSelect={open ? setSelected : undefined} />
 
                 <div className="min-w-0">
                   {row.next ? (
@@ -199,7 +196,7 @@ export default function ProjectsPage() {
                 </div>
 
                 <div className="flex items-center justify-end gap-2">
-                  <span className="font-display text-[15px] font-bold tabular-nums">
+                  <span className="text-subhead text-foreground">
                     {row.accepted}
                     <span className="text-caption font-medium text-muted-foreground">/12</span>
                   </span>
