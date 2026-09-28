@@ -1,0 +1,33 @@
+flowchart TD
+    subgraph NOW["HOW IT WORKS TODAY"]
+        direction TB
+        A1["Mentor has one message<br/>for all 7 teams"]
+        A2["Opens WhatsApp"]
+        A3["Sends it 7 separate times"]
+        A4["No record of who read it"]
+        A5["Message scrolls away<br/>Cannot be searched later"]
+        A1 --> A2 --> A3 --> A4 --> A5
+    end
+    subgraph PROP["WHAT WE ARE PROPOSING"]
+        direction TB
+        B1["Mentor writes it once"]
+        B2{"Who should see it?"}
+        B3["All my teams"]
+        B4["One team"]
+        B5["Whole batch"]
+        B6["Delivered in the app<br/>and mirrored to email"]
+        B7["Sender sees who has read it"]
+        B8["Stays attached to the project<br/>and stays searchable"]
+        B1 --> B2
+        B2 --> B3 --> B6
+        B2 --> B4 --> B6
+        B2 --> B5 --> B6
+        B6 --> B7 --> B8
+    end
+
+    classDef bad fill:#FDEDED,stroke:#C62828,color:#7F1D1D,stroke-width:1.5px
+    classDef good fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20,stroke-width:1.5px
+    classDef neutral fill:#F4F6F9,stroke:#5A6B85,color:#12243F
+    class A3,A4,A5 bad
+    class A1,A2 neutral
+    class B1,B3,B4,B5,B6,B7,B8 good

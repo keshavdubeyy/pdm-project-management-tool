@@ -1,0 +1,27 @@
+flowchart LR
+    subgraph PREP["BEFORE THE MEETING"]
+        direction TB
+        M1["Work out which of my<br/>6 to 8 teams need me<br/>Done from memory"]
+        M2["Fix meeting times<br/>Messages back and forth"]
+        M3["Recall where the team<br/>had reached<br/>No pre-read available"]
+        M1 --> M2 --> M3
+    end
+    subgraph MEET["IN THE MEETING"]
+        direction TB
+        M4["Hold the meeting"]
+        M5["Give feedback<br/>Spoken, not recorded"]
+        M6["Agree next actions<br/>Not tracked afterwards"]
+        M7["Ask again whether last<br/>time's feedback was acted on"]
+        M4 --> M5 --> M6 --> M7
+    end
+    subgraph AFTER["AFTER THE MEETING"]
+        direction TB
+        M9["Review submitted work<br/>Accept or return"]
+        M10["Send the same message<br/>to each team separately"]
+        M9 --> M10
+    end
+    PREP --> MEET --> AFTER
+    classDef problem fill:#FDEDED,stroke:#C62828,color:#7F1D1D,stroke-width:1.5px
+    classDef normal fill:#F4F6F9,stroke:#5A6B85,color:#12243F
+    class M1,M3,M5,M6,M7,M10 problem
+    class M2,M4,M9 normal

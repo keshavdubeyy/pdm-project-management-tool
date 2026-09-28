@@ -1,199 +1,483 @@
 "use client"
 
 import * as React from "react"
-import { Suspense } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { FolderLibraryIcon, Search01Icon, SearchRemoveIcon } from "@hugeicons/core-free-icons"
+import {
+  AlarmClockIcon,
+  CheckmarkCircle02Icon,
+  UserGroupIcon,
+} from "@hugeicons/core-free-icons"
 
-import { BatchCard } from "@/components/batch-card"
-import { CreateBatchSheet } from "@/components/create-batch-sheet"
-import { Button } from "@/components/ui/button"
+import { ActionItemList } from "@/components/meetings/action-items"
+import { EmptyState, PersonAvatar, SectionHeading } from "@/components/common"
+import { MilestoneSheet } from "@/components/milestones/milestone-sheet"
+import { ProgressCells } from "@/components/progress-cells"
+import { StatusPill } from "@/components/status/status-pill"
+import { describeDue, timeAgo } from "@/lib/dates"
+import { projectsFor } from "@/lib/permissions"
 import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { canManageRecords } from "@/lib/permissions"
+  actionItemsFor,
+  measures,
+  milestoneViews,
+  needsAttention,
+  personById,
+  reviewQueue,
+  upcomingFor,
+  type MilestoneView,
+} from "@/lib/selectors"
 import { useProjectsStore } from "@/lib/store"
+import { cn } from "@/lib/utils"
 
-type SortOrder = "newest" | "oldest"
-
-const SORT_LABELS: Record<SortOrder, string> = {
-  newest: "Newest batch first",
-  oldest: "Oldest batch first",
+export default function TodayPage() {
+  const { actor } = useProjectsStore()
+  if (!actor) return null
+  if (actor.role === "student") return <StudentToday />
+  if (actor.role === "mentor") return <MentorToday />
+  return <CoordinatorToday />
 }
 
-function DirectoryContent() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { projects, batches, currentUser } = useProjectsStore()
+/* -------------------------------------------------------------- shared */
 
-  const q = searchParams.get("q") ?? ""
-  const sort: SortOrder = searchParams.get("sort") === "oldest" ? "oldest" : "newest"
-
-  function updateParams(next: { q?: string; sort?: SortOrder }) {
-    const params = new URLSearchParams(searchParams.toString())
-    const nextQ = next.q ?? q
-    const nextSort = next.sort ?? sort
-
-    if (nextQ) params.set("q", nextQ)
-    else params.delete("q")
-
-    if (nextSort !== "newest") params.set("sort", nextSort)
-    else params.delete("sort")
-
-    const query = params.toString()
-    router.replace(query ? `/?${query}` : "/", { scroll: false })
-  }
-
-  const visibleProjects = projects.filter(
-    (project) => !project.archived || currentUser.role === "coordinator"
-  )
-
-  const countsByBatch = React.useMemo(() => {
-    const map = new Map<string, { total: number; ongoing: number; completed: number }>()
-    for (const batch of batches) map.set(batch.id, { total: 0, ongoing: 0, completed: 0 })
-    for (const project of visibleProjects) {
-      const entry = map.get(project.batchId)
-      if (!entry) continue
-      entry.total += 1
-      if (project.status === "ongoing") entry.ongoing += 1
-      else entry.completed += 1
-    }
-    return map
-  }, [batches, visibleProjects])
-
-  const matchingBatches = React.useMemo(() => {
-    const query = q.trim().toLowerCase()
-    const filtered = query
-      ? batches.filter((batch) => batch.label.toLowerCase().includes(query))
-      : batches
-    return [...filtered].sort((a, b) =>
-      sort === "newest"
-        ? b.createdAt.localeCompare(a.createdAt)
-        : a.createdAt.localeCompare(b.createdAt)
-    )
-  }, [batches, q, sort])
-
-  const directoryQuery = searchParams.toString()
-  const directoryHref = directoryQuery ? `/?${directoryQuery}` : "/"
-
+/** The figure the page is about, with its supporting counts beside it. Sized
+ * to be read across a meeting room, not to be looked at. */
+function Headline({
+  value,
+  unit,
+  caption,
+  aside,
+}: {
+  value: string
+  unit?: string
+  caption: string
+  aside?: { value: string; caption: string }[]
+}) {
   return (
-    <div className="flex flex-col gap-6 px-8 py-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-xl font-medium">Project directory</h1>
-          <p className="text-sm text-muted-foreground">
-            {visibleProjects.length} {visibleProjects.length === 1 ? "project" : "projects"} across{" "}
-            {batches.length} {batches.length === 1 ? "batch" : "batches"}.
-          </p>
-        </div>
-        {canManageRecords(currentUser) && <CreateBatchSheet />}
-      </div>
-
-      {batches.length > 0 && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative sm:max-w-sm sm:flex-1">
-            <HugeiconsIcon
-              icon={Search01Icon}
-              strokeWidth={2}
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              value={q}
-              onChange={(event) => updateParams({ q: event.target.value })}
-              placeholder="Search batches"
-              aria-label="Search batches"
-              className="pl-9"
-            />
-          </div>
-          <Select
-            items={SORT_LABELS}
-            value={sort}
-            onValueChange={(value) => updateParams({ sort: value as SortOrder })}
-          >
-            <SelectTrigger className="w-full sm:w-52" aria-label="Sort batches">
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest batch first</SelectItem>
-              <SelectItem value="oldest">Oldest batch first</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {batches.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <HugeiconsIcon icon={FolderLibraryIcon} strokeWidth={2} />
-            </EmptyMedia>
-            <EmptyTitle>No batches yet</EmptyTitle>
-            <EmptyDescription>
-              {canManageRecords(currentUser)
-                ? "Create a batch to start grouping projects by cohort."
-                : "The coordinator hasn't created a batch yet."}
-            </EmptyDescription>
-          </EmptyHeader>
-          {canManageRecords(currentUser) && (
-            <EmptyContent>
-              <CreateBatchSheet />
-            </EmptyContent>
+    <div className="flex flex-wrap items-end gap-x-7 gap-y-4 border-b border-border pb-6">
+      <div>
+        <p className="text-stat text-foreground">
+          {value}
+          {unit && (
+            <span className="ml-1.5 text-section font-medium text-muted-foreground">{unit}</span>
           )}
-        </Empty>
-      ) : matchingBatches.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <HugeiconsIcon icon={SearchRemoveIcon} strokeWidth={2} />
-            </EmptyMedia>
-            <EmptyTitle>No batches found</EmptyTitle>
-            <EmptyDescription>Try a different search term.</EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button variant="outline" onClick={() => updateParams({ q: "" })}>
-              Clear search
-            </Button>
-          </EmptyContent>
-        </Empty>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {matchingBatches.map((batch) => {
-            const counts = countsByBatch.get(batch.id) ?? { total: 0, ongoing: 0, completed: 0 }
-            return (
-              <BatchCard
-                key={batch.id}
-                batch={batch}
-                projectCount={counts.total}
-                ongoingCount={counts.ongoing}
-                completedCount={counts.completed}
-                backHref={directoryHref}
-              />
-            )
-          })}
-        </div>
+        </p>
+        <p className="mt-1 text-body text-muted-foreground">{caption}</p>
+      </div>
+      {aside && aside.length > 0 && (
+        <>
+          <span aria-hidden className="hidden h-10 w-px bg-border sm:block" />
+          <div className="flex flex-wrap gap-7 pb-0.5">
+            {aside.map((item) => (
+              <div key={item.caption}>
+                <p className="text-title text-foreground">{item.value}</p>
+                <p className="mt-1 text-caption text-muted-foreground">{item.caption}</p>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
 }
 
-export default function Page() {
+/** The row you are meant to act on. Tinted and led by the accent, so it reads
+ * as the next thing to do without inverting into a black slab. */
+function LoudRow({
+  eyebrow,
+  title,
+  meta,
+  action,
+  onClick,
+  tone = "loud",
+}: {
+  eyebrow: React.ReactNode
+  title: string
+  meta: string
+  action: string
+  onClick: () => void
+  tone?: "loud" | "quiet"
+}) {
   return (
-    <Suspense>
-      <DirectoryContent />
-    </Suspense>
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-center gap-4 rounded-lg border px-4 py-3 text-left",
+        "transition-colors duration-fast-02 ease-standard",
+        tone === "loud"
+          ? "border-primary/25 bg-primary-subtle hover:border-primary/40"
+          : "border-border bg-card hover:bg-muted"
+      )}
+    >
+      <span className="shrink-0">{eyebrow}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-subhead text-foreground">{title}</span>
+        <span className="mt-0.5 block truncate text-caption text-muted-foreground">{meta}</span>
+      </span>
+      <span
+        className={cn(
+          "shrink-0 rounded-lg px-3 py-1.5 text-meta font-medium whitespace-nowrap",
+          "transition-colors duration-fast-02 ease-standard",
+          tone === "loud"
+            ? "bg-primary text-primary-foreground"
+            : "border border-border-strong text-foreground"
+        )}
+      >
+        {action}
+      </span>
+    </button>
   )
+}
+
+/* ------------------------------------------------------------- student */
+
+function StudentToday() {
+  const { db, actor, currentUser, week } = useProjectsStore()
+  const [selected, setSelected] = React.useState<MilestoneView | null>(null)
+  if (!actor || !currentUser) return null
+
+  const project = projectsFor(db, actor)[0]
+  if (!project) {
+    return (
+      <EmptyState
+        icon={UserGroupIcon}
+        title="You are not on a project yet"
+        body="Your project appears here once the coordinator adds you to a team."
+      />
+    )
+  }
+
+  const views = milestoneViews(db, [project.id])
+  const upcoming = upcomingFor(db, project.id, 3)
+  const next = upcoming[0]
+  const actions = actionItemsFor(db, currentUser.id)
+  const accepted = views.filter((v) => v.status === "accepted").length
+  const due = next ? describeDue(next.dueDate) : null
+  const feedback = db.reviews
+    .filter((r) => r.projectId === project.id)
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .slice(0, 2)
+
+  return (
+    <>
+      <Headline
+        value={due ? String(Math.abs(due.days)) : "—"}
+        unit={due ? (Math.abs(due.days) === 1 ? "day" : "days") : undefined}
+        caption={
+          due
+            ? due.overdue
+              ? `overdue — ${next?.template.title}`
+              : `until ${next?.template.title}`
+            : "everything accepted"
+        }
+        aside={[
+          { value: `${accepted}/12`, caption: "accepted" },
+          { value: String(actions.length), caption: "actions open" },
+          { value: String(week), caption: "week of 28" },
+        ]}
+      />
+
+      <section>
+        <SectionHeading
+          hint="what your team owes"
+          action={
+            <Link
+              href={`/projects/${project.id}`}
+              className="text-meta font-medium underline underline-offset-2"
+            >
+              Open our project
+            </Link>
+          }
+        >
+          Due next
+        </SectionHeading>
+        <div className="space-y-2">
+          {upcoming.map((view, index) => (
+            <LoudRow
+              key={view.instance.id}
+              tone={index === 0 ? "loud" : "quiet"}
+              eyebrow={<StatusPill status={view.status} size="sm" />}
+              title={view.template.title}
+              meta={`Week ${view.dueWeek} · ${describeDue(view.dueDate).label} · ${view.instance.completedDeliverables.length} of ${view.template.deliverables.length} done`}
+              action="Open"
+              onClick={() => setSelected(view)}
+            />
+          ))}
+        </div>
+      </section>
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        <section>
+          <SectionHeading count={actions.length}>Your actions</SectionHeading>
+          {actions.length === 0 ? (
+            <EmptyState title="Nothing open" body="Actions from meetings and reviews land here." />
+          ) : (
+            <ActionItemList project={project} items={actions} allowAdd={false} />
+          )}
+        </section>
+
+        <section>
+          <SectionHeading>Recent feedback</SectionHeading>
+          {feedback.length === 0 ? (
+            <EmptyState title="No feedback yet" />
+          ) : (
+            <ul className="space-y-2">
+              {feedback.map((review) => {
+                const reviewer = personById(db, review.reviewerId)
+                return (
+                  <li
+                    key={review.id}
+                    className={cn(
+                      "rounded-lg border-l-2 px-3 py-2",
+                      review.verdict === "accept"
+                        ? "border-status-accepted-solid bg-status-accepted-bg"
+                        : "border-status-returned-solid bg-status-returned-bg"
+                    )}
+                  >
+                    <p className="flex items-center gap-1.5 text-caption">
+                      <PersonAvatar person={reviewer} size="xs" />
+                      <span className="font-medium">{reviewer?.name}</span>
+                      {review.verdict === "accept" ? "accepted" : "asked for changes"} ·{" "}
+                      {timeAgo(review.createdAt)}
+                    </p>
+                    <p className="mt-1 line-clamp-3 text-meta">{review.body}</p>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <MilestoneSheet
+        view={selected}
+        open={Boolean(selected)}
+        onOpenChange={(open) => !open && setSelected(null)}
+      />
+    </>
+  )
+}
+
+/* -------------------------------------------------------------- mentor */
+
+function MentorToday() {
+  const { db, actor } = useProjectsStore()
+  const [selected, setSelected] = React.useState<MilestoneView | null>(null)
+  if (!actor) return null
+
+  const projects = projectsFor(db, actor)
+  const queue = reviewQueue(db, actor)
+  const attention = needsAttention(db, actor)
+  const stats = measures(
+    db,
+    projects.map((p) => p.id)
+  )
+
+  return (
+    <>
+      <Headline
+        value={String(queue.length)}
+        caption={
+          queue.length === 1 ? "piece of work waiting on you" : "pieces of work waiting on you"
+        }
+        aside={[
+          { value: String(projects.length), caption: "teams" },
+          { value: String(attention.length), caption: "drifting" },
+          {
+            value:
+              stats.actionClosureRate === null
+                ? "—"
+                : `${Math.round(stats.actionClosureRate * 100)}%`,
+            caption: "actions closed",
+          },
+        ]}
+      />
+
+      <section>
+        <SectionHeading count={queue.length} hint="oldest first">
+          Waiting on you
+        </SectionHeading>
+        {queue.length === 0 ? (
+          <EmptyState icon={CheckmarkCircle02Icon} title="All reviewed. Nice work." />
+        ) : (
+          <div className="space-y-2">
+            {queue.slice(0, 5).map((view, index) => (
+              <LoudRow
+                key={view.instance.id}
+                tone={index === 0 ? "loud" : "quiet"}
+                eyebrow={<StatusPill status={view.status} size="sm" />}
+                title={view.template.title}
+                meta={`${teamName(db, view.project.teamId)} · turned in ${
+                  view.instance.submittedAt ? timeAgo(view.instance.submittedAt) : "recently"
+                }`}
+                action="Review it"
+                onClick={() => setSelected(view)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {attention.length > 0 && (
+        <section>
+          <SectionHeading count={attention.length} hint="why, not a score">
+            Drifting
+          </SectionHeading>
+          <ul className="space-y-1.5">
+            {attention.map(({ project, reasons }) => (
+              <li key={project.id}>
+                <Link
+                  href={`/projects/${project.id}`}
+                  className="flex items-start gap-3 rounded-xl border border-border px-4 py-3 transition-colors hover:bg-muted"
+                >
+                  <HugeiconsIcon
+                    icon={AlarmClockIcon}
+                    className="mt-0.5 size-4 shrink-0 text-status-returned-solid"
+                    strokeWidth={2}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-subhead text-foreground">
+                      {teamName(db, project.teamId)}
+                    </span>
+                    <span className="block text-caption text-muted-foreground">
+                      {reasons.join(" · ")}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <p className="text-caption text-muted-foreground">
+        All {projects.length} teams live under{" "}
+        <Link href="/projects" className="underline">
+          Projects
+        </Link>
+        . They are not repeated here.
+      </p>
+
+      <MilestoneSheet
+        view={selected}
+        open={Boolean(selected)}
+        onOpenChange={(open) => !open && setSelected(null)}
+      />
+    </>
+  )
+}
+
+/* --------------------------------------------------------- coordinator */
+
+function CoordinatorToday() {
+  const { db, actor, week } = useProjectsStore()
+  const [selected, setSelected] = React.useState<MilestoneView | null>(null)
+  if (!actor) return null
+
+  const projects = projectsFor(db, actor)
+  const stats = measures(db)
+  const attention = needsAttention(db, actor)
+  const queue = reviewQueue(db, actor)
+  const mentors = db.people.filter((p) => p.roles.includes("mentor"))
+
+  return (
+    <>
+      <Headline
+        value={stats.onTimeRate === null ? "—" : String(Math.round(stats.onTimeRate * 100))}
+        unit={stats.onTimeRate === null ? undefined : "%"}
+        caption={`of ${stats.dueSoFar} checkpoints due so far were on time`}
+        aside={[
+          { value: String(projects.length), caption: "projects" },
+          { value: String(attention.length), caption: "drifting" },
+          { value: String(queue.length), caption: "awaiting a mentor" },
+          { value: String(week), caption: "week of 28" },
+        ]}
+      />
+
+      <section>
+        <SectionHeading count={attention.length} hint="why, not a score">
+          Drifting
+        </SectionHeading>
+        {attention.length === 0 ? (
+          <EmptyState title="Nothing is drifting" />
+        ) : (
+          <ul className="space-y-1.5">
+            {attention.slice(0, 6).map(({ project, reasons }) => (
+              <li key={project.id}>
+                <Link
+                  href={`/projects/${project.id}`}
+                  className="flex items-center gap-4 rounded-xl border border-border px-4 py-3 transition-colors hover:bg-muted"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-subhead text-foreground">
+                      {teamName(db, project.teamId)}
+                    </span>
+                    <span className="block truncate text-caption text-muted-foreground">
+                      {project.mentorIds
+                        .map((id) => personById(db, id)?.name)
+                        .filter(Boolean)
+                        .join(", ")}{" "}
+                      · {reasons.join(" · ")}
+                    </span>
+                  </span>
+                  <span className="hidden w-56 shrink-0 md:block">
+                    <ProgressCells views={milestoneViews(db, [project.id])} />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <SectionHeading count={mentors.length}>Mentoring lines</SectionHeading>
+        <ul className="grid gap-1.5 sm:grid-cols-2">
+          {mentors.map((mentor) => {
+            const load = db.projects.filter(
+              (p) => !p.archived && p.mentorIds.includes(mentor.id)
+            ).length
+            return (
+              <li
+                key={mentor.id}
+                className="flex items-center gap-3 rounded-xl border border-border px-3 py-2.5"
+              >
+                <PersonAvatar person={mentor} size="sm" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-meta font-semibold">{mentor.name}</span>
+                  <span className="block truncate text-caption text-muted-foreground">
+                    {mentor.affiliation}
+                  </span>
+                </span>
+                <span className="shrink-0 text-title text-foreground">
+                  {load}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+
+      <p className="text-caption text-muted-foreground">
+        <Link href="/checkpoints" className="underline">
+          Checkpoints
+        </Link>{" "}
+        holds every project against every week.{" "}
+        <Link href="/measures" className="underline">
+          Measures
+        </Link>{" "}
+        holds the numbers this is judged on.
+      </p>
+
+      <MilestoneSheet
+        view={selected}
+        open={Boolean(selected)}
+        onOpenChange={(open) => !open && setSelected(null)}
+      />
+    </>
+  )
+}
+
+function teamName(db: ReturnType<typeof useProjectsStore>["db"], teamId: string) {
+  return db.teams.find((t) => t.id === teamId)?.name ?? "Team"
 }

@@ -1,0 +1,18 @@
+flowchart LR
+    subgraph L["WHAT WE START FROM"]
+        direction TB
+        A["1. A PROBLEM<br/>Something we saw in the<br/>process, or that a<br/>document already records"]
+        B["2. A FEATURE<br/>The smallest thing we can<br/>build that removes it"]
+        A --> B
+    end
+    subgraph R["HOW WE CHECK IT"]
+        direction TB
+        C["3. A MEASURE<br/>One number that shows<br/>whether it actually<br/>went away"]
+        D["4. A REVIEW<br/>Compared with the target,<br/>and dropped if it<br/>does not move"]
+        C --> D
+    end
+    L ==> R
+    classDef step fill:#EAF1F8,stroke:#1F3864,color:#12243F,stroke-width:1.5px
+    classDef fin fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20,stroke-width:1.5px
+    class A,B,C step
+    class D fin

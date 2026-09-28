@@ -1,0 +1,25 @@
+flowchart TD
+    S1["NOT STARTED"]
+    S2["IN PROGRESS<br/>Team is working on it"]
+    S3["SUBMITTED<br/>Team marks it ready"]
+    S4["UNDER REVIEW<br/>Mentor has opened it"]
+    S5["RETURNED<br/>Mentor asks for changes"]
+    S6["ACCEPTED<br/>Only the mentor can set this"]
+    S7["OVERDUE<br/>Past the due week"]
+
+    S1 --> S2 --> S3 --> S4
+    S4 --> S5 --> S2
+    S4 --> S6
+    S2 -.-> S7
+    S7 -.-> S3
+
+    classDef grey fill:#F2F2F2,stroke:#888888,color:#333333
+    classDef blue fill:#EAF1F8,stroke:#1F3864,color:#12243F,stroke-width:1.5px
+    classDef amber fill:#FFF4E5,stroke:#B26A00,color:#6B3E00,stroke-width:1.5px
+    classDef green fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20,stroke-width:2px
+    classDef red fill:#FDEDED,stroke:#C62828,color:#7F1D1D,stroke-width:1.5px
+    class S1 grey
+    class S2,S3,S4 blue
+    class S5 amber
+    class S6 green
+    class S7 red

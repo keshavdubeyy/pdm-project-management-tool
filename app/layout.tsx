@@ -1,22 +1,27 @@
+import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
+import { AppFrame } from "@/components/shell/app-frame"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
-import { RoleOnboardingDialog } from "@/components/role-onboarding-dialog"
-import { SiteHeader } from "@/components/site-header"
 import { Toaster } from "@/components/ui/toast"
 import { ProjectsProvider } from "@/lib/store"
 import { cn } from "@/lib/utils"
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
+/** One face for the whole interface, as on master. Geist carries tabular
+ *  figures, which twenty-two rows of dates and counts depend on. */
+const sans = Geist({ subsets: ["latin"], variable: "--font-sans" })
 
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-})
+/** For identifiers, timestamps and pasted links — anything read character by
+ *  character rather than as a word. */
+const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
+
+export const metadata: Metadata = {
+  title: "PDM Project Space",
+  description:
+    "Milestones, reviews, meetings and announcements for the PDM final project at IIIT Hyderabad.",
+}
 
 export default function RootLayout({
   children,
@@ -27,26 +32,14 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn(
-        "antialiased",
-        fontMono.variable,
-        "font-sans",
-        geist.variable
-      )}
+      className={cn("antialiased font-sans", sans.variable, mono.variable)}
     >
       <body>
         <ThemeProvider>
           <TooltipProvider>
             <Toaster>
               <ProjectsProvider>
-                <RoleOnboardingDialog />
-                <SidebarProvider>
-                  <AppSidebar />
-                  <SidebarInset>
-                    <SiteHeader />
-                    {children}
-                  </SidebarInset>
-                </SidebarProvider>
+                <AppFrame>{children}</AppFrame>
               </ProjectsProvider>
             </Toaster>
           </TooltipProvider>
