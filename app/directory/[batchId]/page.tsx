@@ -6,7 +6,7 @@ import { notFound, useParams, useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowLeft01Icon, LockIcon, Search01Icon } from "@hugeicons/core-free-icons"
 
-import { EmptyState, PageHeader, PersonAvatar, SectionHeading } from "@/components/common"
+import { EmptyState, PageHeader, PersonAvatar } from "@/components/common"
 import { PersonCombobox } from "@/components/person-combobox"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -25,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { canViewProject } from "@/lib/permissions"
 import { useProjectsStore } from "@/lib/store"
 import type { ProjectStatus } from "@/lib/types"
@@ -114,161 +115,168 @@ export default function BatchDirectoryPage() {
         }
       />
 
-      <section className="space-y-3">
-        <SectionHeading count={students.length}>Students</SectionHeading>
-        {students.length === 0 ? (
-          <EmptyState title="No students yet" body="Nobody is on a team in this batch." />
-        ) : (
-          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {students.map(({ person, team }) => (
-              <li
-                key={person.id}
-                className="flex items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2.5"
-              >
-                <PersonAvatar person={person} size="sm" />
-                <div className="min-w-0">
-                  <p className="truncate text-meta font-medium text-foreground">{person.name}</p>
-                  <p className="truncate text-caption text-muted-foreground">
-                    {person.rollNumber ?? "—"} · {team.name}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <Tabs defaultValue="projects">
+        <TabsList>
+          <TabsTrigger value="projects">Projects ({rows.length})</TabsTrigger>
+          <TabsTrigger value="students">Students ({students.length})</TabsTrigger>
+        </TabsList>
 
-      <section className="space-y-3">
-        <SectionHeading count={rows.length}>Projects</SectionHeading>
+        <TabsContent value="projects" className="mt-5 space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <HugeiconsIcon
+                icon={Search01Icon}
+                className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+                strokeWidth={2}
+              />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search title or team…"
+                className="h-9 w-56 rounded-lg pl-8"
+              />
+            </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <HugeiconsIcon
-              icon={Search01Icon}
-              className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
-              strokeWidth={2}
-            />
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search title or team…"
-              className="h-8 w-52 rounded-lg pl-8"
+            <Select value={domainId} onValueChange={(value) => setDomainId(value ?? "all")}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Domain" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Every domain</SelectItem>
+                {db.domains.map((domain) => (
+                  <SelectItem key={domain.id} value={domain.id}>
+                    {domain.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={status} onValueChange={(value) => setStatus((value as StatusFilter) ?? "all")}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Every status</SelectItem>
+                <SelectItem value="ongoing">Ongoing</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <PersonCombobox
+              people={mentors}
+              value={mentorId}
+              onChange={setMentorId}
+              allowEmpty
+              emptyLabel="Every mentor"
+              placeholder="Filter by mentor…"
+              className="h-9 w-52"
             />
           </div>
 
-          <Select value={domainId} onValueChange={(value) => setDomainId(value ?? "all")}>
-            <SelectTrigger size="sm" className="w-40">
-              <SelectValue placeholder="Domain" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Every domain</SelectItem>
-              {db.domains.map((domain) => (
-                <SelectItem key={domain.id} value={domain.id}>
-                  {domain.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={status} onValueChange={(value) => setStatus((value as StatusFilter) ?? "all")}>
-            <SelectTrigger size="sm" className="w-36">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Every status</SelectItem>
-              <SelectItem value="ongoing">Ongoing</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <PersonCombobox
-            people={mentors}
-            value={mentorId}
-            onChange={setMentorId}
-            allowEmpty
-            emptyLabel="Every mentor"
-            placeholder="Filter by mentor…"
-            className="w-48"
-          />
-        </div>
-
-        {rows.length === 0 ? (
-          <EmptyState title="Nothing matches" body="Try a different chip, or clear the filter." />
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Domain</TableHead>
-                  <TableHead>Team</TableHead>
-                  <TableHead>Mentor</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map(({ project, domain, team, students: teamStudents, mentorNames }) => {
-                  const open = !batch.archived && canViewProject(actor, project, db)
-                  return (
-                    <TableRow
-                      key={project.id}
-                      tabIndex={open ? 0 : undefined}
-                      role={open ? "link" : undefined}
-                      aria-label={open ? project.title : undefined}
-                      className={cn(
-                        open &&
-                          "cursor-pointer focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
-                      )}
-                      onClick={open ? () => router.push(`/projects/${project.id}`) : undefined}
-                      onKeyDown={
-                        open
-                          ? (event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault()
-                                router.push(`/projects/${project.id}`)
+          {rows.length === 0 ? (
+            <EmptyState title="Nothing matches" body="Try a different chip, or clear the filter." />
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="py-3">Title</TableHead>
+                    <TableHead className="py-3">Status</TableHead>
+                    <TableHead className="py-3">Domain</TableHead>
+                    <TableHead className="py-3">Team</TableHead>
+                    <TableHead className="py-3">Mentor</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map(({ project, domain, team, students: teamStudents, mentorNames }) => {
+                    const open = !batch.archived && canViewProject(actor, project, db)
+                    return (
+                      <TableRow
+                        key={project.id}
+                        tabIndex={open ? 0 : undefined}
+                        role={open ? "link" : undefined}
+                        aria-label={open ? project.title : undefined}
+                        className={cn(
+                          "align-top",
+                          open &&
+                            "cursor-pointer focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
+                        )}
+                        onClick={open ? () => router.push(`/projects/${project.id}`) : undefined}
+                        onKeyDown={
+                          open
+                            ? (event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault()
+                                  router.push(`/projects/${project.id}`)
+                                }
                               }
-                            }
-                          : undefined
-                      }
-                    >
-                      <TableCell className="font-medium text-foreground">
-                        <div className="flex min-w-0 items-center gap-1.5">
-                          <span className="truncate">{project.title}</span>
-                          {project.archived && (
-                            <Badge variant="destructive" className="text-micro">
-                              Archived
-                            </Badge>
-                          )}
-                          {!open && (
-                            <HugeiconsIcon
-                              icon={LockIcon}
-                              className="size-3 shrink-0 text-muted-foreground"
-                              strokeWidth={2}
-                            />
-                          )}
-                        </div>
-                        <p className="truncate text-caption text-muted-foreground">{team?.name}</p>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={project.status === "completed" ? "secondary" : "outline"}>
-                          {project.status === "completed" ? "Completed" : "Ongoing"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{domain?.label ?? "—"}</TableCell>
-                      <TableCell className="max-w-48 truncate text-muted-foreground">
-                        {teamStudents.length > 0 ? teamStudents.join(", ") : "Unassigned"}
-                      </TableCell>
-                      <TableCell className="max-w-48 truncate text-muted-foreground">
-                        {mentorNames.length > 0 ? mentorNames.join(", ") : "Unassigned"}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </section>
+                            : undefined
+                        }
+                      >
+                        <TableCell className="h-auto min-w-56 py-3.5 align-top font-medium whitespace-normal text-foreground">
+                          <div className="flex items-start gap-1.5">
+                            <span>{project.title}</span>
+                            {project.archived && (
+                              <Badge variant="destructive" className="shrink-0 text-micro">
+                                Archived
+                              </Badge>
+                            )}
+                            {!open && (
+                              <HugeiconsIcon
+                                icon={LockIcon}
+                                className="mt-0.5 size-3 shrink-0 text-muted-foreground"
+                                strokeWidth={2}
+                              />
+                            )}
+                          </div>
+                          <p className="mt-1 text-caption text-muted-foreground">{team?.name}</p>
+                        </TableCell>
+                        <TableCell className="h-auto py-3.5 align-top">
+                          <Badge variant={project.status === "completed" ? "secondary" : "outline"}>
+                            {project.status === "completed" ? "Completed" : "Ongoing"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="h-auto py-3.5 align-top text-muted-foreground">
+                          {domain?.label ?? "—"}
+                        </TableCell>
+                        <TableCell className="h-auto max-w-56 py-3.5 align-top whitespace-normal text-muted-foreground">
+                          {teamStudents.length > 0 ? teamStudents.join(", ") : "Unassigned"}
+                        </TableCell>
+                        <TableCell className="h-auto max-w-48 py-3.5 align-top whitespace-normal text-muted-foreground">
+                          {mentorNames.length > 0 ? mentorNames.join(", ") : "Unassigned"}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="students" className="mt-5">
+          {students.length === 0 ? (
+            <EmptyState title="No students yet" body="Nobody is on a team in this batch." />
+          ) : (
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {students.map(({ person, team }) => (
+                <li
+                  key={person.id}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5"
+                >
+                  <PersonAvatar person={person} size="default" />
+                  <div className="min-w-0">
+                    <p className="truncate text-subhead font-medium text-foreground">{person.name}</p>
+                    <p className="mt-0.5 truncate text-caption text-muted-foreground">
+                      {person.rollNumber ?? "—"} · {team.name}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </TabsContent>
+      </Tabs>
     </>
   )
 }
