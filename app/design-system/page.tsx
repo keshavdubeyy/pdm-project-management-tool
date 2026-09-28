@@ -1,21 +1,27 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   AlarmClockIcon,
   Attachment01Icon,
+  Calendar01Icon,
   CalendarClockIcon,
   CheckListIcon,
   CheckmarkCircle02Icon,
   DeliverySent02Icon,
+  ExternalLinkIcon,
   FilterIcon,
   Grid02Icon,
   InboxIcon,
   LegalHammerIcon,
   Megaphone01Icon,
   MilestoneIcon,
+  MoreHorizontalCircle01Icon,
   NoteEditIcon,
+  PlusSignIcon,
+  Search01Icon,
   Shield01Icon,
   UserCheck01Icon,
   UserGroupIcon,
@@ -24,11 +30,106 @@ import {
 import { DueBadge, MetricTile, PageHeader, SectionHeading } from "@/components/common"
 import { StatusLegend } from "@/components/status/status-legend"
 import { StatusGlyph, StatusPill } from "@/components/status/status-pill"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+import { Kbd, KbdGroup } from "@/components/ui/kbd"
+import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Textarea } from "@/components/ui/textarea"
+import { Toggle } from "@/components/ui/toggle"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { addDays, todayIso } from "@/lib/dates"
+import { say } from "@/lib/toast"
 import { STATUS_ORDER, statusMeta } from "@/lib/status"
+
+const UNUSED_PRIMITIVES = [
+  { name: "Accordion", note: "collapsible sections" },
+  { name: "Alert", note: "inline banner" },
+  { name: "AlertDialog", note: "confirm-then-destroy" },
+  { name: "AspectRatio", note: "ratio-locked media box" },
+  { name: "Attachment", note: "file/media chip" },
+  { name: "Breadcrumb", note: "path trail" },
+  { name: "Bubble", note: "chat bubble" },
+  { name: "ButtonGroup", note: "segmented buttons" },
+  { name: "Card", note: "the app builds cards from raw divs instead" },
+  { name: "Carousel", note: "slide viewer" },
+  { name: "Chart", note: "recharts wrapper" },
+  { name: "Collapsible", note: "single show/hide region" },
+  { name: "Combobox", note: "raw primitive — the app composes Command + Popover instead" },
+  { name: "ContextMenu", note: "right-click menu" },
+  { name: "DataTable", note: "TanStack Table wrapper" },
+  { name: "DatePicker", note: "calendar popover" },
+  { name: "Drawer", note: "bottom sheet" },
+  { name: "Empty", note: "empty state — the app uses its own EmptyState instead" },
+  { name: "Field", note: "form field layout" },
+  { name: "InputOTP", note: "one-time-code boxes" },
+  { name: "Item", note: "generic list-row layout" },
+  { name: "Marker", note: "map/canvas pin" },
+  { name: "Menubar", note: "app-menu bar" },
+  { name: "Message", note: "chat message block" },
+  { name: "MessageScroller", note: "auto-scrolling chat log" },
+  { name: "NativeSelect", note: "plain <select> wrapper" },
+  { name: "NavigationMenu", note: "mega-menu nav" },
+  { name: "Pagination", note: "page-number controls" },
+  { name: "Progress", note: "determinate bar" },
+  { name: "Questionnaire", note: "step-by-step form flow" },
+  { name: "Resizable", note: "draggable split panes" },
+  { name: "ScrollArea", note: "styled scroll container" },
+  { name: "Slider", note: "range input" },
+  { name: "Spinner", note: "loading glyph" },
+  { name: "Switch", note: "on/off toggle" },
+  { name: "ToggleGroup", note: "grouped toggles" },
+  { name: "Typography", note: "prose helpers" },
+]
 
 /** The design system, as a page in the product rather than a slide about it.
  *
@@ -37,6 +138,11 @@ import { STATUS_ORDER, statusMeta } from "@/lib/status"
  * guide stays true. */
 export default function DesignSystemPage() {
   const today = todayIso()
+  const [visibility, setVisibility] = React.useState("team_and_mentor")
+  const [pinned, setPinned] = React.useState(false)
+  const [flagged, setFlagged] = React.useState(true)
+  const [agreed, setAgreed] = React.useState(false)
+  const [decision, setDecision] = React.useState("accept")
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-8 md:px-6">
@@ -376,6 +482,258 @@ export default function DesignSystemPage() {
 
       <Separator className="my-8" />
 
+      {/* ---------------------------------------------------- components */}
+      <section>
+        <SectionHeading hint="the real import, reading the real tokens">Components</SectionHeading>
+        <p className="mb-4 max-w-2xl text-meta text-muted-foreground">
+          Twenty-five primitives from shadcn over Base UI carry the whole product — the same
+          Dialog that opens a checkpoint, the same Table that lists a batch, live below rather
+          than pictured. The registry in <code className="text-foreground">components/ui</code>{" "}
+          holds roughly thirty more that no screen imports yet; those are named at the end
+          instead of demonstrated; a component nothing calls is not part of this design system
+          yet, whatever the folder says.
+        </p>
+
+        <div className="space-y-6">
+          <ComponentGroup label="Toggle — the pressed state a filter chip is built from">
+            <div className="flex flex-wrap gap-2">
+              <Toggle pressed={pinned} onPressedChange={setPinned} variant="outline">
+                Pinned
+              </Toggle>
+              <Toggle pressed={flagged} onPressedChange={setFlagged} variant="outline">
+                Needs follow-up
+              </Toggle>
+            </div>
+          </ComponentGroup>
+
+          <ComponentGroup label="Form fields — Label, Input, Textarea, Checkbox, RadioGroup, Select, InputGroup">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="ds-name">Project name</Label>
+                <Input id="ds-name" placeholder="Attendance tracker" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ds-visibility">Who can see this</Label>
+                <Select value={visibility} onValueChange={(value) => setVisibility(value ?? "team_and_mentor")}>
+                  <SelectTrigger id="ds-visibility" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="team_and_mentor">Team and mentor</SelectItem>
+                    <SelectItem value="mentor_group">Mentor group</SelectItem>
+                    <SelectItem value="batch">Whole batch</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="ds-notes">Notes</Label>
+                <Textarea id="ds-notes" placeholder="What the mentor should know before reviewing this." />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Decision</Label>
+                <RadioGroup value={decision} onValueChange={setDecision} className="gap-2.5">
+                  <label className="flex items-center gap-2 text-meta">
+                    <RadioGroupItem value="accept" /> Accept
+                  </label>
+                  <label className="flex items-center gap-2 text-meta">
+                    <RadioGroupItem value="return" /> Return for revisions
+                  </label>
+                </RadioGroup>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Search, with an addon</Label>
+                <InputGroup>
+                  <InputGroupAddon>
+                    <HugeiconsIcon icon={Search01Icon} strokeWidth={2} className="size-4" />
+                  </InputGroupAddon>
+                  <InputGroupInput placeholder="Filter people…" />
+                </InputGroup>
+                <label className="mt-1 flex items-center gap-2 text-meta text-muted-foreground">
+                  <Checkbox checked={agreed} onCheckedChange={() => setAgreed((v) => !v)} />
+                  Notify the team once submitted
+                </label>
+              </div>
+            </div>
+          </ComponentGroup>
+
+          <ComponentGroup label="Overlays — Dialog, Sheet, Popover, DropdownMenu">
+            <div className="flex flex-wrap gap-2">
+              <Dialog>
+                <DialogTrigger render={<Button variant="outline" />}>Accept checkpoint</DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Accept this checkpoint?</DialogTitle>
+                    <DialogDescription>
+                      The team is notified immediately. This is the deliberate-stop pattern: a
+                      modal for a decision, never for a form.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+                    <DialogClose render={<Button />}>Accept</DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Sheet>
+                <SheetTrigger render={<Button variant="outline" />}>Open a milestone</SheetTrigger>
+                <SheetContent>
+                  <SheetHeader>
+                    <SheetTitle>Week 4 checkpoint</SheetTitle>
+                    <SheetDescription>
+                      A slide-over, not a modal — the grid behind it is the context for whatever
+                      gets decided in here.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <SheetFooter>
+                    <p className="text-meta text-muted-foreground">
+                      Same component as the real milestone panel, side is right by default.
+                    </p>
+                  </SheetFooter>
+                </SheetContent>
+              </Sheet>
+
+              <Popover>
+                <PopoverTrigger render={<Button variant="outline" />}>Due date</PopoverTrigger>
+                <PopoverContent className="w-64 p-3 text-meta">
+                  <div className="flex items-center gap-2 text-foreground">
+                    <HugeiconsIcon icon={Calendar01Icon} strokeWidth={2} className="size-4" />
+                    Tuesday, week 7
+                  </div>
+                  <p className="mt-1 text-muted-foreground">
+                    The full date always lives in a tooltip or a popover, never only in a relative
+                    label.
+                  </p>
+                </PopoverContent>
+              </Popover>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button variant="outline" />}>
+                  Row actions
+                  <HugeiconsIcon icon={MoreHorizontalCircle01Icon} strokeWidth={2} className="size-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>Checkpoint</DropdownMenuLabel>
+                  <DropdownMenuItem>
+                    <HugeiconsIcon icon={ExternalLinkIcon} strokeWidth={2} className="size-4" />
+                    Open in a new tab
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} className="size-4" />
+                    Add a note
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive">Withdraw submission</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </ComponentGroup>
+
+          <ComponentGroup label="Command — the list a search combobox is built from (person-combobox, ⌘K)">
+            <Command className="max-w-sm border border-border">
+              <CommandInput placeholder="Search people…" />
+              <CommandList>
+                <CommandEmpty>Nobody matches.</CommandEmpty>
+                <CommandGroup>
+                  {["Aarav Mehta", "Priya Rao", "Rohan Shah"].map((name) => (
+                    <CommandItem key={name} className="gap-2.5">
+                      <Avatar className="size-5">
+                        <AvatarFallback className="text-[9px]">
+                          {name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      {name}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </ComponentGroup>
+
+          <ComponentGroup label="Tooltip and Kbd">
+            <div className="flex flex-wrap items-center gap-4">
+              <Tooltip>
+                <TooltipTrigger render={<Button variant="outline" size="sm" />}>
+                  Hover me
+                </TooltipTrigger>
+                <TooltipContent>The full explanation goes here, not in the label.</TooltipContent>
+              </Tooltip>
+              <KbdGroup>
+                <Kbd>⌘</Kbd>
+                <Kbd>K</Kbd>
+              </KbdGroup>
+              <span className="text-meta text-muted-foreground">opens the command palette</span>
+            </div>
+          </ComponentGroup>
+
+          <ComponentGroup label="Table">
+            <div className="overflow-hidden rounded-xl border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Team</TableHead>
+                    <TableHead>Checkpoint</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[
+                    { team: "Team Nimbus", checkpoint: "Week 4", status: "accepted" as const },
+                    { team: "Team Vertex", checkpoint: "Week 4", status: "submitted" as const },
+                    { team: "Team Orbit", checkpoint: "Week 4", status: "overdue" as const },
+                  ].map((row) => (
+                    <TableRow key={row.team}>
+                      <TableCell className="font-medium text-foreground">{row.team}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.checkpoint}</TableCell>
+                      <TableCell>
+                        <StatusPill status={row.status} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </ComponentGroup>
+
+          <ComponentGroup label="Avatar, Skeleton, and a Toast">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Avatar>
+                  <AvatarFallback>PR</AvatarFallback>
+                </Avatar>
+                <div className="space-y-1.5">
+                  <Skeleton className="h-3 w-28" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => say("Saved", "This is what an off-screen confirmation looks like.")}
+              >
+                Fire a toast
+              </Button>
+            </div>
+          </ComponentGroup>
+        </div>
+
+        <p className="mt-6 max-w-2xl text-caption text-muted-foreground">
+          Not yet imported anywhere in the app —{" "}
+          {UNUSED_PRIMITIVES.map((p, i) => (
+            <React.Fragment key={p.name}>
+              <span className="font-medium text-foreground/80">{p.name}</span>
+              <span> ({p.note})</span>
+              {i < UNUSED_PRIMITIVES.length - 1 ? ", " : "."}
+            </React.Fragment>
+          ))}
+        </p>
+      </section>
+
+      <Separator className="my-8" />
+
       {/* ----------------------------------------------------- the rules */}
       <section>
         <SectionHeading>The rules, in short</SectionHeading>
@@ -433,6 +791,15 @@ export default function DesignSystemPage() {
           the build rather than letting a colour drift.
         </p>
       </section>
+    </div>
+  )
+}
+
+function ComponentGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <p className="mb-3 text-th text-muted-foreground uppercase">{label}</p>
+      {children}
     </div>
   )
 }
