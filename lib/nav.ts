@@ -1,6 +1,7 @@
 import {
   Analytics01Icon,
   CalendarCheckIn01Icon,
+  Flag02Icon,
   Grid02Icon,
   Megaphone01Icon,
   Settings02Icon,
@@ -12,7 +13,7 @@ import type { Role } from "@/lib/types"
 
 /** Navigation and reach, defined once.
  *
- * Every role gets the SAME four words. What differs is how much sits inside
+ * Every role gets the SAME words. What differs is how much sits inside
  * them: Projects is one project for a student, six for a mentor, twenty-two for
  * the coordinator. Naming the first item "My work", "My teams" or "Programme"
  * depending on who you were meant nobody could be told where to click.
@@ -43,6 +44,7 @@ export function navFor(role: Role, counts: { projects: number; waiting: number }
     { label: "Checkpoints", href: "/checkpoints", icon: CalendarCheckIn01Icon },
     { label: "Messages", href: "/messages", icon: Megaphone01Icon },
     { label: "Directory", href: "/directory", icon: UserGroupIcon },
+    { label: "Updates", href: "/updates", icon: Flag02Icon },
   ]
 
   if (role !== "coordinator") return [{ items: main }]
