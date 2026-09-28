@@ -43,9 +43,18 @@ const IGNORE = [
 ]
 
 const ROUTES = {
-  coordinator: ["/", "/projects", "/checkpoints", "/messages", "/directory", "/measures", "/admin"],
-  mentor: ["/", "/projects", "/checkpoints", "/messages", "/directory"],
-  student: ["/", "/projects", "/checkpoints", "/messages", "/directory"],
+  coordinator: [
+    "/",
+    "/projects",
+    "/checkpoints",
+    "/messages",
+    "/directory",
+    "/directory/b-2025-2027",
+    "/measures",
+    "/admin",
+  ],
+  mentor: ["/", "/projects", "/checkpoints", "/messages", "/directory", "/directory/b-2025-2027"],
+  student: ["/", "/projects", "/checkpoints", "/messages", "/directory", "/directory/b-2025-2027"],
 }
 
 const WHO = {
