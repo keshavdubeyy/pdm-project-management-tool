@@ -13,7 +13,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { Skeleton } from "@/components/ui/skeleton"
 import { useProjectsStore } from "@/lib/store"
 
-const PUBLIC_ROUTES = ["/signin", "/design-system"]
+const PUBLIC_ROUTES = ["/signin", "/design-system", "/updates"]
 
 /** The frame around every page, and the gate in front of it.
  *

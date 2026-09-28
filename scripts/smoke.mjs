@@ -52,9 +52,26 @@ const ROUTES = {
     "/directory/b-2025-2027",
     "/measures",
     "/admin",
+    "/updates",
   ],
-  mentor: ["/", "/projects", "/checkpoints", "/messages", "/directory", "/directory/b-2025-2027"],
-  student: ["/", "/projects", "/checkpoints", "/messages", "/directory", "/directory/b-2025-2027"],
+  mentor: [
+    "/",
+    "/projects",
+    "/checkpoints",
+    "/messages",
+    "/directory",
+    "/directory/b-2025-2027",
+    "/updates",
+  ],
+  student: [
+    "/",
+    "/projects",
+    "/checkpoints",
+    "/messages",
+    "/directory",
+    "/directory/b-2025-2027",
+    "/updates",
+  ],
 }
 
 const WHO = {

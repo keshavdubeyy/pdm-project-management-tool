@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
+  Flag02Icon,
   InboxIcon,
   MilestoneIcon,
   Search01Icon,
@@ -70,7 +71,12 @@ export function CommandPalette() {
       actor.role === "student"
         ? []
         : [{ label: "Waiting on you", href: "/projects?filter=waiting", icon: InboxIcon }]
-    return [...fromNav, ...extras, { label: "Design system", href: "/design-system", icon: SparklesIcon }]
+    return [
+      ...fromNav,
+      ...extras,
+      { label: "Design system", href: "/design-system", icon: SparklesIcon },
+      { label: "Project progress", href: "/updates", icon: Flag02Icon },
+    ]
   }, [actor, db])
 
   return (
