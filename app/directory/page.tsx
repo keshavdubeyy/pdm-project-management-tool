@@ -1,9 +1,14 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { LockIcon, Search01Icon } from "@hugeicons/core-free-icons"
 
-import { EmptyState, PageHeader, PersonAvatar } from "@/components/common"
+import { EmptyState, PageHeader } from "@/components/common"
+import { PersonCombobox } from "@/components/person-combobox"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -20,115 +25,200 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ROLE_LABEL } from "@/lib/permissions"
+import { canViewProject, isCoordinator } from "@/lib/permissions"
 import { useProjectsStore } from "@/lib/store"
-import type { Person, Role } from "@/lib/types"
+import type { ProjectStatus } from "@/lib/types"
+import { cn } from "@/lib/utils"
 
-type RoleFilter = "all" | Role
+type StatusFilter = "all" | ProjectStatus
 
-/** Every person in the batch, in one register.
+/** Every project in the batch, in one register.
  *
- * The prototype this replaced had a directory as its whole personality — this
- * one is a single page inside a lifecycle, but the question "who is this and
- * how do I reach them" is still asked often enough to deserve its own place
- * rather than a hover card three clicks deep in the grid.
+ * The prototype this replaced was a directory as its whole personality — a
+ * table of every team, mentor and domain, nothing scoped to "your reach". That
+ * plain registry is still asked for often enough — "which domain is this
+ * batch light on", "who is Team Vertex's mentor" — to deserve its own page,
+ * separate from /projects, which answers a different question: not "what
+ * exists" but "what needs me today".
  */
 export default function DirectoryPage() {
+  const router = useRouter()
   const { db, actor } = useProjectsStore()
   const [query, setQuery] = React.useState("")
-  const [roleFilter, setRoleFilter] = React.useState<RoleFilter>("all")
+  const [domainId, setDomainId] = React.useState<string>("all")
+  const [status, setStatus] = React.useState<StatusFilter>("all")
+  const [mentorId, setMentorId] = React.useState<string | null>(null)
+  const [showArchived, setShowArchived] = React.useState(false)
 
   if (!actor) return null
 
-  const projectFor = (person: Person) => {
-    const team = db.teams.find((t) => t.memberIds.includes(person.id))
-    return team ? db.projects.find((p) => p.teamId === team.id) : undefined
-  }
-
+  const mentors = db.people.filter((p) => p.roles.includes("mentor"))
   const q = query.trim().toLowerCase()
-  const people = db.people
-    .filter((p) => roleFilter === "all" || p.roles.includes(roleFilter))
-    .filter(
-      (p) =>
-        !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.email.toLowerCase().includes(q) ||
-        (p.rollNumber ?? "").toLowerCase().includes(q)
-    )
-    .sort((a, b) => a.name.localeCompare(b.name))
+
+  const rows = db.projects
+    .filter((project) => showArchived || !project.archived)
+    .filter((project) => domainId === "all" || project.domainId === domainId)
+    .filter((project) => status === "all" || project.status === status)
+    .filter((project) => !mentorId || project.mentorIds.includes(mentorId))
+    .map((project) => {
+      const batch = db.batches.find((b) => b.id === project.batchId)
+      const domain = db.domains.find((d) => d.id === project.domainId)
+      const team = db.teams.find((t) => t.id === project.teamId)
+      const students = (team?.memberIds ?? [])
+        .map((id) => db.people.find((p) => p.id === id)?.name)
+        .filter((name): name is string => Boolean(name))
+      const mentorNames = project.mentorIds
+        .map((id) => db.people.find((p) => p.id === id)?.name)
+        .filter((name): name is string => Boolean(name))
+      return { project, batch, domain, team, students, mentorNames }
+    })
+    .filter(({ project, team }) => {
+      if (!q) return true
+      const hay = `${project.title} ${team?.name ?? ""} ${project.description}`.toLowerCase()
+      return hay.includes(q)
+    })
+    .sort((a, b) => a.project.title.localeCompare(b.project.title))
 
   return (
     <>
       <PageHeader
         title="Directory"
-        description="Every student and mentor in this batch, and how to reach them."
+        description={`${rows.length} ${rows.length === 1 ? "project" : "projects"} across ${db.batches.length} ${db.batches.length === 1 ? "batch" : "batches"}.`}
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search by name, roll number or email…"
-          className="max-w-xs"
-        />
-        <Select
-          value={roleFilter}
-          onValueChange={(value) => setRoleFilter((value as RoleFilter) ?? "all")}
-        >
-          <SelectTrigger size="sm" className="w-44">
-            <SelectValue />
+        <div className="relative">
+          <HugeiconsIcon
+            icon={Search01Icon}
+            className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+            strokeWidth={2}
+          />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search title or team…"
+            className="h-8 w-52 rounded-lg pl-8"
+          />
+        </div>
+
+        <Select value={domainId} onValueChange={(value) => setDomainId(value ?? "all")}>
+          <SelectTrigger size="sm" className="w-40">
+            <SelectValue placeholder="Domain" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All roles</SelectItem>
-            <SelectItem value="student">Students</SelectItem>
-            <SelectItem value="mentor">Mentors</SelectItem>
-            <SelectItem value="coordinator">Coordinators</SelectItem>
+            <SelectItem value="all">Every domain</SelectItem>
+            {db.domains.map((domain) => (
+              <SelectItem key={domain.id} value={domain.id}>
+                {domain.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
-        <span className="text-meta text-muted-foreground">
-          {people.length} {people.length === 1 ? "person" : "people"}
-        </span>
+
+        <Select value={status} onValueChange={(value) => setStatus((value as StatusFilter) ?? "all")}>
+          <SelectTrigger size="sm" className="w-36">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Every status</SelectItem>
+            <SelectItem value="ongoing">Ongoing</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <PersonCombobox
+          people={mentors}
+          value={mentorId}
+          onChange={setMentorId}
+          allowEmpty
+          emptyLabel="Every mentor"
+          placeholder="Filter by mentor…"
+          className="w-48"
+        />
+
+        {isCoordinator(actor) && (
+          <label className="flex items-center gap-1.5 text-meta text-muted-foreground">
+            <Checkbox checked={showArchived} onCheckedChange={() => setShowArchived((v) => !v)} />
+            Include archived
+          </label>
+        )}
       </div>
 
-      {people.length === 0 ? (
-        <EmptyState title="Nobody matches" body="Try a different name, roll number or role." />
+      {rows.length === 0 ? (
+        <EmptyState title="Nothing matches" body="Try a different chip, or clear the filter." />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Roll number</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Team / project</TableHead>
-                <TableHead>Contact</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Batch</TableHead>
+                <TableHead>Domain</TableHead>
+                <TableHead>Team</TableHead>
+                <TableHead>Mentor</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {people.map((person) => {
-                const project = projectFor(person)
-                return (
-                  <TableRow key={person.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <PersonAvatar person={person} size="xs" />
-                        <span className="font-medium text-foreground">{person.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">
-                      {person.rollNumber ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {person.roles.map((role) => (
-                          <Badge key={role} variant="outline" className="text-micro">
-                            {ROLE_LABEL[role]}
+              {rows.map(({ project, batch, domain, team, students, mentorNames }) => {
+                const open = canViewProject(actor, project, db)
+                const cells = (
+                  <>
+                    <TableCell className="font-medium text-foreground">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate">{project.title}</span>
+                        {project.archived && (
+                          <Badge variant="destructive" className="text-micro">
+                            Archived
                           </Badge>
-                        ))}
+                        )}
+                        {!open && (
+                          <HugeiconsIcon
+                            icon={LockIcon}
+                            className="size-3 shrink-0 text-muted-foreground"
+                            strokeWidth={2}
+                          />
+                        )}
                       </div>
+                      <p className="truncate text-caption text-muted-foreground">{team?.name}</p>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{project?.title ?? "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{person.email}</TableCell>
+                    <TableCell>
+                      <Badge variant={project.status === "completed" ? "secondary" : "outline"}>
+                        {project.status === "completed" ? "Completed" : "Ongoing"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{batch?.label ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{domain?.label ?? "—"}</TableCell>
+                    <TableCell className="max-w-48 truncate text-muted-foreground">
+                      {students.length > 0 ? students.join(", ") : "Unassigned"}
+                    </TableCell>
+                    <TableCell className="max-w-48 truncate text-muted-foreground">
+                      {mentorNames.length > 0 ? mentorNames.join(", ") : "Unassigned"}
+                    </TableCell>
+                  </>
+                )
+                return (
+                  <TableRow
+                    key={project.id}
+                    tabIndex={open ? 0 : undefined}
+                    role={open ? "link" : undefined}
+                    aria-label={open ? project.title : undefined}
+                    className={cn(
+                      open && "cursor-pointer focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
+                    )}
+                    onClick={open ? () => router.push(`/projects/${project.id}`) : undefined}
+                    onKeyDown={
+                      open
+                        ? (event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault()
+                              router.push(`/projects/${project.id}`)
+                            }
+                          }
+                        : undefined
+                    }
+                  >
+                    {cells}
                   </TableRow>
                 )
               })}
