@@ -48,7 +48,7 @@ export default function DirectoryPage() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate text-subhead text-foreground">{batch.label}</p>
-                  <Badge variant={batch.archived ? "outline" : "default"} className="shrink-0 text-micro">
+                  <Badge variant={batch.archived ? "outline" : "secondary"} className="shrink-0 text-micro">
                     {batch.archived ? "Past" : "Current"}
                   </Badge>
                 </div>

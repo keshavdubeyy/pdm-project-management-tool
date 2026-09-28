@@ -109,7 +109,7 @@ export default function BatchDirectoryPage() {
         title={batch.label}
         description={`${batch.admissionYear}–${batch.graduationYear}${batch.description ? ` · ${batch.description}` : ""}`}
         actions={
-          <Badge variant={batch.archived ? "outline" : "default"}>
+          <Badge variant={batch.archived ? "outline" : "secondary"}>
             {batch.archived ? "Past" : "Current"}
           </Badge>
         }
@@ -259,7 +259,7 @@ export default function BatchDirectoryPage() {
             <EmptyState title="No students yet" body="Nobody is on a team in this batch." />
           ) : (
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {students.map(({ person, team }) => (
+              {students.map(({ person }) => (
                 <li
                   key={person.id}
                   className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5"
@@ -268,7 +268,7 @@ export default function BatchDirectoryPage() {
                   <div className="min-w-0">
                     <p className="truncate text-subhead font-medium text-foreground">{person.name}</p>
                     <p className="mt-0.5 truncate text-caption text-muted-foreground">
-                      {person.rollNumber ?? "—"} · {team.name}
+                      {person.rollNumber ?? "—"}
                     </p>
                   </div>
                 </li>
