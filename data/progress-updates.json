@@ -94,6 +94,69 @@
         }
       ],
       "lastIncludedCommit": "fa8c76edd5bf363a529d201d416ecc62c470fde8"
+    },
+    {
+      "id": "2026-09-28-weeks-5-7",
+      "status": "published",
+      "weekStart": 5,
+      "weekEnd": 7,
+      "periodStart": "2026-09-12",
+      "periodEnd": "2026-09-28",
+      "title": "Every must-have feature built, and the design system rebuilt twice to get it right",
+      "summary": "This period turned the project directory into the full lifecycle system the feature plan promised — all forty must-have features are in the running app, verified with a scripted two-tab test. The interface direction was tried twice along the way: a bold display-type redesign was rejected at review as unprofessional for this tool's real audience, so it was rebuilt a second time into a refined, warm-neutral academic system, documented live at /design-system. The Directory (batches, rosters, the project register) came back after the redesign had folded it away, and a run of consistency fixes closed out the period.",
+      "completed": [
+        "Wrote the 28-week workflow map (docs/01-workflow-map.md): phases, per-stakeholder loops, a friction register (F1–F29), known-vs-must-validate assumptions, a scan of about 40 comparable tools, and the public IIITH graduation-projects archive.",
+        "Wrote the MoSCoW feature catalogue (docs/02-feature-catalogue-moscow.md): 162 features across 17 modules, each traced to the friction it removes — 40 Must, 57 Should, 46 Could, 17 Delighter, 2 explicit Won't.",
+        "Turned both into submission-ready Word documents (PDM-Workflow-Report.docx, PDM-Feature-Plan.docx) for faculty review, with the process drawn as diagrams and a build pipeline that renders real page numbers.",
+        "Verified the full feature build with a scripted two-tab run covering submit, review, return-with-reason, and the permission boundary, plus a browser smoke test across every screen and overlay as all three roles."
+      ],
+      "added": [
+        "All forty must-have features from the catalogue, built into the app: a real milestone lifecycle (12 checkpoints per team, not-started through accepted), turn-in/review/accept-or-return with a required reason, meetings with minutes and owned actions, announcements with a live audience count, and a 22×12 grid built as an accessible ARIA grid rather than a table.",
+        "A live, documented design system at /design-system — now with a full component gallery showing every UI primitive the app actually imports, plus a note of what's still unused.",
+        "npm run contrast: recomputes all 42 colour-contrast rules from the token file and fails the build if one drifts.",
+        "npm run smoke: drives a real browser through every screen and every overlay as all three roles.",
+        "The Directory restored as its own page: a batch index, then a batch's roster and its project register (title, domain, team, mentor, status), searchable and filterable.",
+        "Project progress (this page) reconnected to the sidebar — it existed with real content but had no link anywhere in the app since the redesign."
+      ],
+      "improved": [
+        "Navigation restructured to the same words for every role — Today, Projects, Checkpoints, Messages, Directory, Updates — with the coordinator's Programme group beneath, read from one file so the sidebar and the command palette can't drift apart.",
+        "Colour, radius and motion rebuilt around a warm neutral ground with one indigo accent: radius graduated by role instead of one value everywhere, and three easing curves reconciled against real accessibility numbers.",
+        "Form fields — Select, Textarea, Checkbox, RadioGroup, and the command-palette search box — brought to the same plain white/bordered look as a text input, instead of a heavier grey fill that made them read as a different, inconsistent design.",
+        "The batch/project register given room to breathe: Students split into its own tab instead of stacking under Projects, table rows size to their content instead of truncating long titles, and a status badge that was misusing the one-accent-per-screen colour was toned down to a muted variant."
+      ],
+      "fixed": [
+        "Two overlay crashes (the account menu, the command palette) caused by assuming a component's API instead of reading it — both are now covered by the smoke test.",
+        "Contrast failures found while rebuilding the system: an invisible \"not started\" status glyph, input borders under the WCAG boundary minimum, and white text on the dark-mode accent.",
+        "A mentor-allocation warning that flagged a real mentor's ten teams as a data conflict, when the number was simply correct — removed rather than changing the data to fit the check."
+      ],
+      "removed": [
+        "The display-type redesign tried mid-period (Bricolage Grotesque, a lime accent, 2–3px radius) — reverted after review as unprofessional for professors and external faculty looking at one projected screen."
+      ],
+      "blockers": [
+        "Still no coordinator confirmation on the two open questions from the last update: what fields a project record actually needs, and who should own entering them.",
+        "The mentor allocation is still the batch's registration-form data, unconfirmed against the coordinator's real mentoring lines — the roster stays a draft, not a record, until that's settled."
+      ],
+      "unfinished": [
+        "Nothing was shown to students or mentors this period; no new testing or feedback was recorded.",
+        "No real authentication or persistence yet — the role switcher and a store that resets on refresh still stand in for both."
+      ],
+      "approachChange": "The interface was rebuilt twice this period. The first pass chose a bold display-type direction — Bricolage Grotesque, a lime accent, radii dropped to 2–3px — to make the tool look distinct. It was rejected at review as unprofessional for the audience this tool is actually for: professors and external faculty, often looking at one projected screen in a supervision meeting. Rather than patch it, the system was rebuilt a second time around a warm-neutral, indigo-accented, contrast-checked system — the one live now at /design-system.",
+      "nextSteps": [
+        "Get the coordinator's answer on the two open questions, and get the mentor allocation numbers confirmed.",
+        "Show the rebuilt interface and the restored Directory to students and mentors, and record what's learned.",
+        "Real authentication and a real database are still next — the role switcher and the reset-on-refresh store were always meant to be stand-ins."
+      ],
+      "evidence": [
+        {
+          "label": "Live prototype",
+          "url": "https://pdm-project-manager.vercel.app"
+        },
+        {
+          "label": "GitHub repository",
+          "url": "https://github.com/keshavdubeyy/pdm-project-management-tool"
+        }
+      ],
+      "lastIncludedCommit": "3d2f15b1f62cfe5966d286fa41f14960efab28de"
     }
   ]
 }
