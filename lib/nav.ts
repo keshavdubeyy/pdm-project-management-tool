@@ -5,6 +5,7 @@ import {
   Megaphone01Icon,
   Settings02Icon,
   Target01Icon,
+  UserGroupIcon,
 } from "@hugeicons/core-free-icons"
 
 import type { Role } from "@/lib/types"
@@ -41,6 +42,7 @@ export function navFor(role: Role, counts: { projects: number; waiting: number }
     },
     { label: "Checkpoints", href: "/checkpoints", icon: CalendarCheckIn01Icon },
     { label: "Messages", href: "/messages", icon: Megaphone01Icon },
+    { label: "Directory", href: "/directory", icon: UserGroupIcon },
   ]
 
   if (role !== "coordinator") return [{ items: main }]
