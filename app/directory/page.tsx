@@ -1,9 +1,11 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { EmptyState, PageHeader } from "@/components/common"
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/untitled/base/badges/badges"
 import { useProjectsStore } from "@/lib/store"
 
 /** Every batch the programme has run, each a door into its own roster and
@@ -14,16 +16,27 @@ import { useProjectsStore } from "@/lib/store"
  * it is the first thing this page asks: which one, then who and what.
  */
 export default function DirectoryPage() {
+  const router = useRouter()
   const { db, actor } = useProjectsStore()
-  if (!actor) return null
+  const isStudent = actor?.role === "student"
 
-  const batches = [...db.batches].sort((a, b) => b.admissionYear - a.admissionYear)
+  // The directory is hidden from students for now, including by address.
+  React.useEffect(() => {
+    if (isStudent) router.replace("/")
+  }, [isStudent, router])
+
+  if (!actor || isStudent) return null
+
+  const batches = [...db.batches].sort(
+    (a, b) => b.admissionYear - a.admissionYear
+  )
 
   return (
     <>
       <PageHeader
+        divider={false}
         title="Directory"
-        description={`${db.batches.length} ${db.batches.length === 1 ? "batch" : "batches"} in the programme.`}
+        description="Every batch the programme has run."
       />
 
       {batches.length === 0 ? (
@@ -47,8 +60,14 @@ export default function DirectoryPage() {
                 className="rounded-xl border border-border bg-card p-4 transition-colors duration-fast-02 ease-standard hover:bg-muted/60"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-subhead text-foreground">{batch.label}</p>
-                  <Badge variant={batch.archived ? "outline" : "secondary"} className="shrink-0 text-micro">
+                  <p className="truncate text-subhead text-foreground">
+                    {batch.label}
+                  </p>
+                  <Badge
+                    size="sm"
+                    color={batch.archived ? "gray" : "brand"}
+                    className="shrink-0"
+                  >
                     {batch.archived ? "Past" : "Current"}
                   </Badge>
                 </div>
@@ -56,7 +75,8 @@ export default function DirectoryPage() {
                   {batch.admissionYear}–{batch.graduationYear}
                 </p>
                 <p className="mt-3 text-meta text-muted-foreground">
-                  {projects.length} {projects.length === 1 ? "project" : "projects"} ·{" "}
+                  {projects.length}{" "}
+                  {projects.length === 1 ? "project" : "projects"} ·{" "}
                   {studentCount} {studentCount === 1 ? "student" : "students"}
                 </p>
               </Link>

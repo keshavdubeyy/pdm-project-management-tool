@@ -1,21 +1,25 @@
 "use client"
 
 import * as React from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Grid02Icon } from "@hugeicons/core-free-icons"
-
 import { BatchGrid, type BatchGridRow } from "@/components/grid/batch-grid"
 import { EmptyState, PageHeader } from "@/components/common"
 import { MilestoneRail } from "@/components/milestones/milestone-rail"
 import { MilestoneSheet } from "@/components/milestones/milestone-sheet"
 import { PersonCombobox } from "@/components/person-combobox"
 import { StatusLegend } from "@/components/status/status-legend"
-import { Input } from "@/components/ui/input"
+import { Input } from "@/components/untitled/base/input/input"
 import { isCoordinator, projectsFor } from "@/lib/permissions"
-import { milestoneViews, personById, statusCounts, type MilestoneView } from "@/lib/selectors"
+import {
+  milestoneViews,
+  personById,
+  statusCounts,
+  type MilestoneView,
+} from "@/lib/selectors"
 import { useProjectsStore } from "@/lib/store"
 import type { MilestoneStatus } from "@/lib/types"
 import { cn } from "@/lib/utils"
+
+import { Grid01 } from "@untitledui/icons"
 
 /** The calendar, at the scope your role has.
  *
@@ -56,9 +60,13 @@ function OwnCheckpoints() {
           <div className="flex items-baseline gap-3">
             <span className="text-stat text-foreground">
               {accepted}
-              <span className="text-section font-medium text-muted-foreground">/12</span>
+              <span className="text-section font-medium text-muted-foreground">
+                /12
+              </span>
             </span>
-            <span className="text-meta text-muted-foreground">accepted · week {week} of 28</span>
+            <span className="text-meta text-muted-foreground">
+              accepted · week {week} of 28
+            </span>
           </div>
         }
       />
@@ -126,7 +134,9 @@ function EveryoneGrid() {
           label: team?.name ?? project.title,
           sublabel:
             project.mentorIds
-              .map((id) => personById(db, id)?.name.replace(/^Dr\.\s*/, "") ?? "")
+              .map(
+                (id) => personById(db, id)?.name.replace(/^Dr\.\s*/, "") ?? ""
+              )
               .filter(Boolean)
               .join(", ") || "No mentor",
           cells,
@@ -144,9 +154,9 @@ function EveryoneGrid() {
           <div className="flex flex-wrap items-center gap-2">
             <Input
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={setQuery}
               placeholder="Filter by team…"
-              className="h-8 w-48 rounded-lg"
+              className="w-48"
             />
             {isCoordinator(actor) && (
               <PersonCombobox
@@ -181,19 +191,26 @@ function EveryoneGrid() {
         active={statuses}
         onToggle={(status) =>
           setStatuses((prev) =>
-            prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+            prev.includes(status)
+              ? prev.filter((s) => s !== status)
+              : [...prev, status]
           )
         }
       />
 
       {rows.length === 0 ? (
         <EmptyState
-          icon={Grid02Icon}
-          title="Nothing matches those filters"
-          body="Try clearing the status filter or choosing a different mentor."
+          icon={Grid01}
+          title="No matches"
+          body="Try a different filter, or clear it."
         />
       ) : (
-        <BatchGrid rows={rows} columns={columns} currentWeek={week} onSelect={setSelected} />
+        <BatchGrid
+          rows={rows}
+          columns={columns}
+          currentWeek={week}
+          onSelect={setSelected}
+        />
       )}
 
       <MilestoneSheet

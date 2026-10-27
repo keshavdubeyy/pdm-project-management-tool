@@ -26,10 +26,16 @@ export default function MeasuresPage() {
     {
       ref: "K1",
       label: "On-time deliverable rate",
-      value: stats.onTimeRate === null ? "No data yet" : `${Math.round(stats.onTimeRate * 100)}%`,
+      value:
+        stats.onTimeRate === null
+          ? "No data yet"
+          : `${Math.round(stats.onTimeRate * 100)}%`,
       target: "Baseline, then +20 points",
       hint: `${stats.dueSoFar} checkpoints due so far`,
-      tone: stats.onTimeRate !== null && stats.onTimeRate < 0.6 ? ("warn" as const) : ("good" as const),
+      tone:
+        stats.onTimeRate !== null && stats.onTimeRate < 0.6
+          ? ("warn" as const)
+          : ("good" as const),
     },
     {
       ref: "K2",
@@ -66,7 +72,8 @@ export default function MeasuresPage() {
       target: "Above 80%",
       hint: "Any recorded work in the last seven days",
       tone:
-        stats.totalTeams > 0 && stats.teamsActiveThisWeek / stats.totalTeams < 0.8
+        stats.totalTeams > 0 &&
+        stats.teamsActiveThisWeek / stats.totalTeams < 0.8
           ? ("warn" as const)
           : ("good" as const),
     },
@@ -134,14 +141,17 @@ export default function MeasuresPage() {
       </section>
 
       <section>
-        <SectionHeading hint="every checkpoint in scope">Spread of states</SectionHeading>
+        <SectionHeading hint="every checkpoint in scope">
+          Spread of states
+        </SectionHeading>
         <StatusLegend counts={counts} />
       </section>
 
       <p className="max-w-2xl text-caption text-muted-foreground">
-        Two of these are stated rather than measured: reaching a mentoring line in one action, and
-        producing a batch status view immediately, are properties of the system rather than numbers
-        that move. They are listed because the companion document commits to them.
+        Two of these are stated rather than measured: reaching a mentoring line
+        in one action, and producing a batch status view immediately, are
+        properties of the system rather than numbers that move. They are listed
+        because the companion document commits to them.
       </p>
     </>
   )

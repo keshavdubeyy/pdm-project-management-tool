@@ -1,39 +1,35 @@
 "use client"
 
+import { useConfirm } from "@/components/confirm-dialog"
 import * as React from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Delete02Icon, PlusSignIcon } from "@hugeicons/core-free-icons"
-
-import { EmptyState, PageHeader, PersonAvatar, SectionHeading } from "@/components/common"
+import {
+  EmptyState,
+  PageHeader,
+  PersonAvatar,
+  SectionHeading,
+} from "@/components/common"
 import { PersonCombobox } from "@/components/person-combobox"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/untitled/base/badges/badges"
+import { Button } from "@/components/untitled/base/buttons/button"
+import { ModalDialog } from "@/components/untitled/application/modals/modal-dialog"
+import { Input } from "@/components/untitled/base/input/input"
+import { Label } from "@/components/untitled/base/input/label"
+import { Select } from "@/components/untitled/base/select/select"
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
+} from "@/components/untitled/application/tabs/tabs"
+import { TextArea } from "@/components/untitled/base/textarea/textarea"
 import { dueDateForWeek, formatDate, formatTimestamp } from "@/lib/dates"
 import { isCoordinator } from "@/lib/permissions"
 import { personById } from "@/lib/selectors"
 import { useProjectsStore } from "@/lib/store"
 import { report } from "@/lib/toast"
 import type { MilestoneTemplateItem, Team } from "@/lib/types"
+
+import { Plus, Trash01 } from "@untitledui/icons"
 
 /** The coordinator's back room: allocation, the calendar, and the record of
  * who changed what. */
@@ -57,26 +53,26 @@ export default function AdminPage() {
         description="The calendar, who mentors whom, and a record of every decision the system has stored."
       />
 
-      <Tabs defaultValue="allocation">
-        <TabsList>
-          <TabsTrigger value="allocation">Mentor allocation</TabsTrigger>
-          <TabsTrigger value="calendar">Milestone calendar</TabsTrigger>
-          <TabsTrigger value="roster">Roster</TabsTrigger>
-          <TabsTrigger value="audit">Audit trail</TabsTrigger>
-        </TabsList>
+      <Tabs defaultSelectedKey="allocation">
+        <TabList type="underline">
+          <Tab id="allocation">Mentor allocation</Tab>
+          <Tab id="calendar">Milestone calendar</Tab>
+          <Tab id="roster">Roster</Tab>
+          <Tab id="audit">Audit trail</Tab>
+        </TabList>
 
-        <TabsContent value="allocation" className="mt-5">
+        <TabPanel id="allocation" className="mt-5">
           <AllocationTab />
-        </TabsContent>
-        <TabsContent value="calendar" className="mt-5">
+        </TabPanel>
+        <TabPanel id="calendar" className="mt-5">
           <CalendarTab />
-        </TabsContent>
-        <TabsContent value="roster" className="mt-5">
+        </TabPanel>
+        <TabPanel id="roster" className="mt-5">
           <RosterTab />
-        </TabsContent>
-        <TabsContent value="audit" className="mt-5">
+        </TabPanel>
+        <TabPanel id="audit" className="mt-5">
           <AuditTab />
-        </TabsContent>
+        </TabPanel>
       </Tabs>
     </>
   )
@@ -93,7 +89,9 @@ function AllocationTab() {
     <div className="space-y-5">
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {mentors.map((mentor) => {
-          const load = projects.filter((p) => p.mentorIds.includes(mentor.id)).length
+          const load = projects.filter((p) =>
+            p.mentorIds.includes(mentor.id)
+          ).length
           const heaviest = load >= 9
           return (
             <div
@@ -103,9 +101,13 @@ function AllocationTab() {
               <PersonAvatar person={mentor} size="sm" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-meta font-medium">{mentor.name}</p>
-                <p className="truncate text-caption text-muted-foreground">{mentor.affiliation}</p>
+                <p className="truncate text-caption text-muted-foreground">
+                  {mentor.affiliation}
+                </p>
               </div>
-              <Badge variant="secondary">{load}</Badge>
+              <Badge size="sm" color="gray">
+                {load}
+              </Badge>
             </div>
           )
         })}
@@ -122,18 +124,26 @@ function AllocationTab() {
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-meta font-medium">{team?.name}</p>
-                <p className="truncate text-caption text-muted-foreground">{project.title}</p>
+                <p className="truncate text-caption text-muted-foreground">
+                  {project.title}
+                </p>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="shrink-0 text-caption text-muted-foreground">Assigned</span>
+                <span className="shrink-0 text-caption text-muted-foreground">
+                  Assigned
+                </span>
                 <PersonCombobox
                   people={mentors}
                   value={project.mentorIds[0] ?? null}
                   onChange={(value) => {
                     if (!value) return
                     report(
-                      updateAllocation(project.id, [value], project.preferredMentorId),
+                      updateAllocation(
+                        project.id,
+                        [value],
+                        project.preferredMentorId
+                      ),
                       "Allocation updated"
                     )
                   }}
@@ -144,7 +154,9 @@ function AllocationTab() {
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="shrink-0 text-caption text-muted-foreground">Asked for</span>
+                <span className="shrink-0 text-caption text-muted-foreground">
+                  Asked for
+                </span>
                 <PersonCombobox
                   people={mentors}
                   value={project.preferredMentorId}
@@ -163,7 +175,7 @@ function AllocationTab() {
 
               {project.preferredMentorId &&
                 !project.mentorIds.includes(project.preferredMentorId) && (
-                  <Badge variant="outline" className="text-micro">
+                  <Badge size="sm" type="modern" color="gray">
                     reassigned
                   </Badge>
                 )}
@@ -179,7 +191,10 @@ function AllocationTab() {
 
 function CalendarTab() {
   const { db, batch, deleteMilestoneTemplateItem } = useProjectsStore()
-  const [editing, setEditing] = React.useState<MilestoneTemplateItem | null>(null)
+  const { confirm, dialog: confirmDialog } = useConfirm()
+  const [editing, setEditing] = React.useState<MilestoneTemplateItem | null>(
+    null
+  )
   const [creating, setCreating] = React.useState(false)
 
   const template = db.milestoneTemplate
@@ -189,16 +204,21 @@ function CalendarTab() {
   return (
     <div className="space-y-4">
       <p className="max-w-2xl text-meta text-muted-foreground">
-        The checkpoints are data, not something built into the app. The 2025–27 curriculum runs the
-        final project as one 24-credit unit and the 2026–28 curriculum splits it in two, so the
-        calendar has to be editable without a new release.
+        The checkpoints are data, not something built into the app. The 2025–27
+        curriculum runs the final project as one 24-credit unit and the 2026–28
+        curriculum splits it in two, so the calendar has to be editable without
+        a new release.
       </p>
 
       <SectionHeading
         count={template.length}
         action={
-          <Button size="sm" variant="outline" onClick={() => setCreating(true)}>
-            <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2} />
+          <Button
+            size="xs"
+            color="secondary"
+            onPress={() => setCreating(true)}
+            iconLeading={Plus}
+          >
             Add a checkpoint
           </Button>
         }
@@ -212,30 +232,46 @@ function CalendarTab() {
             key={item.id}
             className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5"
           >
-            <span className="w-16 shrink-0 text-meta font-semibold">W{item.dueWeek}</span>
+            <span className="w-16 shrink-0 text-meta font-semibold">
+              W{item.dueWeek}
+            </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-meta font-medium">{item.title}</p>
               <p className="truncate text-caption text-muted-foreground">
-                Semester {item.semester} · {item.phase} · {item.deliverables.length} deliverables ·
-                closes {formatDate(dueDateForWeek(item.dueWeek, batch.startDate))}
+                Semester {item.semester} · {item.phase} ·{" "}
+                {item.deliverables.length} deliverables · closes{" "}
+                {formatDate(dueDateForWeek(item.dueWeek, batch.startDate))}
               </p>
             </div>
-            {item.isGate && <Badge variant="secondary">Gate</Badge>}
-            <Button size="xs" variant="ghost" onClick={() => setEditing(item)}>
+            {item.isGate && (
+              <Badge size="sm" color="gray">
+                Gate
+              </Badge>
+            )}
+            <Button size="xs" color="tertiary" onPress={() => setEditing(item)}>
               Edit
             </Button>
             <Button
-              size="icon-xs"
-              variant="ghost"
+              size="xs"
+              color="tertiary-destructive"
               aria-label={`Remove ${item.title}`}
-              onClick={() => report(deleteMilestoneTemplateItem(item.id))}
-            >
-              <HugeiconsIcon icon={Delete02Icon} className="size-3" strokeWidth={2} />
-            </Button>
+              onPress={() =>
+                confirm({
+                  title: `Remove "${item.title}"?`,
+                  description:
+                    "It leaves the checkpoint calendar for the whole batch.",
+                  confirmLabel: "Remove",
+                  destructive: true,
+                  onConfirm: () => report(deleteMilestoneTemplateItem(item.id)),
+                })
+              }
+              iconLeading={Trash01}
+            />
           </li>
         ))}
       </ul>
 
+      {confirmDialog}
       <TemplateDialog
         item={editing}
         open={Boolean(editing) || creating}
@@ -277,75 +313,23 @@ function TemplateDialog({
   }, [item, open])
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{item ? "Edit checkpoint" : "Add a checkpoint"}</DialogTitle>
-          <DialogDescription>
-            Every project in the batch gets this checkpoint, and the grid gets a column for it.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="t-title">Title</Label>
-            <Input id="t-title" value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="t-week">Due week</Label>
-              <Input
-                id="t-week"
-                type="number"
-                min={1}
-                max={60}
-                value={dueWeek}
-                onChange={(e) => setDueWeek(Number(e.target.value))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="t-sem">Semester</Label>
-              <Select
-                value={String(semester)}
-                onValueChange={(value) => setSemester(Number(value) as 3 | 4)}
-              >
-                <SelectTrigger id="t-sem">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="3">3</SelectItem>
-                  <SelectItem value="4">4</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="t-phase">Phase</Label>
-              <Input id="t-phase" value={phase} onChange={(e) => setPhase(e.target.value)} />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="t-desc">What it is for</Label>
-            <Input
-              id="t-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="t-deliverables">Deliverables, one per line</Label>
-            <Textarea
-              id="t-deliverables"
-              rows={6}
-              value={deliverables}
-              onChange={(e) => setDeliverables(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
+    <ModalDialog
+      isOpen={open}
+      onOpenChange={onOpenChange}
+      title={<>{item ? "Edit checkpoint" : "Add a checkpoint"}</>}
+      description={
+        <>
+          Every project in the batch gets this checkpoint, and the grid gets a
+          column for it.
+        </>
+      }
+      footer={
+        <>
+          <Button color="tertiary" slot="close">
+            Cancel
+          </Button>
           <Button
-            onClick={() => {
+            onPress={() => {
               const result = saveMilestoneTemplateItem(item?.id ?? null, {
                 title,
                 phase,
@@ -364,9 +348,54 @@ function TemplateDialog({
           >
             Save
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Input label="Title" value={title} onChange={setTitle} />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1.5">
+            <Input
+              label="Due week"
+              type="number"
+              value={String(dueWeek)}
+              onChange={(value) => setDueWeek(Number(value))}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Select
+              selectedKey={String(semester)}
+              onSelectionChange={(value) => setSemester(Number(value) as 3 | 4)}
+              size="md"
+              label="Semester"
+            >
+              <Select.Item id="3" label="3" />
+              <Select.Item id="4" label="4" />
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Input label="Phase" value={phase} onChange={setPhase} />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Input
+            label="What it is for"
+            value={description}
+            onChange={setDescription}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <TextArea
+            label="Deliverables, one per line"
+            rows={6}
+            value={deliverables}
+            onChange={setDeliverables}
+          />
+        </div>
+      </div>
+    </ModalDialog>
   )
 }
 
@@ -389,14 +418,23 @@ function RosterTab() {
         {teams.map((team) => {
           const project = db.projects.find((p) => p.teamId === team.id)
           return (
-            <li key={team.id} className="rounded-xl border border-border bg-card px-3 py-2.5">
+            <li
+              key={team.id}
+              className="rounded-xl border border-border bg-card px-3 py-2.5"
+            >
               <div className="flex items-center justify-between gap-2">
                 <p className="truncate text-meta font-medium">{team.name}</p>
                 <span className="flex shrink-0 items-center gap-1">
-                  <Badge variant="outline" className="text-micro">
-                    {team.memberIds.length === 1 ? "Individual" : `${team.memberIds.length} members`}
+                  <Badge size="sm" type="modern" color="gray">
+                    {team.memberIds.length === 1
+                      ? "Individual"
+                      : `${team.memberIds.length} members`}
                   </Badge>
-                  <Button size="xs" variant="ghost" onClick={() => setEditing(team)}>
+                  <Button
+                    size="xs"
+                    color="tertiary"
+                    onPress={() => setEditing(team)}
+                  >
                     Edit
                   </Button>
                 </span>
@@ -427,7 +465,9 @@ function RosterTab() {
 
       {unassigned.length > 0 && (
         <>
-          <SectionHeading count={unassigned.length}>Not on a team</SectionHeading>
+          <SectionHeading count={unassigned.length}>
+            Not on a team
+          </SectionHeading>
           <ul className="flex flex-wrap gap-2">
             {unassigned.map((person) => (
               <li
@@ -476,48 +516,53 @@ function TeamDialog({
   if (!team) return null
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Edit team</DialogTitle>
-          <DialogDescription>
-            The name shows everywhere this team appears, including the grid.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="team-name">Team name</Label>
-            <Input id="team-name" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Who speaks for the team</Label>
-            <PersonCombobox
-              people={team.memberIds
-                .map((id) => personById(db, id))
-                .filter((p): p is NonNullable<typeof p> => Boolean(p))}
-              value={leadId}
-              onChange={setLeadId}
-              allowEmpty
-              emptyLabel="Nobody named"
-              placeholder="Find a member…"
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
+    <ModalDialog
+      isOpen={open}
+      onOpenChange={onOpenChange}
+      size="md"
+      title={<>Edit team</>}
+      description={
+        <>The name shows everywhere this team appears, including the grid.</>
+      }
+      footer={
+        <>
+          <Button color="tertiary" slot="close">
+            Cancel
+          </Button>
           <Button
-            onClick={() => {
-              const result = saveTeam(team.id, { name, memberIds: team.memberIds, leadId })
+            onPress={() => {
+              const result = saveTeam(team.id, {
+                name,
+                memberIds: team.memberIds,
+                leadId,
+              })
               if (report(result, "Team updated")) onOpenChange(false)
             }}
           >
             Save
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Input label="Team name" value={name} onChange={setName} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Who speaks for the team</Label>
+          <PersonCombobox
+            people={team.memberIds
+              .map((id) => personById(db, id))
+              .filter((p): p is NonNullable<typeof p> => Boolean(p))}
+            value={leadId}
+            onChange={setLeadId}
+            allowEmpty
+            emptyLabel="Nobody named"
+            placeholder="Find a member…"
+          />
+        </div>
+      </div>
+    </ModalDialog>
   )
 }
 
@@ -529,28 +574,36 @@ function AuditTab() {
   return (
     <div className="space-y-3">
       <p className="max-w-2xl text-meta text-muted-foreground">
-        Every status change, override and allocation edit, with who did it. A coordinator acting
-        outside their own mentoring line is recorded as an override rather than passing silently.
+        Every status change, override and allocation edit, with who did it. A
+        coordinator acting outside their own mentoring line is recorded as an
+        override rather than passing silently.
       </p>
 
       {db.audit.length === 0 ? (
         <EmptyState
-          title="Nothing recorded yet"
+          title="No activity yet"
           body="Changes made from now on will appear here."
         />
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
           {db.audit.slice(0, 80).map((event) => (
-            <li key={event.id} className="flex flex-wrap items-baseline gap-2 px-3 py-2">
+            <li
+              key={event.id}
+              className="flex flex-wrap items-baseline gap-2 px-3 py-2"
+            >
               <span className="text-caption text-muted-foreground">
                 {formatTimestamp(event.createdAt)}
               </span>
               <span className="text-meta font-medium">
                 {personById(db, event.actorId)?.name ?? "Someone"}
               </span>
-              <span className="text-meta text-muted-foreground">{event.action}</span>
+              <span className="text-meta text-muted-foreground">
+                {event.action}
+              </span>
               {event.detail && (
-                <span className="text-caption text-muted-foreground">· {event.detail}</span>
+                <span className="text-caption text-muted-foreground">
+                  · {event.detail}
+                </span>
               )}
             </li>
           ))}

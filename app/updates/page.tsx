@@ -1,7 +1,4 @@
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowDown01Icon, Link02Icon } from "@hugeicons/core-free-icons"
-
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/untitled/base/badges/badges"
 import {
   PROJECT_START_DATE,
   dateRangeLabel,
@@ -11,14 +8,14 @@ import {
   type ProgressUpdate,
 } from "@/lib/progress"
 
+import { ChevronDown, Link01 } from "@untitledui/icons"
+
 function List({ label, items }: { label: string; items?: string[] }) {
   if (!items || items.length === 0) return null
   return (
     <div>
-      <h4 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
-      </h4>
-      <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm">
+      <h4 className="text-th text-muted-foreground uppercase">{label}</h4>
+      <ul className="mt-1.5 list-disc space-y-1 pl-5 text-meta">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}
@@ -34,29 +31,27 @@ function UpdateEntry({ update }: { update: ProgressUpdate }) {
 
   return (
     <li>
-      <details className="group rounded-2xl border border-foreground/15 bg-card">
+      <details className="group rounded-xl border border-foreground/15 bg-card">
         <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
           <div className="flex flex-col gap-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="w-24 shrink-0">{weekLabel(update)}</Badge>
+              <Badge size="sm" color="brand" className="w-24 shrink-0">
+                {weekLabel(update)}
+              </Badge>
               <span className="text-xs text-muted-foreground">
                 Reporting period: {dateRangeLabel(update)}
               </span>
             </div>
-            <h3 className="font-heading text-base font-medium">{update.title}</h3>
-            <p className="text-sm text-muted-foreground">{update.summary}</p>
+            <h3 className="text-section text-foreground">{update.title}</h3>
+            <p className="text-meta text-muted-foreground">{update.summary}</p>
           </div>
-          <HugeiconsIcon
-            icon={ArrowDown01Icon}
-            strokeWidth={2}
-            className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
-          />
+          <ChevronDown className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
         </summary>
 
         <div className="flex flex-col gap-4 border-t border-foreground/15 px-5 py-4">
           {update.approachChange && (
-            <div className="rounded-xl border border-foreground/15 bg-primary/5 p-3">
-              <h4 className="text-xs font-medium tracking-wide text-primary uppercase">
+            <div className="rounded-xl border border-foreground/15 bg-brand-solid/5 p-3">
+              <h4 className="text-th text-brand-secondary uppercase">
                 Change in approach
               </h4>
               <p className="mt-1.5 text-sm">{update.approachChange}</p>
@@ -82,7 +77,7 @@ function UpdateEntry({ update }: { update: ProgressUpdate }) {
 
           {update.evidence && update.evidence.length > 0 && (
             <div>
-              <h4 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              <h4 className="text-th text-muted-foreground uppercase">
                 Evidence
               </h4>
               <div className="mt-1.5 flex flex-col gap-1">
@@ -92,9 +87,9 @@ function UpdateEntry({ update }: { update: ProgressUpdate }) {
                     href={doc.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex w-fit items-center gap-1.5 text-sm text-primary hover:underline"
+                    className="inline-flex w-fit items-center gap-1.5 text-sm text-brand-secondary hover:underline"
                   >
-                    <HugeiconsIcon icon={Link02Icon} strokeWidth={2} className="size-4" />
+                    <Link01 className="size-4" />
                     {doc.label}
                   </a>
                 ))}
@@ -113,12 +108,12 @@ export default function UpdatesPage() {
 
   return (
     <div className="px-8 py-6">
-      <h1 className="font-heading text-2xl font-medium">Project progress</h1>
-      <p className="mt-1.5 text-sm text-muted-foreground">
-        What actually changed, week by week — in plain language, backed by the real work behind
-        it.
+      <h1 className="text-page text-foreground">Project progress</h1>
+      <p className="mt-1.5 text-meta text-muted-foreground">
+        What actually changed, week by week — in plain language, backed by the
+        real work behind it.
       </p>
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-meta text-muted-foreground">
         <span>Project started {formatDate(PROJECT_START_DATE)}</span>
         {latestDate && <span>Last updated {formatDate(latestDate)}</span>}
       </div>

@@ -1,27 +1,28 @@
 "use client"
 
+import { useConfirm } from "@/components/confirm-dialog"
 import * as React from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Megaphone01Icon, PlusSignIcon, ViewIcon } from "@hugeicons/core-free-icons"
-
-import { AvatarStack, EmptyState, PageHeader, PersonAvatar } from "@/components/common"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Textarea } from "@/components/ui/textarea"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+  AvatarStack,
+  EmptyState,
+  PageHeader,
+  PersonAvatar,
+} from "@/components/common"
+import { Badge } from "@/components/untitled/base/badges/badges"
+import { Button } from "@/components/untitled/base/buttons/button"
+import { Checkbox } from "@/components/untitled/base/checkbox/checkbox"
+import { ModalDialog } from "@/components/untitled/application/modals/modal-dialog"
+import { Input } from "@/components/untitled/base/input/input"
+import { Label } from "@/components/untitled/base/input/label"
+import {
+  RadioButton,
+  RadioGroup,
+} from "@/components/untitled/base/radio-buttons/radio-buttons"
+import { TextArea } from "@/components/untitled/base/textarea/textarea"
+import {
+  Tooltip,
+  TooltipTrigger,
+} from "@/components/untitled/base/tooltip/tooltip"
 import { timeAgo } from "@/lib/dates"
 import { canAnnounceTo, isCoordinator, projectsFor } from "@/lib/permissions"
 import {
@@ -35,6 +36,8 @@ import { useProjectsStore } from "@/lib/store"
 import { report } from "@/lib/toast"
 import type { AnnouncementAudience } from "@/lib/types"
 import { cn } from "@/lib/utils"
+
+import { Announcement01, Eye, Plus } from "@untitledui/icons"
 
 /** Write it once, choose who sees it.
  *
@@ -58,9 +61,9 @@ export default function AnnouncementsPage() {
 
       {items.length === 0 ? (
         <EmptyState
-          icon={Megaphone01Icon}
-          title="Nothing announced yet"
-          body="Deadlines, schedule changes and notices to the batch will appear here."
+          icon={Announcement01}
+          title="No announcements yet"
+          body="Deadlines, schedule changes and notices to the batch appear here."
         />
       ) : (
         <ul className="space-y-3">
@@ -77,7 +80,7 @@ export default function AnnouncementsPage() {
                 key={announcement.id}
                 className={cn(
                   "rounded-xl border bg-card p-4",
-                  announcement.pinned ? "border-primary/30" : "border-border"
+                  announcement.pinned ? "border-brand/30" : "border-border"
                 )}
                 onMouseEnter={() => {
                   if (!iHaveRead) markAnnouncementRead(announcement.id)
@@ -85,12 +88,14 @@ export default function AnnouncementsPage() {
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <PersonAvatar person={author} size="xs" />
-                  <span className="text-meta font-medium">{author?.name ?? "Someone"}</span>
-                  <Badge variant="outline" className="text-micro">
+                  <span className="text-meta font-medium">
+                    {author?.name ?? "Someone"}
+                  </span>
+                  <Badge size="sm" type="modern" color="gray">
                     {describeAudience(db, announcement)}
                   </Badge>
                   {announcement.pinned && (
-                    <Badge variant="secondary" className="text-micro">
+                    <Badge size="sm" color="gray">
                       Pinned
                     </Badge>
                   )}
@@ -99,31 +104,32 @@ export default function AnnouncementsPage() {
                   </span>
                 </div>
 
-                <h2 className="mt-2 text-subhead text-foreground">{announcement.title}</h2>
+                <h2 className="mt-2 text-subhead text-foreground">
+                  {announcement.title}
+                </h2>
                 <p className="mt-1 text-meta whitespace-pre-line text-muted-foreground">
                   {announcement.body}
                 </p>
 
                 {canSeeReceipts && (
                   <div className="mt-3 flex items-center gap-2 border-t border-border pt-2.5">
-                    <HugeiconsIcon
-                      icon={ViewIcon}
-                      className="size-3.5 text-muted-foreground"
-                      strokeWidth={2}
-                    />
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={<span className="text-caption text-muted-foreground" />}
-                      >
+                    <Eye className="size-3.5 text-muted-foreground" />
+                    <Tooltip
+                      title={
+                        <>
+                          Only you and the coordinator can see this. No times,
+                          and no per-person record.
+                        </>
+                      }
+                    >
+                      <TooltipTrigger className="text-caption text-muted-foreground">
                         Seen by {readers.length} of {reach.length}
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-[260px]">
-                        Only you and the coordinator can see this. No times, and no per-person
-                        record.
-                      </TooltipContent>
                     </Tooltip>
                     <AvatarStack
-                      people={readers.map((personId) => personById(db, personId))}
+                      people={readers.map((personId) =>
+                        personById(db, personId)
+                      )}
                       max={5}
                       className="ml-1"
                     />
@@ -142,24 +148,34 @@ export default function AnnouncementsPage() {
 
 function Composer() {
   const { db, actor, postAnnouncement, batch } = useProjectsStore()
+  const { confirm, dialog: confirmDialog } = useConfirm()
   const [open, setOpen] = React.useState(false)
   const [title, setTitle] = React.useState("")
   const [body, setBody] = React.useState("")
-  const [kind, setKind] = React.useState<AnnouncementAudience["kind"]>("my_teams")
+  const [kind, setKind] =
+    React.useState<AnnouncementAudience["kind"]>("my_teams")
   const [teamId, setTeamId] = React.useState<string>("")
   const [pinned, setPinned] = React.useState(false)
 
   if (!actor) return null
 
   const myProjects = projectsFor(db, actor)
-  const myTeams = db.teams.filter((t) => myProjects.some((p) => p.teamId === t.id))
+  const myTeams = db.teams.filter((t) =>
+    myProjects.some((p) => p.teamId === t.id)
+  )
 
   const options = (
     [
       myTeams.length > 0 && { kind: "team" as const, label: "One team" },
-      actor.role === "mentor" && { kind: "my_teams" as const, label: "All my teams" },
-      canAnnounceTo(actor, "batch") && { kind: "batch" as const, label: "Whole batch" },
-      { kind: "faculty" as const, label: "Faculty only" },
+      actor.role === "mentor" && {
+        kind: "my_teams" as const,
+        label: "All my teams",
+      },
+      canAnnounceTo(actor, "batch") && {
+        kind: "batch" as const,
+        label: "Whole batch",
+      },
+      { kind: "faculty" as const, label: "Mentors only" },
     ].filter(Boolean) as { kind: AnnouncementAudience["kind"]; label: string }[]
   ).filter((option) => canAnnounceTo(actor, option.kind))
 
@@ -179,51 +195,92 @@ function Composer() {
   const broad = kind === "batch"
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <Button onClick={() => setOpen(true)}>
-        <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2} />
+    <>
+      <Button onPress={() => setOpen(true)} iconLeading={Plus}>
         New announcement
       </Button>
-
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>New announcement</DialogTitle>
-          <DialogDescription>
-            Written once. It lands in the app, and stays attached to the batch so it can be found
-            again.
-          </DialogDescription>
-        </DialogHeader>
-
+      <ModalDialog
+        isOpen={open}
+        onOpenChange={setOpen}
+        size="xl"
+        title={<>New announcement</>}
+        description={
+          <>
+            Written once. It lands in the app, and stays attached to the batch
+            so it can be found again.
+          </>
+        }
+        footer={
+          <>
+            <Button color="tertiary" slot="close">
+              Cancel
+            </Button>
+            <Button
+              isDisabled={!title.trim() || !body.trim() || !audience}
+              onPress={() => {
+                if (!audience) return
+                const send = () => {
+                  const result = postAnnouncement({
+                    title,
+                    body,
+                    audience,
+                    pinned,
+                  })
+                  if (report(result, "Announcement posted")) {
+                    setTitle("")
+                    setBody("")
+                    setPinned(false)
+                    setOpen(false)
+                  }
+                }
+                if (!broad) return send()
+                confirm({
+                  title: "Send to the entire batch?",
+                  description: `This reaches ${reach} people.`,
+                  confirmLabel: "Send",
+                  onConfirm: send,
+                })
+              }}
+            >
+              Post
+            </Button>
+          </>
+        }
+      >
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="ann-title">Subject</Label>
             <Input
-              id="ann-title"
+              label="Subject"
               value={title}
-              onChange={(event) => setTitle(event.target.value)}
+              onChange={setTitle}
               placeholder="Office hours move to Thursday this week"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ann-body">Message</Label>
-            <Textarea
-              id="ann-body"
+            <TextArea
+              label="Message"
               rows={5}
               value={body}
-              onChange={(event) => setBody(event.target.value)}
+              onChange={setBody}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Who should see this?</Label>
             <RadioGroup
               value={kind}
-              onValueChange={(value) => setKind(value as AnnouncementAudience["kind"])}
-              className="gap-1"
+              onChange={(value) =>
+                setKind(value as AnnouncementAudience["kind"])
+              }
+              className="gap-3"
             >
+              <Label>Who should see this?</Label>
               {options.map((option) => {
-                const preview = buildAudience(option.kind, teamId || myTeams[0]?.id, batch.id)
+                const preview = buildAudience(
+                  option.kind,
+                  teamId || myTeams[0]?.id,
+                  batch.id
+                )
                 const count = preview
                   ? audienceMembers(db, {
                       id: "preview",
@@ -236,16 +293,12 @@ function Composer() {
                     }).length
                   : 0
                 return (
-                  <Label
+                  <RadioButton
                     key={option.kind}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-transparent px-2 py-1.5 text-meta font-normal hover:bg-muted/60"
-                  >
-                    <RadioGroupItem value={option.kind} />
-                    <span className="flex-1">{option.label}</span>
-                    <span className="text-caption text-muted-foreground">
-                      {count} {count === 1 ? "person" : "people"}
-                    </span>
-                  </Label>
+                    value={option.kind}
+                    label={option.label}
+                    hint={`${count} ${count === 1 ? "person" : "people"}`}
+                  />
                 )
               })}
             </RadioGroup>
@@ -265,10 +318,11 @@ function Composer() {
             )}
           </div>
 
-          <label className="flex cursor-pointer items-center gap-2.5 text-meta">
-            <Checkbox checked={pinned} onCheckedChange={() => setPinned((value) => !value)} />
-            Keep this at the top
-          </label>
+          <Checkbox
+            isSelected={pinned}
+            onChange={() => setPinned((value) => !value)}
+            label="Keep this at the top"
+          />
 
           {broad && (
             <p className="rounded-lg border border-status-under_review-br bg-status-under_review-bg px-3 py-2 text-caption text-status-under_review-fg">
@@ -276,33 +330,9 @@ function Composer() {
             </p>
           )}
         </div>
-
-        <DialogFooter>
-          <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
-          <Button
-            disabled={!title.trim() || !body.trim() || !audience}
-            onClick={() => {
-              if (!audience) return
-              if (
-                broad &&
-                !window.confirm(`Send to the entire batch — ${reach} people?`)
-              ) {
-                return
-              }
-              const result = postAnnouncement({ title, body, audience, pinned })
-              if (report(result, "Announcement posted")) {
-                setTitle("")
-                setBody("")
-                setPinned(false)
-                setOpen(false)
-              }
-            }}
-          >
-            Post
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </ModalDialog>
+      {confirmDialog}
+    </>
   )
 }
 

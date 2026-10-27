@@ -2,21 +2,20 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { LockIcon, Search01Icon } from "@hugeicons/core-free-icons"
-
 import { EmptyState, PageHeader, PersonAvatar } from "@/components/common"
 import { MilestoneSheet } from "@/components/milestones/milestone-sheet"
 import { PersonCombobox } from "@/components/person-combobox"
 import { ProgressCells } from "@/components/progress-cells"
 import { StatusPill } from "@/components/status/status-pill"
-import { Input } from "@/components/ui/input"
+import { Input } from "@/components/untitled/base/input/input"
 import { canViewProject, isCoordinator, projectsFor } from "@/lib/permissions"
 import { milestoneViews, personById, type MilestoneView } from "@/lib/selectors"
 import { AWAITING_MENTOR } from "@/lib/status"
 import { useProjectsStore } from "@/lib/store"
 import type { Project } from "@/lib/types"
 import { cn } from "@/lib/utils"
+
+import { Lock01, SearchLg } from "@untitledui/icons"
 
 type Filter = "all" | "waiting" | "drifting" | "done"
 
@@ -46,13 +45,24 @@ export default function ProjectsPage() {
     return scope
       .map((project) => {
         const views = milestoneViews(db, [project.id])
-        const waiting = views.filter((v) => AWAITING_MENTOR.includes(v.status)).length
+        const waiting = views.filter((v) =>
+          AWAITING_MENTOR.includes(v.status)
+        ).length
         const overdue = views.filter((v) => v.status === "overdue").length
         const returned = views.filter((v) => v.status === "returned").length
         const accepted = views.filter((v) => v.status === "accepted").length
         const next = views.find((v) => v.status !== "accepted")
         const team = db.teams.find((t) => t.id === project.teamId)
-        return { project, views, waiting, overdue, returned, accepted, next, team }
+        return {
+          project,
+          views,
+          waiting,
+          overdue,
+          returned,
+          accepted,
+          next,
+          team,
+        }
       })
       .filter((row) => {
         if (mentorId && !row.project.mentorIds.includes(mentorId)) return false
@@ -72,16 +82,27 @@ export default function ProjectsPage() {
     const all = scope.map((project) => milestoneViews(db, [project.id]))
     return {
       all: scope.length,
-      waiting: all.filter((v) => v.some((x) => AWAITING_MENTOR.includes(x.status))).length,
-      drifting: all.filter((v) => v.some((x) => x.status === "overdue" || x.status === "returned"))
-        .length,
+      waiting: all.filter((v) =>
+        v.some((x) => AWAITING_MENTOR.includes(x.status))
+      ).length,
+      drifting: all.filter((v) =>
+        v.some((x) => x.status === "overdue" || x.status === "returned")
+      ).length,
       done: all.filter((v) => v.some((x) => x.status === "accepted")).length,
     }
   }, [db, scope])
 
   const chips: { key: Filter; label: string; count: number }[] = [
-    { key: "all", label: isStudent ? "Every project" : "All", count: counts.all },
-    { key: "waiting", label: isStudent ? "With a mentor" : "Waiting on me", count: counts.waiting },
+    {
+      key: "all",
+      label: isStudent ? "Every project" : "All",
+      count: counts.all,
+    },
+    {
+      key: "waiting",
+      label: isStudent ? "With a mentor" : "Waiting on me",
+      count: counts.waiting,
+    },
     { key: "drifting", label: "Drifting", count: counts.drifting },
     { key: "done", label: "Has accepted work", count: counts.done },
   ]
@@ -107,30 +128,26 @@ export default function ProjectsPage() {
                     "rounded-lg border px-2.5 py-1 text-meta font-medium",
                     "transition-colors duration-fast-02 ease-standard",
                     filter === chip.key
-                      ? "border-primary bg-primary text-primary-foreground"
+                      ? "border-brand bg-brand-solid text-white"
                       : "border-border text-muted-foreground hover:bg-muted"
                   )}
                 >
                   {chip.label}
-                  <span className="ml-1.5 tabular-nums opacity-65">{chip.count}</span>
+                  <span className="ml-1.5 tabular-nums opacity-65">
+                    {chip.count}
+                  </span>
                 </button>
               ))}
             </div>
 
             <div className="ml-auto flex items-center gap-2">
-              <div className="relative">
-                <HugeiconsIcon
-                  icon={Search01Icon}
-                  className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
-                  strokeWidth={2}
-                />
-                <Input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Filter…"
-                  className="h-8 w-48 rounded-lg pl-8"
-                />
-              </div>
+              <Input
+                icon={SearchLg}
+                value={query}
+                onChange={setQuery}
+                placeholder="Filter…"
+                className="w-48"
+              />
               {isCoordinator(actor) && (
                 <PersonCombobox
                   people={mentors}
@@ -149,8 +166,8 @@ export default function ProjectsPage() {
 
       {rows.length === 0 ? (
         <EmptyState
-          title="Nothing matches"
-          body="Try a different chip, or clear the filter."
+          title="No matches"
+          body="Try a different filter, or clear it."
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-card">
@@ -170,17 +187,18 @@ export default function ProjectsPage() {
                       {row.team?.name ?? "Team"}
                     </p>
                     {!open && (
-                      <HugeiconsIcon
-                        icon={LockIcon}
-                        className="size-3 shrink-0 text-muted-foreground"
-                        strokeWidth={2}
-                      />
+                      <Lock01 className="size-3 shrink-0 text-muted-foreground" />
                     )}
                   </div>
-                  <p className="truncate text-caption text-muted-foreground">{row.project.title}</p>
+                  <p className="truncate text-caption text-muted-foreground">
+                    {row.project.title}
+                  </p>
                 </div>
 
-                <ProgressCells views={row.views} onSelect={open ? setSelected : undefined} />
+                <ProgressCells
+                  views={row.views}
+                  onSelect={open ? setSelected : undefined}
+                />
 
                 <div className="min-w-0">
                   {row.next ? (
@@ -198,14 +216,20 @@ export default function ProjectsPage() {
                 <div className="flex items-center justify-end gap-2">
                   <span className="text-subhead text-foreground">
                     {row.accepted}
-                    <span className="text-caption font-medium text-muted-foreground">/12</span>
+                    <span className="text-caption font-medium text-muted-foreground">
+                      /12
+                    </span>
                   </span>
                 </div>
               </div>
             )
 
             return open ? (
-              <Link key={row.project.id} href={`/projects/${row.project.id}`} className="block">
+              <Link
+                key={row.project.id}
+                href={`/projects/${row.project.id}`}
+                className="block"
+              >
                 {inner}
               </Link>
             ) : (
@@ -217,7 +241,8 @@ export default function ProjectsPage() {
 
       {!isStudent && (
         <p className="text-caption text-muted-foreground">
-          Each team appears once. The chips ask a different question of the same list.
+          Each team appears once. The chips ask a different question of the same
+          list.
         </p>
       )}
 
