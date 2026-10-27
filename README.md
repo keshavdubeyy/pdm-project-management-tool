@@ -13,24 +13,45 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:3000 and pick who you are — type three letters into the
-field rather than scrolling a list. There are no passwords: the
-sign-in list is the real roster, and the point is to be able to move between people
-quickly while testing.
+Then open http://localhost:3000/signin. Choose Student, Mentor or Coordinator, then
+sign in with the email and password the coordinator issued.
+
+**Issuing passwords.** Accounts live in Supabase Auth. To create them, run
+`SUPABASE_SERVICE_ROLE_KEY=<key> node --env-file=.env.local scripts/create-accounts.mjs`.
+It writes `scripts/credentials.csv` (email and a generated password for each
+person) and skips anyone who already has an account; add `--reset` to give
+existing accounts a new password. The service-role key is in the Supabase
+dashboard under Project Settings → API. It is never put in the app. Everyone can
+change their own password on the Profile page.
 
 **Sessions are per browser tab.** Open a second tab, sign in as somebody else, and put
-the two side by side — a student turning work in shows up in their mentor's queue in the
-other tab within a second, and the mentor's decision comes back the same way.
+the two side by side — a student's note shows up for their mentor in the other tab
+within a second, and the mentor's comment comes back the same way.
 
-Three people worth signing in as:
+Accounts worth signing in as:
 
-| Person | Role | What you see |
+| Email | Tab | What you see |
 |---|---|---|
-| Dr. Raman Saxena | Coordinator and mentor | The whole batch, and a switch between the two roles |
-| Prakash Yalla | Mentor | Six teams, a review queue, what needs a look |
-| Rahul Saha | Student | One project, what is due next, what the mentor last said |
+| `raman.saxena@iiit.ac.in` | Coordinator, or Mentor | The whole batch; or just his own teams |
+| `prakash.yalla@iiit.ac.in` | Mentor | A picker of his teams, a review queue |
+| `rahul.saha@students.iiit.ac.in` (Rahul Saha) | Student | Notes, to-dos and progress for their team |
 
-`Reset demo data` in the account menu puts everything back.
+The app starts empty. **Populate demo data** in the header fills it with generated
+activity for stress-testing; **Clear demo data** removes it again.
+
+## Design system
+
+Untitled UI, with its default purple brand. Every screen is built from its components,
+which live in `components/untitled` (React Aria underneath) and are used as installed:
+`npx untitledui@latest add <component> -y -t base|application` adds more. Its tokens
+are in `styles/theme.css` unchanged; `app/globals.css` maps the older names the app
+used (`background`, `primary`, `border` …) onto them and loads the React Aria
+variants plugin the components need. Dark mode is the `.dark-mode` class, set by
+next-themes. Icons are `@untitledui/icons`.
+
+Where Untitled UI has nothing free to use, the app builds the piece from its tokens:
+toasts (its notifications component is PRO-only; ours is Sonner plus Untitled's
+FeaturedIcon and CloseButton), separators, and skeletons.
 
 ## Checking it still works
 
