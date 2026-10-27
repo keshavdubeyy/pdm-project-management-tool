@@ -1,0 +1,355 @@
+[
+  {
+    "personId": "p-mentor-prakash",
+    "name": "Prakash Yalla",
+    "email": "prakash.yalla@iiit.ac.in",
+    "roles": [
+      "mentor"
+    ]
+  },
+  {
+    "personId": "p-mentor-raman",
+    "name": "Dr. Raman Saxena",
+    "email": "raman.saxena@iiit.ac.in",
+    "roles": [
+      "mentor",
+      "coordinator"
+    ]
+  },
+  {
+    "personId": "p-mentor-raghu",
+    "name": "Dr. Raghu Reddy",
+    "email": "raghu.reddy@iiit.ac.in",
+    "roles": [
+      "mentor"
+    ]
+  },
+  {
+    "personId": "p-mentor-ramesh",
+    "name": "Ramesh Loganathan",
+    "email": "ramesh.loganathan@iiit.ac.in",
+    "roles": [
+      "mentor"
+    ]
+  },
+  {
+    "personId": "p-2024204015",
+    "name": "Yerrabachu Keerthy Rao",
+    "email": "yerrabachu.rao@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204001",
+    "name": "Kalluri Lakshmi Prathyusha",
+    "email": "kalluri.prathyusha@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204002",
+    "name": "Sanapathi Kishore Naidu",
+    "email": "sanapathi.naidu@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204003",
+    "name": "Nagam Chandrakanth Reddy",
+    "email": "chandrakanthr876@gmail.com",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204004",
+    "name": "Rahul Saha",
+    "email": "rahul.saha@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204005",
+    "name": "Dhawal Pawanarkar",
+    "email": "dhawal.pawanarkar@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204006",
+    "name": "Shada Praneeth Reddy",
+    "email": "shadapraneeth.reddy@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204007",
+    "name": "Devansh Singh",
+    "email": "devansh.singh@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204008",
+    "name": "Mohd Shahid Kaleem",
+    "email": "mohd.kaleem@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204009",
+    "name": "Ekansh Patidar",
+    "email": "ekansh.patidar@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204010",
+    "name": "Kushal Karan",
+    "email": "kushal.karan@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204011",
+    "name": "Harsh Jaiswal",
+    "email": "harsh.jaiswal@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204012",
+    "name": "Vadali SS Bharadwaja",
+    "email": "bharadwaja.vadali@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204013",
+    "name": "Patil Varun Nitin",
+    "email": "varun.patil@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204014",
+    "name": "Gaurav Goswami",
+    "email": "gaurav.goswami@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204015",
+    "name": "Anjali Yadav",
+    "email": "anjali.yadav@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204016",
+    "name": "Prakash Bhabad",
+    "email": "prakash.bhabad@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204017",
+    "name": "Anukriti Gongle",
+    "email": "anukriti.gongle@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204018",
+    "name": "Anil Kumar",
+    "email": "kondeboina.kumar@gmail.com",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204019",
+    "name": "K Lakshmi Sai Aasritha",
+    "email": "k.aasritha@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204020",
+    "name": "V Venkata Raghava Sai Srividya",
+    "email": "srividya.vemavarapu@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204021",
+    "name": "P. Sai Harsha Vardhan",
+    "email": "pittada.s@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204022",
+    "name": "Paila Tejeswara Rao",
+    "email": "tejeswararao.paila@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204024",
+    "name": "Manali Gupta",
+    "email": "manali.gupta@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204025",
+    "name": "Rishabh singh",
+    "email": "rishabh.singh@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204026",
+    "name": "Kedar Dalvi",
+    "email": "kedar.dalvi@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204027",
+    "name": "Kaushal Negi",
+    "email": "kaushal.negi@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204028",
+    "name": "Vinit Jain",
+    "email": "vinit.jain@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204029",
+    "name": "Snigdha Pani",
+    "email": "snigdha.pani@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204030",
+    "name": "Eshwar Prasad Pingili",
+    "email": "eshwar.pingili@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204031",
+    "name": "Neha Susan Manoj",
+    "email": "neha.manoj@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204033",
+    "name": "Deepti Koranga",
+    "email": "deepti.koranga@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204034",
+    "name": "Metta Venkata Ramana Murthy",
+    "email": "metta.murthy@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204035",
+    "name": "Bhumika Mehndiratta",
+    "email": "bhumika.mehndiratta@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204036",
+    "name": "Gargi Saini",
+    "email": "gargi.saini@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204037",
+    "name": "Rahul chand",
+    "email": "rahul.chand@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204039",
+    "name": "Samir Saurabh",
+    "email": "samir.saurabh@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204040",
+    "name": "Peri Sri Charan",
+    "email": "sricharan.peri@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204041",
+    "name": "Keshav Dubey",
+    "email": "keshav.dubey@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "personId": "p-2025204042",
+    "name": "Abhinav Borah",
+    "email": "abhinav.borah@students.iiit.ac.in",
+    "roles": [
+      "student"
+    ]
+  }
+]
