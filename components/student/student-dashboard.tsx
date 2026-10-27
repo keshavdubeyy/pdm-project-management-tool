@@ -3,7 +3,12 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { EmptyState, PersonAvatar, ProjectTitle } from "@/components/common"
+import {
+  EmptyState,
+  PersonAvatar,
+  PersonChips,
+  ProjectTitle,
+} from "@/components/common"
 import { useConfirm } from "@/components/confirm-dialog"
 import { Tab, TabList, Tabs } from "@/components/untitled/application/tabs/tabs"
 import { Table, TableCard } from "@/components/untitled/application/table/table"
@@ -246,7 +251,10 @@ function Notes({ projectId }: { projectId: string }) {
                   {note.title || "Untitled"}
                 </Table.Cell>
                 <Table.Cell className="whitespace-nowrap">
-                  {personById(db, note.authorId)?.name ?? "Unknown"}
+                  <PersonChips
+                    people={[personById(db, note.authorId)]}
+                    empty="Unknown"
+                  />
                 </Table.Cell>
                 <Table.Cell className="whitespace-nowrap">
                   {formatTimestamp(note.createdAt)}

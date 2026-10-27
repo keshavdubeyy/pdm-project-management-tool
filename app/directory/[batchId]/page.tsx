@@ -4,7 +4,7 @@ import * as React from "react"
 import type { SortDescriptor } from "react-aria-components"
 import Link from "next/link"
 import { notFound, useParams, useRouter } from "next/navigation"
-import { EmptyState, PageHeader } from "@/components/common"
+import { EmptyState, PageHeader, PersonChips } from "@/components/common"
 import { Button } from "@/components/untitled/base/buttons/button"
 import { Badge } from "@/components/untitled/base/badges/badges"
 import { Input } from "@/components/untitled/base/input/input"
@@ -18,6 +18,7 @@ import {
 } from "@/components/untitled/application/tabs/tabs"
 import { canViewProject } from "@/lib/permissions"
 import { useProjectsStore } from "@/lib/store"
+import type { Person } from "@/lib/types"
 
 import { ChevronLeft, Lock01, SearchLg } from "@untitledui/icons"
 
@@ -85,13 +86,21 @@ export default function BatchDirectoryPage() {
     .map((project) => {
       const domain = db.domains.find((d) => d.id === project.domainId)
       const team = db.teams.find((t) => t.id === project.teamId)
-      const students = (team?.memberIds ?? [])
-        .map((id) => db.people.find((p) => p.id === id)?.name)
-        .filter((name): name is string => Boolean(name))
-      const mentorNames = project.mentorIds
-        .map((id) => db.people.find((p) => p.id === id)?.name)
-        .filter((name): name is string => Boolean(name))
-      return { project, domain, team, students, mentorNames }
+      const studentPeople = (team?.memberIds ?? [])
+        .map((id) => db.people.find((p) => p.id === id))
+        .filter((p): p is Person => Boolean(p))
+      const mentorPeople = project.mentorIds
+        .map((id) => db.people.find((p) => p.id === id))
+        .filter((p): p is Person => Boolean(p))
+      return {
+        project,
+        domain,
+        team,
+        studentPeople,
+        students: studentPeople.map((p) => p.name),
+        mentorPeople,
+        mentorNames: mentorPeople.map((p) => p.name),
+      }
     })
     .filter(({ project, students: teamStudents, mentorNames }) => {
       if (!q) return true
@@ -237,7 +246,7 @@ export default function BatchDirectoryPage() {
                 <Table.Body>
                   {rows.map(
                     (
-                      { project, students: teamStudents, mentorNames },
+                      { project, studentPeople, mentorPeople },
                       index
                     ) => {
                       const open =
@@ -255,16 +264,14 @@ export default function BatchDirectoryPage() {
                           <Table.Cell className="w-0 text-tertiary tabular-nums">
                             {index + 1}
                           </Table.Cell>
-                          <Table.Cell className="text-tertiary">
-                            {teamStudents[0] ?? "Unassigned"}
+                          <Table.Cell>
+                            <PersonChips people={[studentPeople[0]]} />
                           </Table.Cell>
-                          <Table.Cell className="text-tertiary">
-                            {teamStudents[1] ?? "—"}
+                          <Table.Cell>
+                            <PersonChips people={[studentPeople[1]]} empty="—" />
                           </Table.Cell>
-                          <Table.Cell className="text-tertiary">
-                            {mentorNames.length > 0
-                              ? mentorNames.join(", ")
-                              : "Unassigned"}
+                          <Table.Cell>
+                            <PersonChips people={mentorPeople} />
                           </Table.Cell>
                           <Table.Cell className="text-right">
                             {open ? (
@@ -323,8 +330,8 @@ export default function BatchDirectoryPage() {
                       <Table.Cell className="w-0 text-tertiary tabular-nums">
                         {index + 1}
                       </Table.Cell>
-                      <Table.Cell className="font-medium text-primary">
-                        {person.name}
+                      <Table.Cell>
+                        <PersonChips people={[person]} />
                       </Table.Cell>
                       <Table.Cell className="text-tertiary">
                         {person.rollNumber ?? "—"}

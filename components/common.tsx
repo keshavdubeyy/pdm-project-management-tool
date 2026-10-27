@@ -188,6 +188,26 @@ export function PersonChip({
   )
 }
 
+/** Avatar and name for each person, side by side. Used in table cells. */
+export function PersonChips({
+  people,
+  empty = "Unassigned",
+}: {
+  people: (Person | null | undefined)[]
+  empty?: string
+}) {
+  const list = people.filter((p): p is Person => Boolean(p))
+  if (list.length === 0)
+    return <span className="text-meta text-muted-foreground">{empty}</span>
+  return (
+    <span className="flex items-center gap-3">
+      {list.map((person) => (
+        <PersonChip key={person.id} person={person} />
+      ))}
+    </span>
+  )
+}
+
 /** First few faces plus a count. Used for attendees and read receipts, where
  * the useful signal is "how many" rather than "exactly who, at what time". */
 export function AvatarStack({

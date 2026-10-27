@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import type { SortDescriptor } from "react-aria-components"
-import { EmptyState, ProjectTitle } from "@/components/common"
+import { EmptyState, PersonChips, ProjectTitle } from "@/components/common"
 import { StudentDashboard } from "@/components/student/student-dashboard"
 import { Table, TableCard } from "@/components/untitled/application/table/table"
 import { Button } from "@/components/untitled/base/buttons/button"
@@ -11,6 +11,7 @@ import { Input } from "@/components/untitled/base/input/input"
 import { projectsFor } from "@/lib/permissions"
 import { personById } from "@/lib/selectors"
 import { useProjectsStore } from "@/lib/store"
+import type { Person } from "@/lib/types"
 
 import { SearchLg, Users01 } from "@untitledui/icons"
 
@@ -37,7 +38,10 @@ function MentorToday() {
       const firstNames = project.teamMemberIds
         .map((id) => personById(db, id)?.name.split(" ")[0])
         .filter((n): n is string => Boolean(n))
-      return { project, team: firstNames.join(" & ") || "Team" }
+      const members = project.teamMemberIds
+        .map((id) => personById(db, id))
+        .filter((p): p is Person => Boolean(p))
+      return { project, members, team: firstNames.join(" & ") || "Team" }
     })
     .filter(
       ({ project, team }) =>
@@ -80,13 +84,13 @@ function MentorToday() {
               <Table.Head id="actions" aria-label="Actions" className="w-0" />
             </Table.Header>
             <Table.Body items={rows.map((r, i) => ({ ...r, no: i + 1 }))}>
-              {({ project, team, no }) => (
+              {({ project, members, team, no }) => (
                 <Table.Row id={project.id} href={`/projects/${project.id}`}>
                   <Table.Cell className="w-0 text-tertiary tabular-nums">
                     {no}
                   </Table.Cell>
-                  <Table.Cell className="font-medium whitespace-nowrap text-primary">
-                    {team}
+                  <Table.Cell className="whitespace-nowrap">
+                    <PersonChips people={members} empty={team} />
                   </Table.Cell>
                   <Table.Cell className="max-w-96">
                     <span className="block truncate text-tertiary">
@@ -153,25 +157,30 @@ function CoordinatorToday() {
   const filtered = projectsFor(db, actor)
     .map((project) => {
       const students = project.teamMemberIds
-        .map((id) => personById(db, id)?.name)
-        .filter((n): n is string => Boolean(n))
-      const mentorNames = project.mentorIds
-        .map((id) => personById(db, id)?.name)
-        .filter((n): n is string => Boolean(n))
-      return { project, students, mentorNames }
+        .map((id) => personById(db, id))
+        .filter((p): p is Person => Boolean(p))
+      const mentorPeople = project.mentorIds
+        .map((id) => personById(db, id))
+        .filter((p): p is Person => Boolean(p))
+      return {
+        project,
+        students,
+        mentorPeople,
+        mentorNames: mentorPeople.map((p) => p.name),
+      }
     })
     .filter(({ project }) => !mentorId || project.mentorIds.includes(mentorId))
     .filter(
       ({ project, students, mentorNames }) =>
         !q ||
-        `${students.join(" ")} ${mentorNames.join(" ")} ${project.title}`
+        `${students.map((s) => s.name).join(" ")} ${mentorNames.join(" ")} ${project.title}`
           .toLowerCase()
           .includes(q)
     )
 
   const rows = sortRows(filtered, sort, {
-    student1: (r) => r.students[0] ?? "",
-    student2: (r) => r.students[1] ?? "",
+    student1: (r) => r.students[0]?.name ?? "",
+    student2: (r) => r.students[1]?.name ?? "",
     mentor: (r) => r.mentorNames.join(", "),
   })
 
@@ -240,19 +249,19 @@ function CoordinatorToday() {
               <Table.Head id="actions" aria-label="Actions" className="w-0" />
             </Table.Header>
             <Table.Body items={rows.map((r, i) => ({ ...r, no: i + 1 }))}>
-              {({ project, students, mentorNames, no }) => (
+              {({ project, students, mentorPeople, no }) => (
                 <Table.Row id={project.id} href={`/projects/${project.id}`}>
                   <Table.Cell className="w-0 text-tertiary tabular-nums">
                     {no}
                   </Table.Cell>
-                  <Table.Cell className="whitespace-nowrap text-tertiary">
-                    {students[0] ?? "Unassigned"}
+                  <Table.Cell className="whitespace-nowrap">
+                    <PersonChips people={[students[0]]} />
                   </Table.Cell>
-                  <Table.Cell className="whitespace-nowrap text-tertiary">
-                    {students[1] ?? "—"}
+                  <Table.Cell className="whitespace-nowrap">
+                    <PersonChips people={[students[1]]} empty="—" />
                   </Table.Cell>
-                  <Table.Cell className="whitespace-nowrap text-tertiary">
-                    {mentorNames.join(", ") || "Unassigned"}
+                  <Table.Cell className="whitespace-nowrap">
+                    <PersonChips people={mentorPeople} />
                   </Table.Cell>
                   <Table.Cell className="w-0 pr-4 text-right">
                     <Button
