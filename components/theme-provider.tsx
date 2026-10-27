@@ -10,6 +10,8 @@ function ThemeProvider({
   return (
     <NextThemesProvider
       attribute="class"
+      // Untitled UI's dark tokens hang off `.dark-mode`.
+      value={{ light: "light-mode", dark: "dark-mode" }}
       defaultTheme="system"
       enableSystem
       disableTransitionOnChange
