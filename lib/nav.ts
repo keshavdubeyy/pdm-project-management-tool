@@ -1,15 +1,6 @@
-import {
-  Analytics01Icon,
-  CalendarCheckIn01Icon,
-  Flag02Icon,
-  Grid02Icon,
-  Megaphone01Icon,
-  Settings02Icon,
-  Target01Icon,
-  UserGroupIcon,
-} from "@hugeicons/core-free-icons"
-
 import type { Role } from "@/lib/types"
+
+import type { Grid01 } from "@untitledui/icons"
 
 /** Navigation and reach, defined once.
  *
@@ -22,7 +13,7 @@ import type { Role } from "@/lib/types"
 export type NavItem = {
   label: string
   href: string
-  icon: typeof Grid02Icon
+  icon: typeof Grid01
   /** What this holds for the current role, shown beside the label. */
   scope?: string
 }
@@ -32,33 +23,13 @@ export type NavGroup = {
   items: NavItem[]
 }
 
-export function navFor(role: Role, counts: { projects: number; waiting: number }): NavGroup[] {
-  const main: NavItem[] = [
-    { label: "Today", href: "/", icon: Target01Icon },
-    {
-      label: "Projects",
-      href: "/projects",
-      icon: Grid02Icon,
-      scope: String(counts.projects),
-    },
-    { label: "Checkpoints", href: "/checkpoints", icon: CalendarCheckIn01Icon },
-    { label: "Messages", href: "/messages", icon: Megaphone01Icon },
-    { label: "Directory", href: "/directory", icon: UserGroupIcon },
-    { label: "Updates", href: "/updates", icon: Flag02Icon },
-  ]
-
-  if (role !== "coordinator") return [{ items: main }]
-
-  return [
-    { items: main },
-    {
-      label: "Programme",
-      items: [
-        { label: "Measures", href: "/measures", icon: Analytics01Icon },
-        { label: "Settings", href: "/admin", icon: Settings02Icon },
-      ],
-    },
-  ]
+/** The top bar carries no page links, so there is nothing to list. Kept so the
+ * command palette has a single place to ask. */
+export function navFor(
+  _role: Role,
+  _counts: { projects: number; waiting: number }
+): NavGroup[] {
+  return []
 }
 
 /** What this role may and may not do, in the words a person would use.

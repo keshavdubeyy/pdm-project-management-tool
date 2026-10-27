@@ -1,5 +1,9 @@
 import type { Batch, Domain, Person, Project, Team } from "@/lib/types"
 
+// Hierarchy: Dr. Raman Saxena (programme coordinator, who also mentors) is at
+// the top; every mentor carries `reportsTo` pointing at him; each student
+// group (team) hangs off its mentor through `project.mentorIds`.
+//
 // Real roster for the PDM 2025–2027 batch, sourced from the batch's project
 // registration form. Each project's mentorIds reflects the mentor actually
 // assigned to that team — a separate field on the form from the mentor the
@@ -7,15 +11,16 @@ import type { Batch, Domain, Person, Project, Team } from "@/lib/types"
 export const seedPeople: Person[] = [
   {
     id: "p-mentor-prakash",
+    reportsTo: "p-mentor-raman",
     name: "Prakash Yalla",
-    email: "prakash.yalla@pdm.edu",
+    email: "prakash.yalla@iiit.ac.in",
     roles: ["mentor"],
     affiliation: "Professor of Practice",
   },
   {
     id: "p-mentor-raman",
     name: "Dr. Raman Saxena",
-    email: "raman.saxena@pdm.edu",
+    email: "raman.saxena@iiit.ac.in",
     // Listed on the programme site as "Professor & Program Coordinator", so
     // this person holds both roles and switches between them.
     roles: ["mentor", "coordinator"],
@@ -23,302 +28,297 @@ export const seedPeople: Person[] = [
   },
   {
     id: "p-mentor-raghu",
+    reportsTo: "p-mentor-raman",
     name: "Dr. Raghu Reddy",
-    email: "raghu.reddy@pdm.edu",
+    email: "raghu.reddy@iiit.ac.in",
     roles: ["mentor"],
     affiliation: "Associate Professor, SERC",
   },
   {
     id: "p-mentor-ramesh",
+    reportsTo: "p-mentor-raman",
     name: "Ramesh Loganathan",
-    email: "ramesh.loganathan@pdm.edu",
+    email: "ramesh.loganathan@iiit.ac.in",
     roles: ["mentor"],
     affiliation: "Professor of Practice, Co-innovations",
   },
   {
     id: "p-2024204015",
     name: "Yerrabachu Keerthy Rao",
-    email: "2024204015@pdm.edu",
+    email: "yerrabachu.rao@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2024204015",
   },
   {
     id: "p-2025204001",
     name: "Kalluri Lakshmi Prathyusha",
-    email: "2025204001@pdm.edu",
+    email: "kalluri.prathyusha@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204001",
   },
   {
     id: "p-2025204002",
     name: "Sanapathi Kishore Naidu",
-    email: "2025204002@pdm.edu",
+    email: "sanapathi.naidu@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204002",
   },
   {
     id: "p-2025204003",
     name: "Nagam Chandrakanth Reddy",
-    email: "2025204003@pdm.edu",
+    email: "chandrakanthr876@gmail.com",
     roles: ["student"],
     rollNumber: "2025204003",
   },
   {
     id: "p-2025204004",
     name: "Rahul Saha",
-    email: "2025204004@pdm.edu",
+    email: "rahul.saha@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204004",
   },
   {
     id: "p-2025204005",
     name: "Dhawal Pawanarkar",
-    email: "2025204005@pdm.edu",
+    email: "dhawal.pawanarkar@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204005",
   },
   {
     id: "p-2025204006",
     name: "Shada Praneeth Reddy",
-    email: "2025204006@pdm.edu",
+    email: "shadapraneeth.reddy@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204006",
   },
   {
     id: "p-2025204007",
     name: "Devansh Singh",
-    email: "2025204007@pdm.edu",
+    email: "devansh.singh@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204007",
   },
   {
     id: "p-2025204008",
     name: "Mohd Shahid Kaleem",
-    email: "2025204008@pdm.edu",
+    email: "mohd.kaleem@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204008",
   },
   {
     id: "p-2025204009",
     name: "Ekansh Patidar",
-    email: "2025204009@pdm.edu",
+    email: "ekansh.patidar@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204009",
   },
   {
     id: "p-2025204010",
     name: "Kushal Karan",
-    email: "2025204010@pdm.edu",
+    email: "kushal.karan@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204010",
   },
   {
     id: "p-2025204011",
     name: "Harsh Jaiswal",
-    email: "2025204011@pdm.edu",
+    email: "harsh.jaiswal@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204011",
   },
   {
     id: "p-2025204012",
     name: "Vadali SS Bharadwaja",
-    email: "2025204012@pdm.edu",
+    email: "bharadwaja.vadali@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204012",
   },
   {
     id: "p-2025204013",
     name: "Patil Varun Nitin",
-    email: "2025204013@pdm.edu",
+    email: "varun.patil@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204013",
   },
   {
     id: "p-2025204014",
     name: "Gaurav Goswami",
-    email: "2025204014@pdm.edu",
+    email: "gaurav.goswami@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204014",
   },
   {
     id: "p-2025204015",
     name: "Anjali Yadav",
-    email: "2025204015@pdm.edu",
+    email: "anjali.yadav@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204015",
   },
   {
     id: "p-2025204016",
     name: "Prakash Bhabad",
-    email: "2025204016@pdm.edu",
+    email: "prakash.bhabad@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204016",
   },
   {
     id: "p-2025204017",
     name: "Anukriti Gongle",
-    email: "2025204017@pdm.edu",
+    email: "anukriti.gongle@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204017",
   },
   {
     id: "p-2025204018",
     name: "Anil Kumar",
-    email: "2025204018@pdm.edu",
+    email: "kondeboina.kumar@gmail.com",
     roles: ["student"],
     rollNumber: "2025204018",
   },
   {
     id: "p-2025204019",
     name: "K Lakshmi Sai Aasritha",
-    email: "2025204019@pdm.edu",
+    email: "k.aasritha@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204019",
   },
   {
     id: "p-2025204020",
     name: "V Venkata Raghava Sai Srividya",
-    email: "2025204020@pdm.edu",
+    email: "srividya.vemavarapu@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204020",
   },
   {
     id: "p-2025204021",
     name: "P. Sai Harsha Vardhan",
-    email: "2025204021@pdm.edu",
+    email: "pittada.s@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204021",
   },
   {
     id: "p-2025204022",
     name: "Paila Tejeswara Rao",
-    email: "2025204022@pdm.edu",
+    email: "tejeswararao.paila@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204022",
   },
   {
-    id: "p-2025204023",
-    name: "Panem Chaitanya Pavan Kumar",
-    email: "2025204023@pdm.edu",
-    roles: ["student"],
-    rollNumber: "2025204023",
-  },
-  {
     id: "p-2025204024",
     name: "Manali Gupta",
-    email: "2025204024@pdm.edu",
+    email: "manali.gupta@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204024",
   },
   {
     id: "p-2025204025",
     name: "Rishabh singh",
-    email: "2025204025@pdm.edu",
+    email: "rishabh.singh@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204025",
   },
   {
     id: "p-2025204026",
     name: "Kedar Dalvi",
-    email: "2025204026@pdm.edu",
+    email: "kedar.dalvi@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204026",
   },
   {
     id: "p-2025204027",
     name: "Kaushal Negi",
-    email: "2025204027@pdm.edu",
+    email: "kaushal.negi@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204027",
   },
   {
     id: "p-2025204028",
     name: "Vinit Jain",
-    email: "2025204028@pdm.edu",
+    email: "vinit.jain@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204028",
   },
   {
     id: "p-2025204029",
     name: "Snigdha Pani",
-    email: "2025204029@pdm.edu",
+    email: "snigdha.pani@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204029",
   },
   {
     id: "p-2025204030",
     name: "Eshwar Prasad Pingili",
-    email: "2025204030@pdm.edu",
+    email: "eshwar.pingili@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204030",
   },
   {
     id: "p-2025204031",
     name: "Neha Susan Manoj",
-    email: "2025204031@pdm.edu",
+    email: "neha.manoj@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204031",
   },
   {
     id: "p-2025204033",
     name: "Deepti Koranga",
-    email: "2025204033@pdm.edu",
+    email: "deepti.koranga@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204033",
   },
   {
     id: "p-2025204034",
     name: "Metta Venkata Ramana Murthy",
-    email: "2025204034@pdm.edu",
+    email: "metta.murthy@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204034",
   },
   {
     id: "p-2025204035",
     name: "Bhumika Mehndiratta",
-    email: "2025204035@pdm.edu",
+    email: "bhumika.mehndiratta@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204035",
   },
   {
     id: "p-2025204036",
     name: "Gargi Saini",
-    email: "2025204036@pdm.edu",
+    email: "gargi.saini@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204036",
   },
   {
     id: "p-2025204037",
     name: "Rahul chand",
-    email: "2025204037@pdm.edu",
+    email: "rahul.chand@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204037",
   },
   {
     id: "p-2025204039",
     name: "Samir Saurabh",
-    email: "2025204039@pdm.edu",
+    email: "samir.saurabh@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204039",
   },
   {
     id: "p-2025204040",
     name: "Peri Sri Charan",
-    email: "2025204040@pdm.edu",
+    email: "sricharan.peri@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204040",
   },
   {
     id: "p-2025204041",
     name: "Keshav Dubey",
-    email: "2025204041@pdm.edu",
+    email: "keshav.dubey@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204041",
   },
   {
     id: "p-2025204042",
     name: "Abhinav Borah",
-    email: "2025204042@pdm.edu",
+    email: "abhinav.borah@students.iiit.ac.in",
     roles: ["student"],
     rollNumber: "2025204042",
   },
@@ -473,8 +473,8 @@ export const seedTeams: Team[] = [
   {
     id: "team-15",
     batchId: "b-2025-2027",
-    name: "Saini & Pawanarkar",
-    memberIds: ["p-2025204036", "p-2025204005"],
+    name: "Saini & Koranga",
+    memberIds: ["p-2025204036", "p-2025204033"],
     leadId: "p-2025204036",
     createdAt: "2026-07-20T00:00:00.000Z",
   },
@@ -489,9 +489,9 @@ export const seedTeams: Team[] = [
   {
     id: "team-17",
     batchId: "b-2025-2027",
-    name: "Kumar",
-    memberIds: ["p-2025204023"],
-    leadId: "p-2025204023",
+    name: "Pawanarkar",
+    memberIds: ["p-2025204005"],
+    leadId: "p-2025204005",
     createdAt: "2026-07-20T00:00:00.000Z",
   },
   {
@@ -513,9 +513,9 @@ export const seedTeams: Team[] = [
   {
     id: "team-20",
     batchId: "b-2025-2027",
-    name: "Koranga & Bhabad",
-    memberIds: ["p-2025204033", "p-2025204016"],
-    leadId: "p-2025204033",
+    name: "Bhabad",
+    memberIds: ["p-2025204016"],
+    leadId: "p-2025204016",
     createdAt: "2026-07-20T00:00:00.000Z",
   },
   {
@@ -539,7 +539,7 @@ export const seedTeams: Team[] = [
 export const seedProjects: Project[] = [
   {
     id: "proj-1",
-    title: "Everything-for-rent platform",
+    title: "",
     description:
       "an app that lets people easily rent useful items locally for short periods instead of buying them outright.",
     teamId: "team-1",
@@ -565,7 +565,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-2",
-    title: "Financial Caregiving Platform for Aging Parents",
+    title: "",
     description:
       "As families become geographically distributed, adult children increasingly help manage their aging parents' finances remotely.",
     teamId: "team-2",
@@ -591,8 +591,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-3",
-    title:
-      "Outpatient consultations extend well beyond the clinical encounter itself.",
+    title: "",
     description:
       "Doctors in independent and small-clinic settings must simultaneously manage documentation, maintain records, prepare prescriptions, review diagnostic reports, and coordinate follow-ups, often across disconnected…",
     teamId: "team-3",
@@ -618,8 +617,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-4",
-    title:
-      "PetSensei is a personalized pet care companion that guides pet owners through every stage…",
+    title: "",
     description:
       "of their pet's life with timely advice, trusted recommendations, and proactive care reminders.",
     teamId: "team-4",
@@ -645,7 +643,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-5",
-    title: "Fraud detection using AI",
+    title: "",
     description: "Fraud detection using AI",
     teamId: "team-5",
     teamMemberIds: ["p-2025204024", "p-2024204015"],
@@ -669,8 +667,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-6",
-    title:
-      "AI System to diagnose and reduce workspace friction for radiologists",
+    title: "",
     description:
       "AI System to diagnose and reduce workspace friction for radiologists",
     teamId: "team-6",
@@ -696,7 +693,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-7",
-    title: "Human-AI Performance Manager",
+    title: "",
     description:
       "Exploring how productivity, collaboration quality, and decision-making effectiveness can be measured and improved in teams where humans and AI agents work together as contributors.",
     teamId: "team-7",
@@ -722,8 +719,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-8",
-    title:
-      "Traffic enforcement in India remains fragmented and largely dependent on manual…",
+    title: "",
     description: "monitoring and multiple disconnected systems.",
     teamId: "team-8",
     teamMemberIds: ["p-2025204012", "p-2025204002"],
@@ -748,8 +744,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-9",
-    title:
-      "An AI-powered Operating System for Freelance Photography Businesses.",
+    title: "",
     description:
       "An AI-powered Operating System for Freelance Photography Businesses.",
     teamId: "team-9",
@@ -775,7 +770,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-10",
-    title: "Preserving Memories of a physical object in a digitalise format",
+    title: "",
     description:
       "Preserving Memories of a physical object in a digitalise format",
     teamId: "team-10",
@@ -801,7 +796,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-11",
-    title: "Enterprise Revenue Intelligence & Assurance",
+    title: "",
     description:
       "A broader business solution focused on helping enterprises improve revenue realization, financial efficiency, and operational performance.",
     teamId: "team-11",
@@ -827,7 +822,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-12",
-    title: "AI Voice Agent Platform",
+    title: "",
     description:
       "The Problem: - Businesses spend significant time and money on repetitive outbound and inbound calling activities.",
     teamId: "team-12",
@@ -853,7 +848,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-13",
-    title: "AI Operating Copilot for Micro & Small Businesses",
+    title: "",
     description: "AI Operating Copilot for Micro & Small Businesses",
     teamId: "team-13",
     teamMemberIds: ["p-2025204004", "p-2025204011"],
@@ -878,8 +873,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-14",
-    title:
-      "Intelligence Layer for AI Agents which respects constraints, adheres to compliance and…",
+    title: "",
     description:
       "keeps track of decision points to prevent context drift and easy rollback to previous state.",
     teamId: "team-14",
@@ -905,13 +899,13 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-15",
-    title: "Intelligent Shipment Clustering for Urban Logistics",
+    title: "",
     description:
       "A logistics optimization platform that aggregates fragmented delivery demand from multiple businesses within the same geographic zone and consolidates them into shared, route-optimized vehicle runs.",
     teamId: "team-15",
-    teamMemberIds: ["p-2025204036", "p-2025204005"],
+    teamMemberIds: ["p-2025204036", "p-2025204033"],
     batchId: "b-2025-2027",
-    mentorIds: ["p-mentor-raghu"],
+    mentorIds: ["p-mentor-ramesh"],
     // The registration form records a preferred mentor as well as the
     // assigned one. We do not hold those values yet, so this stays null
     // until the coordinator fills it in rather than being invented.
@@ -931,8 +925,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-16",
-    title:
-      "Exploring a platform that reimagines the technical events ecosystem—either by…",
+    title: "",
     description:
       "streamlining end-to-end event management or by helping participants build meaningful professional connections before, during, and after events.",
     teamId: "team-16",
@@ -958,35 +951,28 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-17",
-    title:
-      "Design and develop an AI enabled wearable companion that can understand a user's daily…",
-    description:
-      "interactions and activities to provide contextual assistance and personalized insights.",
+    title: "",
+    description: "This team has not submitted a project idea yet.",
     teamId: "team-17",
-    teamMemberIds: ["p-2025204023"],
+    teamMemberIds: ["p-2025204005"],
     batchId: "b-2025-2027",
-    mentorIds: ["p-mentor-raghu"],
-    // The registration form records a preferred mentor as well as the
-    // assigned one. We do not hold those values yet, so this stays null
-    // until the coordinator fills it in rather than being invented.
+    mentorIds: ["p-mentor-ramesh"],
     preferredMentorId: null,
     visibility: "team_and_mentor",
     domainId: null,
     status: "ongoing",
-    problem:
-      "Idea 1:\n\nDesign and develop an AI enabled wearable companion that can understand a user's daily interactions and activities to provide contextual assistance and personalized insights. The project aims to identify suitable target users, validate their needs through market and user research, build and iterate on a product prototype, and evaluate its usability, desirability, and overall value proposition.\n\n---\n\nIdea 2 (also proposed):\n\nDesign and develop an adaptive Human Machine Interface (HMI) for controlling Unmanned Aerial Vehicles (UAVs) through an intuitive interaction mechanism. Instead of developing a UAV, the focus will be on creating a modular control solution that can potentially integrate with different UAV platforms. The product concept will be validated with relevant stakeholders through user research, prototyping, usability testing, and iterative product development.",
+    problem: "",
     workOrOutcome: "",
     materials: [],
     archived: false,
-    createdBy: "p-2025204023",
+    createdBy: "p-2025204005",
     createdAt: "2026-07-19T16:55:49.000Z",
-    updatedBy: "p-2025204023",
+    updatedBy: "p-2025204005",
     updatedAt: "2026-07-19T16:55:49.000Z",
   },
   {
     id: "proj-18",
-    title:
-      "Understand how product teams collect customer feedback and decide which features to…",
+    title: "",
     description:
       "build, and explore ways to make this process easier and more efficient.",
     teamId: "team-18",
@@ -1012,7 +998,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-19",
-    title: "Improving Decision-Making in Early-Stage Investments",
+    title: "",
     description:
       "Early-stage investors find it difficult to evaluate startups efficiently because critical information is scattered across multiple sources.",
     teamId: "team-19",
@@ -1038,13 +1024,12 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-20",
-    title:
-      "UPI and digital payments have made transactions effortless, but they have not made…",
+    title: "",
     description: "financial decision-making any easier.",
     teamId: "team-20",
-    teamMemberIds: ["p-2025204033", "p-2025204016"],
+    teamMemberIds: ["p-2025204016"],
     batchId: "b-2025-2027",
-    mentorIds: ["p-mentor-raghu"],
+    mentorIds: ["p-mentor-ramesh"],
     // The registration form records a preferred mentor as well as the
     // assigned one. We do not hold those values yet, so this stays null
     // until the coordinator fills it in rather than being invented.
@@ -1057,15 +1042,14 @@ export const seedProjects: Project[] = [
     workOrOutcome: "",
     materials: [],
     archived: false,
-    createdBy: "p-2025204033",
+    createdBy: "p-2025204016",
     createdAt: "2026-07-19T16:59:10.000Z",
-    updatedBy: "p-2025204033",
+    updatedBy: "p-2025204016",
     updatedAt: "2026-07-19T16:59:10.000Z",
   },
   {
     id: "proj-21",
-    title:
-      "Multilingual, low-learning-curve claims coordination platform that helps claimants…",
+    title: "",
     description:
       "Insurance claimants often struggle to complete and track claims because documents, communications, approvals and responsibilities are distributed across multiple parties and systems.",
     teamId: "team-21",
@@ -1091,8 +1075,7 @@ export const seedProjects: Project[] = [
   },
   {
     id: "proj-22",
-    title:
-      "AI-Powered Creator–Brand Collaboration and Campaign Intelligence Platform",
+    title: "",
     description:
       "We propose to develop an AI-powered platform that connects content creators with brands for relevant marketing collaborations while providing intelligent recommendations to both stakeholders.",
     teamId: "team-22",

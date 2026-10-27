@@ -25,9 +25,32 @@ export const CHANNEL = "pdm.db"
 let channel: BroadcastChannel | null = null
 
 function getChannel(): BroadcastChannel | null {
-  if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") return null
+  if (typeof window === "undefined" || typeof BroadcastChannel === "undefined")
+    return null
   if (!channel) channel = new BroadcastChannel(CHANNEL)
   return channel
+}
+
+/** Emails are roster data, not something anyone types in. The seed's address
+ * for a person wins over a copy saved earlier, in this browser or on the
+ * server, so a corrected email reaches everyone without losing the notes and
+ * progress already entered. Returns the same object when nothing differs. */
+export function withSeedEmails(db: Database): Database {
+  const seed = new Map(buildSeedDatabase().people.map((p) => [p.id, p.email]))
+  let changed = false
+  const people = db.people.map((person) => {
+    const email = seed.get(person.id)
+    if (!email || email === person.email) return person
+    changed = true
+    return { ...person, email }
+  })
+  return changed ? { ...db, people } : db
+}
+
+function syncEmails(db: Database): Database {
+  const next = withSeedEmails(db)
+  if (next !== db) saveDatabase(next, { broadcast: false })
+  return next
 }
 
 export function loadDatabase(): Database {
@@ -48,7 +71,7 @@ export function loadDatabase(): Database {
       saveDatabase(fresh, { broadcast: false })
       return fresh
     }
-    return parsed
+    return syncEmails(parsed)
   } catch {
     return buildSeedDatabase()
   }

@@ -1,14 +1,13 @@
-import {
-  AlarmClockIcon,
-  CheckmarkCircle02Icon,
-  CircleDashedIcon,
-  DeliverySent02Icon,
-  RecordIcon,
-  TimeQuarterPassIcon,
-  Undo02Icon,
-} from "@hugeicons/core-free-icons"
-
 import type { MilestoneStatus } from "@/lib/types"
+
+import {
+  AlarmClock,
+  CheckCircle,
+  Circle,
+  Clock,
+  FlipBackward,
+  Send01,
+} from "@untitledui/icons"
 
 /** Everything the interface knows about a milestone status, in one place.
  *
@@ -27,7 +26,7 @@ export type StatusMeta = {
   label: string
   /** Shorter form for the grid legend and dense cells. */
   shortLabel: string
-  icon: typeof CircleDashedIcon
+  icon: typeof Circle
   /** One line explaining what this state means, used in the legend and the
    * design-system page. */
   description: string
@@ -46,7 +45,7 @@ export const STATUS_META: Record<MilestoneStatus, StatusMeta> = {
     value: "not_started",
     label: "Not started",
     shortLabel: "Not started",
-    icon: CircleDashedIcon,
+    icon: Circle,
     description: "No work recorded against this checkpoint yet.",
     bucket: "idle",
     bg: "bg-status-not_started-bg",
@@ -58,7 +57,7 @@ export const STATUS_META: Record<MilestoneStatus, StatusMeta> = {
     value: "in_progress",
     label: "In progress",
     shortLabel: "In progress",
-    icon: RecordIcon,
+    icon: Circle,
     description: "The team is working on it. Nothing is waiting on the mentor.",
     bucket: "moving",
     bg: "bg-status-in_progress-bg",
@@ -70,7 +69,7 @@ export const STATUS_META: Record<MilestoneStatus, StatusMeta> = {
     value: "submitted",
     label: "Turned in",
     shortLabel: "Turned in",
-    icon: DeliverySent02Icon,
+    icon: Send01,
     description: "The team has handed it in. The mentor has not opened it yet.",
     bucket: "waiting",
     bg: "bg-status-submitted-bg",
@@ -82,7 +81,7 @@ export const STATUS_META: Record<MilestoneStatus, StatusMeta> = {
     value: "under_review",
     label: "Under review",
     shortLabel: "In review",
-    icon: TimeQuarterPassIcon,
+    icon: Clock,
     description: "The mentor has opened it and is reading.",
     bucket: "waiting",
     bg: "bg-status-under_review-bg",
@@ -94,7 +93,7 @@ export const STATUS_META: Record<MilestoneStatus, StatusMeta> = {
     value: "returned",
     label: "Returned for revisions",
     shortLabel: "Returned",
-    icon: Undo02Icon,
+    icon: FlipBackward,
     description: "The mentor has asked for changes and said what they are.",
     bucket: "moving",
     bg: "bg-status-returned-bg",
@@ -106,7 +105,7 @@ export const STATUS_META: Record<MilestoneStatus, StatusMeta> = {
     value: "accepted",
     label: "Accepted",
     shortLabel: "Accepted",
-    icon: CheckmarkCircle02Icon,
+    icon: CheckCircle,
     description: "The mentor is satisfied. Only a mentor can set this.",
     bucket: "done",
     bg: "bg-status-accepted-bg",
@@ -118,7 +117,7 @@ export const STATUS_META: Record<MilestoneStatus, StatusMeta> = {
     value: "overdue",
     label: "Overdue",
     shortLabel: "Overdue",
-    icon: AlarmClockIcon,
+    icon: AlarmClock,
     description: "Past its due week with nothing handed in.",
     bucket: "idle",
     bg: "bg-status-overdue-bg",
@@ -142,7 +141,12 @@ export const STATUS_ORDER: MilestoneStatus[] = [
 export const AWAITING_MENTOR: MilestoneStatus[] = ["submitted", "under_review"]
 
 /** Statuses that mean the ball is with the team. */
-export const AWAITING_TEAM: MilestoneStatus[] = ["not_started", "in_progress", "returned", "overdue"]
+export const AWAITING_TEAM: MilestoneStatus[] = [
+  "not_started",
+  "in_progress",
+  "returned",
+  "overdue",
+]
 
 export function statusMeta(status: MilestoneStatus): StatusMeta {
   return STATUS_META[status]

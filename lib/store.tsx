@@ -2,13 +2,32 @@
 
 import * as React from "react"
 
-import { currentWeek, dueDateForWeek, todayIso } from "@/lib/dates"
-import { loadDatabase, resetDatabase, saveDatabase, subscribeToChanges } from "@/lib/db"
+import { currentWeek, dueDateForWeek, formatDate, todayIso } from "@/lib/dates"
+import {
+  loadDatabase,
+  withSeedEmails,
+  resetDatabase,
+  saveDatabase,
+  subscribeToChanges,
+} from "@/lib/db"
+import {
+  applyChange,
+  fetchShared,
+  migrateLocal,
+  pushDiff,
+  subscribeShared,
+} from "@/lib/remote"
+import {
+  buildSeedDatabase,
+  withDemoActivity,
+  withoutActivity,
+} from "@/lib/seed"
 import { detectService } from "@/lib/links"
 import { milestoneTemplateFor } from "@/lib/milestone-template"
 import {
   type Actor,
   canAnnounceTo,
+  canEditProject,
   canReview,
   canSetMilestoneStatus,
   canSubmitMilestone,
@@ -18,8 +37,13 @@ import {
   isMentorOf,
   isOverride,
 } from "@/lib/permissions"
-import { audienceMembers } from "@/lib/selectors"
-import { readSession, signIn as persistSignIn, clearSession, writeSession } from "@/lib/session"
+import { audienceMembers, projectLabel } from "@/lib/selectors"
+import {
+  readSession,
+  signIn as persistSignIn,
+  clearSession,
+  writeSession,
+} from "@/lib/session"
 import type {
   ActionItem,
   Announcement,
@@ -34,6 +58,8 @@ import type {
   MilestoneStatus,
   MilestoneTemplateItem,
   Minutes,
+  Note,
+  NoteComment,
   Person,
   Project,
   ProjectDraft,
@@ -56,6 +82,10 @@ const deny = (reason: string): ActionResult => ({ ok: false, reason })
 type StoreValue = {
   db: Database
   ready: boolean
+  /** True once the server's copy has been loaded (or could not be). Until then
+   * a title, a note or a photo may look missing only because it has not
+   * arrived. */
+  sharedReady: boolean
   session: Session | null
   /** Null until a session exists. Everything role-aware reads this. */
   actor: Actor | null
@@ -69,9 +99,16 @@ type StoreValue = {
   setActiveRole: (role: Role) => void
 
   // milestones
-  setMilestoneStatus: (milestoneId: string, next: MilestoneStatus) => ActionResult
+  setMilestoneStatus: (
+    milestoneId: string,
+    next: MilestoneStatus
+  ) => ActionResult
   toggleDeliverable: (milestoneId: string, deliverable: string) => ActionResult
-  submitMilestone: (milestoneId: string, note: string, artefactIds: string[]) => ActionResult
+  submitMilestone: (
+    milestoneId: string,
+    note: string,
+    artefactIds: string[]
+  ) => ActionResult
   reviewSubmission: (
     milestoneId: string,
     verdict: "accept" | "return",
@@ -79,21 +116,36 @@ type StoreValue = {
     category?: ReturnCategory
   ) => ActionResult
   openForReview: (milestoneId: string) => ActionResult
-  setDueWeekOverride: (milestoneId: string, week: number | null, reason: string) => ActionResult
+  setDueWeekOverride: (
+    milestoneId: string,
+    week: number | null,
+    reason: string
+  ) => ActionResult
   markFeedbackAddressed: (reviewId: string, note: string) => ActionResult
   confirmFeedbackAddressed: (reviewId: string) => ActionResult
 
   // artefacts
   addArtefact: (
     projectId: string,
-    input: { url: string; label?: string; milestoneInstanceId?: string | null; note?: string }
+    input: {
+      url: string
+      label?: string
+      milestoneInstanceId?: string | null
+      note?: string
+    }
   ) => ActionResult
   removeArtefact: (artefactId: string) => ActionResult
 
   // meetings, minutes, actions
   addMeeting: (
     projectId: string,
-    input: { title: string; date: string; time?: string; attendeeIds: string[]; callUrl?: string }
+    input: {
+      title: string
+      date: string
+      time?: string
+      attendeeIds: string[]
+      callUrl?: string
+    }
   ) => ActionResult
   saveMinutes: (
     meetingId: string,
@@ -102,7 +154,13 @@ type StoreValue = {
   confirmMinutes: (minutesId: string) => ActionResult
   addActionItem: (
     projectId: string,
-    input: { text: string; ownerId: string; dueDate: string; meetingId?: string }
+    input: {
+      text: string
+      ownerId: string
+      dueDate: string
+      meetingId?: string
+      noteId?: string
+    }
   ) => ActionResult
   toggleActionItem: (actionItemId: string) => ActionResult
   verifyActionItem: (actionItemId: string) => ActionResult
@@ -123,8 +181,16 @@ type StoreValue = {
   markNotificationRead: (id: string) => void
   markAllNotificationsRead: () => void
 
+  /** Your own photo. Nothing else about you is editable here. */
+  updateProfile: (input: { avatarUrl?: string | null }) => ActionResult
+
   // programme administration
-  addPerson: (input: { name: string; email: string; roles: Role[]; rollNumber?: string }) => Person
+  addPerson: (input: {
+    name: string
+    email: string
+    roles: Role[]
+    rollNumber?: string
+  }) => Person
   updateAllocation: (
     projectId: string,
     mentorIds: string[],
@@ -134,9 +200,13 @@ type StoreValue = {
   createTeam: (draft: TeamDraft) => ActionResult
   addProject: (draft: ProjectDraft) => ActionResult
   updateProject: (id: string, draft: ProjectDraft) => ActionResult
+  setProjectTitle: (projectId: string, title: string) => ActionResult
   archiveProject: (id: string) => ActionResult
   restoreProject: (id: string) => ActionResult
-  setProjectVisibility: (id: string, visibility: Project["visibility"]) => ActionResult
+  setProjectVisibility: (
+    id: string,
+    visibility: Project["visibility"]
+  ) => ActionResult
   addBatch: (draft: BatchDraft) => ActionResult
   updateBatch: (id: string, draft: BatchDraft) => ActionResult
   addDomain: (label: string) => ActionResult
@@ -145,7 +215,29 @@ type StoreValue = {
     draft: Omit<MilestoneTemplateItem, "id" | "batchId">
   ) => ActionResult
   deleteMilestoneTemplateItem: (id: string) => ActionResult
+  // notes
+  createNote: (projectId: string) => string | null
+  updateNote: (
+    noteId: string,
+    patch: { title?: string; content?: string }
+  ) => ActionResult
+  deleteNote: (noteId: string) => ActionResult
+  addNoteComment: (
+    noteId: string,
+    input: {
+      body: string
+      quote?: string
+      anchorId?: string
+      parentId?: string
+      /** The note's content with the new anchor applied, saved in the same
+       * write so the comment and its highlight can never disagree. */
+      content?: string
+    }
+  ) => ActionResult
+
   resetAll: () => void
+  /** Loads generated activity for stress-testing, or clears it again. */
+  setDemoData: (on: boolean) => void
 }
 
 const StoreContext = React.createContext<StoreValue | null>(null)
@@ -154,7 +246,16 @@ const StoreContext = React.createContext<StoreValue | null>(null)
 
 export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const [db, setDb] = React.useState<Database>(() => loadDatabase())
+  // The latest state, so a save can be compared with what came before it.
+  const dbRef = React.useRef(db)
+  React.useEffect(() => {
+    dbRef.current = db
+  }, [db])
   const [session, setSession] = React.useState<Session | null>(null)
+  // Whose server copy has been loaded; compared with the signed-in person so a
+  // second sign-in in the same tab waits for its own load.
+  const [sharedFor, setSharedFor] = React.useState<string | null>(null)
+  const sharedReady = Boolean(session) && sharedFor === session?.personId
   const [ready, setReady] = React.useState(false)
 
   // localStorage is not available while rendering on the server, so the real
@@ -165,6 +266,51 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     setSession(readSession())
     setReady(true)
   }, [])
+
+  // Notes, action items and progress links live on the server. Load them once
+  // we know who this tab is, then take every change anyone else makes.
+  React.useEffect(() => {
+    if (!ready) return
+    let cancelled = false
+    const who = session?.personId ?? null
+    fetchShared().then((remote) => {
+      if (cancelled) return
+      if (!remote) {
+        setSharedFor(who)
+        return
+      }
+      // Titles are written by students now, so a browser's older copy of the
+      // projects must never seed the server; the seed's blank titles do.
+      const local = {
+        ...loadDatabase(),
+        projects: buildSeedDatabase().projects,
+      }
+      const useRemote = migrateLocal(local, remote)
+      setDb((current) => {
+        const merged = { ...current, ...useRemote }
+        // The server may still hold an earlier email for someone; the roster's
+        // wins, and the correction is written back for everyone else.
+        const next = withSeedEmails(merged)
+        if (next !== merged) pushDiff(merged, next)
+        saveDatabase(next, { broadcast: false })
+        dbRef.current = next
+        return next
+      })
+      setSharedFor(who)
+    })
+    const stop = subscribeShared((change) =>
+      setDb((current) => {
+        const next = applyChange(current, change)
+        saveDatabase(next, { broadcast: false })
+        dbRef.current = next
+        return next
+      })
+    )
+    return () => {
+      cancelled = true
+      stop()
+    }
+  }, [ready, session?.personId])
 
   // Another tab wrote. Pick it up so a mentor watching in a second window sees
   // a submission land without refreshing.
@@ -194,7 +340,8 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       const dueWeek = milestone.dueWeekOverride ?? template.dueWeek
       const due = dueDateForWeek(dueWeek, batchStart)
       const daysOut = Math.round(
-        (new Date(`${due}T00:00:00Z`).getTime() - new Date(`${today}T00:00:00Z`).getTime()) /
+        (new Date(`${due}T00:00:00Z`).getTime() -
+          new Date(`${today}T00:00:00Z`).getTime()) /
           86_400_000
       )
       // A week out and the day before. Two reminders, not a stream.
@@ -219,28 +366,42 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     })
 
     if (!fresh.length) return
-    const next = { ...current, notifications: [...fresh, ...current.notifications].slice(0, 1000) }
+    const next = {
+      ...current,
+      notifications: [...fresh, ...current.notifications].slice(0, 1000),
+    }
     setDb(next)
     saveDatabase(next)
   }, [ready])
 
   const commit = React.useCallback((next: Database) => {
+    pushDiff(dbRef.current, next)
+    dbRef.current = next
     setDb(next)
     saveDatabase(next)
   }, [])
 
   const currentUser = React.useMemo(
-    () => (session ? (db.people.find((p) => p.id === session.personId) ?? null) : null),
+    () =>
+      session
+        ? (db.people.find((p) => p.id === session.personId) ?? null)
+        : null,
     [db.people, session]
   )
 
   const actor = React.useMemo<Actor | null>(
-    () => (currentUser && session ? { person: currentUser, role: session.activeRole } : null),
+    () =>
+      currentUser && session
+        ? { person: currentUser, role: session.activeRole }
+        : null,
     [currentUser, session]
   )
 
   const batch = db.batches[0]
-  const week = React.useMemo(() => currentWeek(batch.startDate), [batch.startDate])
+  const week = React.useMemo(
+    () => currentWeek(batch.startDate),
+    [batch.startDate]
+  )
 
   /* ------------------------------------------------------------ helpers */
 
@@ -260,7 +421,8 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   )
 
   const templateOf = React.useCallback(
-    (templateItemId: string) => db.milestoneTemplate.find((t) => t.id === templateItemId),
+    (templateItemId: string) =>
+      db.milestoneTemplate.find((t) => t.id === templateItemId),
     [db.milestoneTemplate]
   )
 
@@ -268,7 +430,10 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
    * trail, and so a coordinator acting outside their own mentees is recorded
    * as an override rather than silently allowed. */
   const write = React.useCallback(
-    (mutate: (draft: Database) => void, audit?: { action: string; subject: string; detail?: string }) => {
+    (
+      mutate: (draft: Database) => void,
+      audit?: { action: string; subject: string; detail?: string }
+    ) => {
       const next: Database = structuredClone(db)
       mutate(next)
       if (audit && actor) {
@@ -306,7 +471,8 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const doSignIn = React.useCallback((personId: string, role?: Role) => {
     const person = loadDatabase().people.find((p) => p.id === personId)
     if (!person) return
-    const chosen = role && person.roles.includes(role) ? role : preferredRole(person)
+    const chosen =
+      role && person.roles.includes(role) ? role : preferredRole(person)
     setSession(persistSignIn(personId, chosen))
   }, [])
 
@@ -378,17 +544,23 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   )
 
   const submitMilestone = React.useCallback(
-    (milestoneId: string, note: string, artefactIds: string[]): ActionResult => {
+    (
+      milestoneId: string,
+      note: string,
+      artefactIds: string[]
+    ): ActionResult => {
       if (!actor) return deny("Sign in first.")
       const found = projectOfMilestone(milestoneId)
       if (!found) return deny("That checkpoint no longer exists.")
       const check = canSubmitMilestone(actor, found.project)
       if (!check.allowed) return deny(check.reason ?? "Not permitted.")
-      if (!artefactIds.length) return deny("Attach at least one piece of work before turning it in.")
+      if (!artefactIds.length)
+        return deny("Attach at least one piece of work before turning it in.")
 
       const now = new Date().toISOString()
       const attempt =
-        db.submissions.filter((s) => s.milestoneInstanceId === milestoneId).length + 1
+        db.submissions.filter((s) => s.milestoneInstanceId === milestoneId)
+          .length + 1
 
       write(
         (draft) => {
@@ -407,16 +579,25 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
             artefactIds,
           }
           draft.submissions = [submission, ...draft.submissions]
-          const item = draft.milestoneTemplate.find((t) => t.id === m.templateItemId)
+          const item = draft.milestoneTemplate.find(
+            (t) => t.id === m.templateItemId
+          )
           notify(draft, found.project.mentorIds, {
             kind: "submission",
-            title: `${found.project.title.slice(0, 48)} turned in ${item?.title ?? "a checkpoint"}`,
-            body: attempt > 1 ? `Resubmission, attempt ${attempt}.` : "Waiting on your review.",
+            title: `${projectLabel(found.project).slice(0, 48)} turned in ${item?.title ?? "a checkpoint"}`,
+            body:
+              attempt > 1
+                ? `Resubmission, attempt ${attempt}.`
+                : "Waiting on your review.",
             href: "/projects?filter=waiting",
             createdAt: now,
           })
         },
-        { action: "milestone.submit", subject: milestoneId, detail: `attempt ${attempt}` }
+        {
+          action: "milestone.submit",
+          subject: milestoneId,
+          detail: `attempt ${attempt}`,
+        }
       )
       return ok
     },
@@ -456,7 +637,8 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       if (verdict === "return" && body.trim().length < 20) {
         return deny("Say what needs to change — at least a sentence.")
       }
-      if (verdict === "return" && !category) return deny("Pick what kind of change is needed.")
+      if (verdict === "return" && !category)
+        return deny("Pick what kind of change is needed.")
 
       const submission = db.submissions
         .filter((s) => s.milestoneInstanceId === milestoneId)
@@ -490,7 +672,9 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
           }
           m.updatedAt = now
 
-          const item = draft.milestoneTemplate.find((t) => t.id === m.templateItemId)
+          const item = draft.milestoneTemplate.find(
+            (t) => t.id === m.templateItemId
+          )
           notify(draft, found.project.teamMemberIds, {
             kind: "review",
             title:
@@ -523,7 +707,9 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
         {
           action: `milestone.${verdict}`,
           subject: milestoneId,
-          detail: isOverride(actor, found.project) ? "coordinator override" : undefined,
+          detail: isOverride(actor, found.project)
+            ? "coordinator override"
+            : undefined,
         }
       )
       return ok
@@ -532,7 +718,11 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   )
 
   const setDueWeekOverride = React.useCallback(
-    (milestoneId: string, weekValue: number | null, reason: string): ActionResult => {
+    (
+      milestoneId: string,
+      weekValue: number | null,
+      reason: string
+    ): ActionResult => {
       if (!actor) return deny("Sign in first.")
       const found = projectOfMilestone(milestoneId)
       if (!found) return deny("That checkpoint no longer exists.")
@@ -567,7 +757,8 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       const review = db.reviews.find((r) => r.id === reviewId)
       const project = review ? findProject(review.projectId) : undefined
       if (!review || !project) return deny("That feedback no longer exists.")
-      if (!isMemberOf(actor, project)) return deny("Only the team records how they addressed it.")
+      if (!isMemberOf(actor, project))
+        return deny("Only the team records how they addressed it.")
       write((draft) => {
         const r = draft.reviews.find((x) => x.id === reviewId)!
         r.addressedNote = note.trim()
@@ -602,12 +793,18 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const addArtefact = React.useCallback(
     (
       projectId: string,
-      input: { url: string; label?: string; milestoneInstanceId?: string | null; note?: string }
+      input: {
+        url: string
+        label?: string
+        milestoneInstanceId?: string | null
+        note?: string
+      }
     ): ActionResult => {
       if (!actor) return deny("Sign in first.")
       const project = findProject(projectId)
       if (!project) return deny("That project no longer exists.")
-      if (!isMemberOf(actor, project) && !isMentorOf(actor, project) && !isCoordinator(actor)) {
+      // Progress is the team's own record: mentors and the coordinator read it.
+      if (!isMemberOf(actor, project)) {
         return deny("This project is not yours to change.")
       }
       const artefact: Artefact = {
@@ -638,8 +835,13 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       if (!isMemberOf(actor, project) && !isCoordinator(actor)) {
         return deny("Only the team can remove its own links.")
       }
-      const used = db.submissions.some((s) => s.artefactIds.includes(artefactId))
-      if (used) return deny("This is attached to work already turned in, so it stays on the record.")
+      const used = db.submissions.some((s) =>
+        s.artefactIds.includes(artefactId)
+      )
+      if (used)
+        return deny(
+          "This is attached to work already turned in, so it stays on the record."
+        )
       write((draft) => {
         draft.artefacts = draft.artefacts.filter((a) => a.id !== artefactId)
       })
@@ -653,12 +855,22 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const addMeeting = React.useCallback(
     (
       projectId: string,
-      input: { title: string; date: string; time?: string; attendeeIds: string[]; callUrl?: string }
+      input: {
+        title: string
+        date: string
+        time?: string
+        attendeeIds: string[]
+        callUrl?: string
+      }
     ): ActionResult => {
       if (!actor) return deny("Sign in first.")
       const project = findProject(projectId)
       if (!project) return deny("That project no longer exists.")
-      if (!isMemberOf(actor, project) && !isMentorOf(actor, project) && !isCoordinator(actor)) {
+      if (
+        !isMemberOf(actor, project) &&
+        !isMentorOf(actor, project) &&
+        !isCoordinator(actor)
+      ) {
         return deny("This project is not yours to change.")
       }
       const meeting: Meeting = {
@@ -681,7 +893,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
             {
               kind: "meeting",
               title: `${meeting.title} on ${meeting.date}`,
-              body: `${project.title.slice(0, 60)}`,
+              body: `${projectLabel(project).slice(0, 60)}`,
               href: `/projects/${projectId}?tab=meetings`,
               createdAt: meeting.createdAt,
             }
@@ -703,7 +915,11 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       const meeting = db.meetings.find((m) => m.id === meetingId)
       const project = meeting ? findProject(meeting.projectId) : undefined
       if (!meeting || !project) return deny("That meeting no longer exists.")
-      if (!isMemberOf(actor, project) && !isMentorOf(actor, project) && !isCoordinator(actor)) {
+      if (
+        !isMemberOf(actor, project) &&
+        !isMentorOf(actor, project) &&
+        !isCoordinator(actor)
+      ) {
         return deny("This project is not yours to change.")
       }
       const now = new Date().toISOString()
@@ -750,7 +966,8 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       write((draft) => {
         const m = draft.minutes.find((x) => x.id === minutesId)!
         if (isMemberOf(actor, project)) m.confirmedByTeamAt = now
-        else if (isMentorOf(actor, project) || isCoordinator(actor)) m.confirmedByMentorAt = now
+        else if (isMentorOf(actor, project) || isCoordinator(actor))
+          m.confirmedByMentorAt = now
       })
       return ok
     },
@@ -760,7 +977,13 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const addActionItem = React.useCallback(
     (
       projectId: string,
-      input: { text: string; ownerId: string; dueDate: string; meetingId?: string }
+      input: {
+        text: string
+        ownerId: string
+        dueDate: string
+        meetingId?: string
+        noteId?: string
+      }
     ): ActionResult => {
       if (!actor) return deny("Sign in first.")
       const project = findProject(projectId)
@@ -770,8 +993,9 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       const item: ActionItem = {
         id: id("ai"),
         projectId,
-        source: input.meetingId ? "meeting" : "self",
+        source: input.meetingId || input.noteId ? "meeting" : "self",
         meetingId: input.meetingId,
+        noteId: input.noteId,
         text: input.text.trim(),
         ownerId: input.ownerId,
         dueDate: input.dueDate,
@@ -853,11 +1077,17 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       const item = db.actionItems.find((a) => a.id === actionItemId)
       const project = item ? findProject(item.projectId) : undefined
       if (!item || !project) return deny("That action no longer exists.")
-      if (item.createdBy !== actor.person.id && !isCoordinator(actor)) {
-        return deny("Only whoever raised it can remove it.")
+      if (
+        item.createdBy !== actor.person.id &&
+        !isMentorOf(actor, project) &&
+        !isCoordinator(actor)
+      ) {
+        return deny("Only whoever raised it, or the mentor, can remove it.")
       }
       write((draft) => {
-        draft.actionItems = draft.actionItems.filter((a) => a.id !== actionItemId)
+        draft.actionItems = draft.actionItems.filter(
+          (a) => a.id !== actionItemId
+        )
       })
       return ok
     },
@@ -908,7 +1138,11 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
             }
           )
         },
-        { action: "announcement.post", subject: announcement.id, detail: input.audience.kind }
+        {
+          action: "announcement.post",
+          subject: announcement.id,
+          detail: input.audience.kind,
+        }
       )
       return ok
     },
@@ -919,12 +1153,17 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     (announcementId: string) => {
       if (!actor) return
       const already = db.announcementReads.some(
-        (r) => r.announcementId === announcementId && r.personId === actor.person.id
+        (r) =>
+          r.announcementId === announcementId && r.personId === actor.person.id
       )
       if (already) return
       write((draft) => {
         draft.announcementReads = [
-          { announcementId, personId: actor.person.id, readAt: new Date().toISOString() },
+          {
+            announcementId,
+            personId: actor.person.id,
+            readAt: new Date().toISOString(),
+          },
           ...draft.announcementReads,
         ]
       })
@@ -965,7 +1204,8 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     if (!actor) return
     write((draft) => {
       draft.notifications.forEach((n) => {
-        if (n.personId === actor.person.id && !n.readAt) n.readAt = new Date().toISOString()
+        if (n.personId === actor.person.id && !n.readAt)
+          n.readAt = new Date().toISOString()
       })
     })
   }, [actor, write])
@@ -974,12 +1214,34 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
 
   const requireCoordinator = React.useCallback((): ActionResult | null => {
     if (!actor) return deny("Sign in first.")
-    if (!isCoordinator(actor)) return deny("Only the programme coordinator can change this.")
+    if (!isCoordinator(actor))
+      return deny("Only the programme coordinator can change this.")
     return null
   }, [actor])
 
+  const updateProfile = React.useCallback(
+    (input: { avatarUrl?: string | null }): ActionResult => {
+      if (!actor) return deny("Sign in first.")
+      // Name, email and roll number come from the roster; only the photo is
+      // the person's own to change.
+      write((draft) => {
+        const me = draft.people.find((p) => p.id === actor.person.id)
+        if (!me) return
+        if (input.avatarUrl !== undefined)
+          me.avatarUrl = input.avatarUrl ?? undefined
+      })
+      return ok
+    },
+    [actor, write]
+  )
+
   const addPerson = React.useCallback(
-    (input: { name: string; email: string; roles: Role[]; rollNumber?: string }): Person => {
+    (input: {
+      name: string
+      email: string
+      roles: Role[]
+      rollNumber?: string
+    }): Person => {
       const person: Person = {
         id: id("p"),
         name: input.name.trim(),
@@ -996,7 +1258,11 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   )
 
   const updateAllocation = React.useCallback(
-    (projectId: string, mentorIds: string[], preferredMentorId: string | null): ActionResult => {
+    (
+      projectId: string,
+      mentorIds: string[],
+      preferredMentorId: string | null
+    ): ActionResult => {
       const denied = requireCoordinator()
       if (denied) return denied
       if (!mentorIds.length) return deny("A project needs at least one mentor.")
@@ -1008,7 +1274,11 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
           p.updatedAt = new Date().toISOString()
           p.updatedBy = actor!.person.id
         },
-        { action: "allocation.update", subject: projectId, detail: mentorIds.join(", ") }
+        {
+          action: "allocation.update",
+          subject: projectId,
+          detail: mentorIds.join(", "),
+        }
       )
       return ok
     },
@@ -1019,7 +1289,8 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     (teamId: string, draftTeam: TeamDraft): ActionResult => {
       const denied = requireCoordinator()
       if (denied) return denied
-      if (!draftTeam.memberIds.length) return deny("A team needs at least one member.")
+      if (!draftTeam.memberIds.length)
+        return deny("A team needs at least one member.")
       write(
         (draft) => {
           const team = draft.teams.find((t) => t.id === teamId)!
@@ -1043,7 +1314,8 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     (draftTeam: TeamDraft): ActionResult => {
       const denied = requireCoordinator()
       if (denied) return denied
-      if (!draftTeam.memberIds.length) return deny("A team needs at least one member.")
+      if (!draftTeam.memberIds.length)
+        return deny("A team needs at least one member.")
       const team: Team = {
         id: id("team"),
         batchId: batch.id,
@@ -1080,7 +1352,9 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
         (draft) => {
           draft.projects = [...draft.projects, project]
           // A new project gets the whole calendar, not a blank slate.
-          const template = draft.milestoneTemplate.filter((t) => t.batchId === project.batchId)
+          const template = draft.milestoneTemplate.filter(
+            (t) => t.batchId === project.batchId
+          )
           draft.milestones = [
             ...draft.milestones,
             ...template.map<MilestoneInstance>((t) => ({
@@ -1105,7 +1379,11 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       if (!actor) return deny("Sign in first.")
       const project = findProject(projectId)
       if (!project) return deny("That project no longer exists.")
-      if (!isMemberOf(actor, project) && !isMentorOf(actor, project) && !isCoordinator(actor)) {
+      if (
+        !isMemberOf(actor, project) &&
+        !isMentorOf(actor, project) &&
+        !isCoordinator(actor)
+      ) {
         return deny("This project is not yours to change.")
       }
       write(
@@ -1116,6 +1394,33 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
           p.updatedBy = actor.person.id
         },
         { action: "project.update", subject: projectId }
+      )
+      return ok
+    },
+    [actor, findProject, write]
+  )
+
+  const setProjectTitle = React.useCallback(
+    (projectId: string, title: string): ActionResult => {
+      if (!actor) return deny("Sign in first.")
+      const project = findProject(projectId)
+      if (!project) return deny("That project no longer exists.")
+      // The team names its project; its mentors may correct it.
+      if (!isMemberOf(actor, project) && !isMentorOf(actor, project)) {
+        return deny("Only the team and its mentors can name the project.")
+      }
+      const clean = title.trim().replace(/\s+/g, " ")
+      if (!clean) return deny("A project needs a title.")
+      if (clean.length > 120)
+        return deny("Keep the title under 120 characters.")
+      write(
+        (draft) => {
+          const p = draft.projects.find((x) => x.id === projectId)!
+          p.title = clean
+          p.updatedAt = new Date().toISOString()
+          p.updatedBy = actor.person.id
+        },
+        { action: "project.title", subject: projectId }
       )
       return ok
     },
@@ -1236,7 +1541,8 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       const denied = requireCoordinator()
       if (denied) return denied
       if (!draftItem.title.trim()) return deny("A checkpoint needs a title.")
-      if (draftItem.dueWeek < 1 || draftItem.dueWeek > 60) return deny("Week must be between 1 and 60.")
+      if (draftItem.dueWeek < 1 || draftItem.dueWeek > 60)
+        return deny("Week must be between 1 and 60.")
 
       write(
         (draft) => {
@@ -1271,7 +1577,10 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
             t.order = index + 1
           })
         },
-        { action: itemId ? "template.update" : "template.create", subject: itemId ?? draftItem.title }
+        {
+          action: itemId ? "template.update" : "template.create",
+          subject: itemId ?? draftItem.title,
+        }
       )
       return ok
     },
@@ -1286,12 +1595,18 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
         (m) => m.templateItemId === itemId && m.status !== "not_started"
       )
       if (hasWork) {
-        return deny("Teams have already worked against this checkpoint, so it cannot be removed.")
+        return deny(
+          "Teams have already worked against this checkpoint, so it cannot be removed."
+        )
       }
       write(
         (draft) => {
-          draft.milestoneTemplate = draft.milestoneTemplate.filter((t) => t.id !== itemId)
-          draft.milestones = draft.milestones.filter((m) => m.templateItemId !== itemId)
+          draft.milestoneTemplate = draft.milestoneTemplate.filter(
+            (t) => t.id !== itemId
+          )
+          draft.milestones = draft.milestones.filter(
+            (m) => m.templateItemId !== itemId
+          )
           draft.milestoneTemplate.forEach((t, index) => {
             t.order = index + 1
           })
@@ -1303,14 +1618,156 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     [db.milestones, requireCoordinator, write]
   )
 
+  /* -------------------------------------------------------------- notes */
+
+  const createNote = React.useCallback(
+    (projectId: string): string | null => {
+      if (!actor) return null
+      const project = findProject(projectId)
+      // The coordinator reads notes; the team and its mentors write them.
+      if (isCoordinator(actor)) return null
+      if (!project || !canEditProject(actor, project)) return null
+      const now = new Date().toISOString()
+      const note: Note = {
+        id: id("note"),
+        projectId,
+        title: `${formatDate(todayIso(), { withYear: true })} Meeting notes`,
+        content: "",
+        authorId: actor.person.id,
+        createdAt: now,
+        updatedAt: now,
+      }
+      write((draft) => {
+        draft.notes = [note, ...draft.notes]
+      })
+      return note.id
+    },
+    [actor, findProject, write]
+  )
+
+  const updateNote = React.useCallback(
+    (
+      noteId: string,
+      patch: { title?: string; content?: string }
+    ): ActionResult => {
+      if (!actor) return deny("Sign in first.")
+      const note = db.notes.find((n) => n.id === noteId)
+      const project = note ? findProject(note.projectId) : undefined
+      if (!note || !project) return deny("That note no longer exists.")
+      // The team and its mentors write the same notes.
+      if (
+        !isMemberOf(actor, project) &&
+        !isMentorOf(actor, project) &&
+        note.authorId !== actor.person.id
+      ) {
+        return deny("Only the team and its mentors can edit its notes.")
+      }
+      write((draft) => {
+        const n = draft.notes.find((x) => x.id === noteId)!
+        if (patch.title !== undefined) n.title = patch.title
+        if (patch.content !== undefined) n.content = patch.content
+        n.updatedAt = new Date().toISOString()
+      })
+      return ok
+    },
+    [actor, db.notes, findProject, write]
+  )
+
+  const deleteNote = React.useCallback(
+    (noteId: string): ActionResult => {
+      if (!actor) return deny("Sign in first.")
+      const note = db.notes.find((n) => n.id === noteId)
+      if (!note) return deny("That note no longer exists.")
+      const project = findProject(note.projectId)
+      // The whole team shares its notes: any member can edit or delete one.
+      const onTeam =
+        !!project && (isMemberOf(actor, project) || isMentorOf(actor, project))
+      if (!onTeam && note.authorId !== actor.person.id) {
+        return deny("Only the team and its mentors can delete its notes.")
+      }
+      write((draft) => {
+        draft.notes = draft.notes.filter((n) => n.id !== noteId)
+        draft.actionItems = draft.actionItems.filter((a) => a.noteId !== noteId)
+        draft.noteComments = draft.noteComments.filter(
+          (c) => c.noteId !== noteId
+        )
+      })
+      return ok
+    },
+    [actor, db.notes, findProject, write]
+  )
+
+  const addNoteComment = React.useCallback(
+    (
+      noteId: string,
+      input: {
+        body: string
+        quote?: string
+        anchorId?: string
+        parentId?: string
+        content?: string
+      }
+    ): ActionResult => {
+      if (!actor) return deny("Sign in first.")
+      const note = db.notes.find((n) => n.id === noteId)
+      const project = note ? findProject(note.projectId) : undefined
+      if (!note || !project) return deny("That note no longer exists.")
+      if (!canEditProject(actor, project))
+        return deny("This note is not yours to comment on.")
+      if (!input.body.trim()) return deny("A comment needs some text.")
+      const comment: NoteComment = {
+        id: id("nc"),
+        noteId,
+        projectId: project.id,
+        authorId: actor.person.id,
+        body: input.body.trim(),
+        quote: input.quote,
+        anchorId: input.anchorId,
+        parentId: input.parentId,
+        createdAt: new Date().toISOString(),
+      }
+      write((draft) => {
+        draft.noteComments = [...draft.noteComments, comment]
+        if (input.content !== undefined) {
+          const n = draft.notes.find((x) => x.id === noteId)!
+          n.content = input.content
+          n.updatedAt = comment.createdAt
+        }
+        notify(
+          draft,
+          [...project.teamMemberIds, ...project.mentorIds].filter(
+            (p) => p !== actor.person.id
+          ),
+          {
+            kind: "review",
+            title: `${actor.person.name} commented on "${note.title}"`,
+            body: comment.body.slice(0, 80),
+            href: `/notes/${noteId}`,
+            createdAt: comment.createdAt,
+          }
+        )
+      })
+      return ok
+    },
+    [actor, db.notes, findProject, write]
+  )
+
   const resetAll = React.useCallback(() => {
     setDb(resetDatabase())
   }, [])
+
+  const setDemoData = React.useCallback(
+    (on: boolean) => {
+      commit(on ? withDemoActivity(db) : withoutActivity(db))
+    },
+    [commit, db]
+  )
 
   const value = React.useMemo<StoreValue>(
     () => ({
       db,
       ready,
+      sharedReady,
       session,
       actor,
       currentUser,
@@ -1342,11 +1799,70 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       markNotificationRead,
       markAllNotificationsRead,
       addPerson,
+      updateProfile,
       updateAllocation,
       saveTeam,
       createTeam,
       addProject,
       updateProject,
+      setProjectTitle,
+      archiveProject,
+      restoreProject,
+      setProjectVisibility,
+      addBatch,
+      updateBatch,
+      addDomain,
+      saveMilestoneTemplateItem,
+      deleteMilestoneTemplateItem,
+      createNote,
+      updateNote,
+      deleteNote,
+      addNoteComment,
+      resetAll,
+      setDemoData,
+    }),
+    [
+      db,
+      ready,
+      sharedReady,
+      session,
+      actor,
+      currentUser,
+      week,
+      batch,
+      doSignIn,
+      doSignOut,
+      setActiveRole,
+      setMilestoneStatus,
+      toggleDeliverable,
+      submitMilestone,
+      reviewSubmission,
+      openForReview,
+      setDueWeekOverride,
+      markFeedbackAddressed,
+      confirmFeedbackAddressed,
+      addArtefact,
+      removeArtefact,
+      addMeeting,
+      saveMinutes,
+      confirmMinutes,
+      addActionItem,
+      toggleActionItem,
+      verifyActionItem,
+      deleteActionItem,
+      postAnnouncement,
+      markAnnouncementRead,
+      togglePinned,
+      markNotificationRead,
+      markAllNotificationsRead,
+      addPerson,
+      updateProfile,
+      updateAllocation,
+      saveTeam,
+      createTeam,
+      addProject,
+      updateProject,
+      setProjectTitle,
       archiveProject,
       restoreProject,
       setProjectVisibility,
@@ -1356,20 +1872,11 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       saveMilestoneTemplateItem,
       deleteMilestoneTemplateItem,
       resetAll,
-    }),
-    [
-      db, ready, session, actor, currentUser, week, batch,
-      doSignIn, doSignOut, setActiveRole,
-      setMilestoneStatus, toggleDeliverable, submitMilestone, reviewSubmission, openForReview,
-      setDueWeekOverride, markFeedbackAddressed, confirmFeedbackAddressed,
-      addArtefact, removeArtefact,
-      addMeeting, saveMinutes, confirmMinutes, addActionItem, toggleActionItem, verifyActionItem,
-      deleteActionItem,
-      postAnnouncement, markAnnouncementRead, togglePinned,
-      markNotificationRead, markAllNotificationsRead,
-      addPerson, updateAllocation, saveTeam, createTeam, addProject, updateProject,
-      archiveProject, restoreProject, setProjectVisibility, addBatch, updateBatch, addDomain,
-      saveMilestoneTemplateItem, deleteMilestoneTemplateItem, resetAll,
+      setDemoData,
+      createNote,
+      updateNote,
+      deleteNote,
+      addNoteComment,
     ]
   )
 
@@ -1378,7 +1885,8 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
 
 export function useProjectsStore() {
   const ctx = React.useContext(StoreContext)
-  if (!ctx) throw new Error("useProjectsStore must be used inside ProjectsProvider")
+  if (!ctx)
+    throw new Error("useProjectsStore must be used inside ProjectsProvider")
   return ctx
 }
 

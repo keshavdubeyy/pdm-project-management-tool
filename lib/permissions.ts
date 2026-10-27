@@ -180,14 +180,14 @@ export function canSeeFacultyChannel(actor: Actor) {
 /* ------------------------------------------------------------ artefacts */
 
 export function canAddArtefact(actor: Actor, project: Project) {
-  return isMemberOf(actor, project) || isMentorOf(actor, project) || isCoordinator(actor)
+  return isMemberOf(actor, project)
 }
 
 /* ------------------------------------------------------------ describing */
 
 export const ROLE_LABEL: Record<Role, string> = {
   student: "Student",
-  mentor: "Faculty mentor",
+  mentor: "Mentor",
   coordinator: "Programme coordinator",
 }
 

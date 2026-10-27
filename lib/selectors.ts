@@ -247,7 +247,7 @@ export function describeAudience(db: Database, announcement: Announcement): stri
     case "batch":
       return "Whole batch"
     case "faculty":
-      return "Faculty only"
+      return "Mentors only"
   }
 }
 
@@ -370,4 +370,16 @@ export function statusCounts(views: MilestoneView[]): Record<MilestoneStatus, nu
     counts[v.status] += 1
   })
   return counts
+}
+
+/** What a project with no title yet is called wherever a title is shown. */
+export const PROJECT_TITLE_PLACEHOLDER = "Project title"
+
+export function hasProjectTitle(project: { title: string }) {
+  return project.title.trim().length > 0
+}
+
+/** The title as plain text, for a notification or a search string. */
+export function projectLabel(project: { title: string }) {
+  return hasProjectTitle(project) ? project.title : "A project"
 }

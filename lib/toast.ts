@@ -1,6 +1,6 @@
 "use client"
 
-import { toast } from "@/components/ui/toast"
+import { toast } from "@/components/untitled/application/notifications/toast"
 
 import type { ActionResult } from "@/lib/store"
 
@@ -13,13 +13,17 @@ import type { ActionResult } from "@/lib/store"
  */
 export function report(result: ActionResult, success?: string) {
   if (result.ok) {
-    if (success) toast.add({ title: success })
+    if (success) toast({ title: success })
     return result.ok
   }
-  toast.add({ title: "That did not go through", description: result.reason })
+  toast({
+    title: "That did not go through",
+    description: result.reason,
+    tone: "error",
+  })
   return false
 }
 
 export function say(title: string, description?: string) {
-  toast.add({ title, description })
+  toast({ title, description })
 }

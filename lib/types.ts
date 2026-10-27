@@ -26,6 +26,9 @@ export type Person = {
   avatarUrl?: string
   /** Short affiliation shown on the sign-in screen and hover cards. */
   affiliation?: string
+  /** The person above this one in the hierarchy: faculty report to the
+   * programme coordinator. Students are reached through their team's mentor. */
+  reportsTo?: string
 }
 
 export type Batch = {
@@ -144,7 +147,10 @@ export type MilestoneTemplateItem = {
   description?: string
 }
 
-export type MilestoneTemplateDraft = Omit<MilestoneTemplateItem, "id" | "batchId">
+export type MilestoneTemplateDraft = Omit<
+  MilestoneTemplateItem,
+  "id" | "batchId"
+>
 
 export type MilestoneStatus =
   | "not_started"
@@ -156,7 +162,11 @@ export type MilestoneStatus =
   | "overdue"
 
 /** Only a mentor or the coordinator may move a milestone into these. */
-export const MENTOR_ONLY_STATUSES: MilestoneStatus[] = ["under_review", "returned", "accepted"]
+export const MENTOR_ONLY_STATUSES: MilestoneStatus[] = [
+  "under_review",
+  "returned",
+  "accepted",
+]
 
 /** A team's own copy of one checkpoint. */
 export type MilestoneInstance = {
@@ -224,7 +234,8 @@ export type Submission = {
 
 export type ReviewVerdict = "accept" | "return"
 
-export type ReturnCategory = "scope" | "evidence" | "depth" | "incomplete" | "other"
+export type ReturnCategory =
+  "scope" | "evidence" | "depth" | "incomplete" | "other"
 
 export type Review = {
   id: string
@@ -281,6 +292,8 @@ export type ActionItem = {
   projectId: string
   source: ActionItemSource
   meetingId?: string
+  /** Set when the action was written beside a meeting note. */
+  noteId?: string
   reviewId?: string
   text: string
   ownerId: string
@@ -293,6 +306,36 @@ export type ActionItem = {
   /** A mentor confirming the work actually happened. */
   verifiedBy?: string
   verifiedAt?: string
+}
+
+/* ------------------------------------------------------------- notes */
+
+/** A free-form document a team writes during or after a meeting. */
+export type Note = {
+  id: string
+  projectId: string
+  title: string
+  /** Rich text as HTML. Comment anchors are `span[data-comment-id]` marks. */
+  content: string
+  authorId: string
+  /** Captured when the note is created; never typed in. */
+  createdAt: string
+  updatedAt: string
+}
+
+export type NoteComment = {
+  id: string
+  noteId: string
+  projectId: string
+  authorId: string
+  body: string
+  /** The passage the comment was made on, kept in case the text changes. */
+  quote?: string
+  /** Matches a `data-comment-id` mark inside the note's content. */
+  anchorId?: string
+  /** Set on a reply; replies are one level deep. */
+  parentId?: string
+  createdAt: string
 }
 
 /* --------------------------------------------------- communication */
@@ -366,6 +409,9 @@ export type Session = {
 
 export type Database = {
   version: number
+  /** True while the generated demo activity is loaded, so the app can offer
+   * to clear it. Off by default: a fresh install starts empty. */
+  demoData: boolean
   people: Person[]
   batches: Batch[]
   domains: Domain[]
@@ -378,6 +424,8 @@ export type Database = {
   reviews: Review[]
   meetings: Meeting[]
   minutes: Minutes[]
+  notes: Note[]
+  noteComments: NoteComment[]
   actionItems: ActionItem[]
   announcements: Announcement[]
   announcementReads: AnnouncementRead[]

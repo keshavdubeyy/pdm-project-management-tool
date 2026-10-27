@@ -1,5 +1,11 @@
 import { addDays, dueDateForWeek, todayIso, weekNumber } from "@/lib/dates"
-import { seedBatches, seedDomains, seedPeople, seedProjects, seedTeams } from "@/lib/mock-data"
+import {
+  seedBatches,
+  seedDomains,
+  seedPeople,
+  seedProjects,
+  seedTeams,
+} from "@/lib/mock-data"
 import { milestoneTemplateFor } from "@/lib/milestone-template"
 import type {
   ActionItem,
@@ -12,13 +18,15 @@ import type {
   MilestoneInstance,
   MilestoneStatus,
   Minutes,
+  Note,
+  NoteComment,
   Review,
   Submission,
 } from "@/lib/types"
 
-export const DB_VERSION = 1
+export const DB_VERSION = 5
 
-/** Builds the starting state of the database.
+/** Builds the database with generated activity on top of the roster.
  *
  * The roster, the teams, the projects and the milestone calendar are real. The
  * activity on top of them — who has submitted what, which reviews have been
@@ -31,7 +39,7 @@ export const DB_VERSION = 1
  * a reviewer nothing. A grid with a realistic spread of states shows them what
  * the programme would actually look like on a Tuesday in week six.
  */
-export function buildSeedDatabase(): Database {
+function buildDemoDatabase(): Database {
   const batch = seedBatches[0]
   const template = milestoneTemplateFor(batch.id)
   const today = todayIso()
@@ -45,6 +53,8 @@ export function buildSeedDatabase(): Database {
   const minutes: Minutes[] = []
   const actionItems: ActionItem[] = []
   const notifications: AppNotification[] = []
+  const notes: Note[] = []
+  const noteComments: NoteComment[] = []
 
   seedProjects.forEach((project, projectIndex) => {
     const rand = mulberry(projectIndex * 7919 + 13)
@@ -115,7 +125,10 @@ export function buildSeedDatabase(): Database {
           milestones.push({
             ...base,
             status: "returned",
-            completedDeliverables: item.deliverables.slice(0, Math.ceil(item.deliverables.length / 2)),
+            completedDeliverables: item.deliverables.slice(
+              0,
+              Math.ceil(item.deliverables.length / 2)
+            ),
             startedAt: `${addDays(dueIso, -16)}T09:00:00.000Z`,
             submittedAt,
             returnedAt,
@@ -164,13 +177,15 @@ export function buildSeedDatabase(): Database {
             createdBy: mentorId,
             createdAt: returnedAt,
           })
-          notifications.push(...notifyTeam(project.teamMemberIds, {
-            kind: "review",
-            title: `${item.title} returned for revisions`,
-            body: review.body.slice(0, 90),
-            href: `/projects/${project.id}?milestone=${id}`,
-            createdAt: returnedAt,
-          }))
+          notifications.push(
+            ...notifyTeam(project.teamMemberIds, {
+              kind: "review",
+              title: `${item.title} returned for revisions`,
+              body: review.body.slice(0, 90),
+              href: `/projects/${project.id}?milestone=${id}`,
+              createdAt: returnedAt,
+            })
+          )
         } else {
           // Nothing handed in and the week has gone.
           milestones.push({
@@ -331,9 +346,49 @@ export function buildSeedDatabase(): Database {
     }
   })
 
+  // One written-up note per team, with the mentor commenting on a passage.
+  seedProjects.forEach((project, i) => {
+    const mentorId = project.mentorIds[0]
+    const lead = project.teamMemberIds[0]
+    const stamp = `${addDays(today, -(i % 9) - 1)}T10:30:00.000Z`
+    const noteId = `note-${project.id}`
+    notes.push({
+      id: noteId,
+      projectId: project.id,
+      title: "Meeting notes",
+      content:
+        "## Key points\n\n- **Scope:** narrow the first release to one core flow.\n- **Research:** five more user conversations before the next checkpoint.\n\n## Action items\n\n- Write up the interview notes.\n- Share the revised wireframes.\n",
+      authorId: lead,
+      createdAt: stamp,
+      updatedAt: stamp,
+    })
+    noteComments.push(
+      {
+        id: `c-${project.id}`,
+        noteId,
+        projectId: project.id,
+        authorId: mentorId,
+        body: "Agreed. Please say what you are leaving out of the first release, and why.",
+        quote: "narrow the first release to one core flow",
+        anchorId: `c-${project.id}`,
+        createdAt: stamp,
+      },
+      {
+        id: `c-${project.id}-r1`,
+        noteId,
+        projectId: project.id,
+        authorId: lead,
+        body: "Will add a short out-of-scope list before the next meeting.",
+        parentId: `c-${project.id}`,
+        createdAt: stamp,
+      }
+    )
+  })
+
   // Mark the "done" action items as actually completed.
   actionItems.forEach((a) => {
-    if (a.status === "done" && !a.completedAt) a.completedAt = `${addDays(a.dueDate, -1)}T11:00:00.000Z`
+    if (a.status === "done" && !a.completedAt)
+      a.completedAt = `${addDays(a.dueDate, -1)}T11:00:00.000Z`
   })
 
   const coordinator = seedPeople.find((p) => p.roles.includes("coordinator"))!
@@ -343,8 +398,7 @@ export function buildSeedDatabase(): Database {
       authorId: coordinator.id,
       audience: { kind: "batch", batchId: batch.id },
       title: "Week 6 — Domain Research Report is due this Sunday",
-      body:
-        "A reminder that the Domain Research Report closes at the end of week 6. Cover the technical trends, the competitors and the existing products in the market. If your team is blocked on finding comparable products, say so in your next mentor meeting rather than waiting.",
+      body: "A reminder that the Domain Research Report closes at the end of week 6. Cover the technical trends, the competitors and the existing products in the market. If your team is blocked on finding comparable products, say so in your next mentor meeting rather than waiting.",
       milestoneTemplateItemId: template[1].id,
       pinned: true,
       createdAt: `${addDays(today, -4)}T08:30:00.000Z`,
@@ -354,8 +408,7 @@ export function buildSeedDatabase(): Database {
       authorId: "p-mentor-raghu",
       audience: { kind: "my_teams" },
       title: "Office hours moved to Thursday this week",
-      body:
-        "I am travelling on Wednesday, so this week's slots move to Thursday afternoon. Same room. If that does not work for your team, message me and we will find another time.",
+      body: "I am travelling on Wednesday, so this week's slots move to Thursday afternoon. Same room. If that does not work for your team, message me and we will find another time.",
       pinned: false,
       createdAt: `${addDays(today, -2)}T17:10:00.000Z`,
     },
@@ -364,8 +417,7 @@ export function buildSeedDatabase(): Database {
       authorId: coordinator.id,
       audience: { kind: "faculty" },
       title: "Calibrating what we accept at week 8",
-      body:
-        "Before the Customer Validation Report lands, it would help if the four of us agreed roughly what a pass looks like. My view: at least five real conversations, assumptions written down before the conversations rather than after, and evidence that at least one assumption was wrong. Shout if you would set the bar elsewhere.",
+      body: "Before the Customer Validation Report lands, it would help if the four of us agreed roughly what a pass looks like. My view: at least five real conversations, assumptions written down before the conversations rather than after, and evidence that at least one assumption was wrong. Shout if you would set the bar elsewhere.",
       pinned: false,
       createdAt: `${addDays(today, -6)}T19:00:00.000Z`,
     },
@@ -399,6 +451,7 @@ export function buildSeedDatabase(): Database {
 
   return {
     version: DB_VERSION,
+    demoData: true,
     people: seedPeople,
     batches: seedBatches,
     domains: seedDomains,
@@ -411,6 +464,8 @@ export function buildSeedDatabase(): Database {
     reviews,
     meetings,
     minutes,
+    notes,
+    noteComments,
     actionItems,
     announcements,
     announcementReads,
@@ -434,7 +489,10 @@ function mulberry(seed: number) {
 }
 
 let submissionCounter = 0
-function pushSubmission(list: Submission[], data: Omit<Submission, "id">): Submission {
+function pushSubmission(
+  list: Submission[],
+  data: Omit<Submission, "id">
+): Submission {
   submissionCounter += 1
   const submission: Submission = { id: `sub-${submissionCounter}`, ...data }
   list.push(submission)
@@ -500,3 +558,81 @@ const ACTION_TEXTS = [
   "Add the evidence behind the two unsupported claims",
   "Redo the competitor table with a why-it-fails column",
 ]
+
+/* ------------------------------------------------------- empty and demo */
+
+/** Every checkpoint of every project, untouched. The app needs these rows to
+ * exist, but nothing has been started, submitted or reviewed. */
+function untouchedMilestones(db: Database): MilestoneInstance[] {
+  const now = new Date().toISOString()
+  return db.projects.flatMap((project) =>
+    db.milestoneTemplate
+      .filter((item) => item.batchId === project.batchId)
+      .map<MilestoneInstance>((item) => ({
+        id: `ms-${project.id}-${item.order}`,
+        projectId: project.id,
+        templateItemId: item.id,
+        status: "not_started",
+        completedDeliverables: [],
+        updatedAt: now,
+      }))
+  )
+}
+
+/** The starting state: the roster, the teams and the projects, with no
+ * activity at all. Demo activity is opt-in. */
+export function buildSeedDatabase(): Database {
+  return withoutActivity({ ...buildDemoDatabase() })
+}
+
+/** Removes everything people did, keeping who they are and what they work on. */
+export function withoutActivity(db: Database): Database {
+  const next: Database = {
+    ...db,
+    demoData: false,
+    artefacts: [],
+    submissions: [],
+    reviews: [],
+    meetings: [],
+    minutes: [],
+    notes: [],
+    noteComments: [],
+    actionItems: [],
+    announcements: [],
+    announcementReads: [],
+    notifications: [],
+    audit: [],
+    milestones: [],
+  }
+  next.milestones = untouchedMilestones(next)
+  return next
+}
+
+/** Fills the database with generated activity so screens can be stress-tested.
+ * Replaces whatever activity exists; the roster is kept. Projects added after
+ * seeding have no generated activity and keep untouched checkpoints. */
+export function withDemoActivity(db: Database): Database {
+  const demo = buildDemoDatabase()
+  const seeded = new Set(seedProjects.map((p) => p.id))
+  const extra = untouchedMilestones({
+    ...db,
+    projects: db.projects.filter((p) => !seeded.has(p.id)),
+  })
+  return {
+    ...db,
+    demoData: true,
+    milestones: [...demo.milestones, ...extra],
+    artefacts: demo.artefacts,
+    submissions: demo.submissions,
+    reviews: demo.reviews,
+    meetings: demo.meetings,
+    minutes: demo.minutes,
+    notes: demo.notes,
+    noteComments: demo.noteComments,
+    actionItems: demo.actionItems,
+    announcements: demo.announcements,
+    announcementReads: demo.announcementReads,
+    notifications: demo.notifications,
+    audit: [],
+  }
+}

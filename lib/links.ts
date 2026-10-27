@@ -1,17 +1,17 @@
-import {
-  Attachment01Icon,
-  Book02Icon,
-  File01Icon,
-  Folder01Icon,
-  GitBranchIcon,
-  Grid02Icon,
-  PlayIcon,
-  Presentation01Icon,
-  SparklesIcon,
-  WorkflowSquare01Icon,
-} from "@hugeicons/core-free-icons"
-
 import type { ArtefactService } from "@/lib/types"
+
+import {
+  BookOpen01,
+  Dataflow01,
+  File01,
+  Folder,
+  GitBranch01,
+  Grid01,
+  Paperclip,
+  Play,
+  PresentationChart01,
+  Stars01,
+} from "@untitledui/icons"
 
 /** Recognising where a pasted link lives.
  *
@@ -24,7 +24,7 @@ import type { ArtefactService } from "@/lib/types"
 export type ServiceMeta = {
   service: ArtefactService
   label: string
-  icon: typeof File01Icon
+  icon: typeof File01
   /** Tailwind text colour for the icon. */
   tint: string
   /** Whether the service publishes an embeddable view we can show inline. */
@@ -35,91 +35,91 @@ export const SERVICE_META: Record<ArtefactService, ServiceMeta> = {
   google_doc: {
     service: "google_doc",
     label: "Google Docs",
-    icon: File01Icon,
+    icon: File01,
     tint: "text-blue-600 dark:text-blue-400",
     embeddable: true,
   },
   google_sheet: {
     service: "google_sheet",
     label: "Google Sheets",
-    icon: Grid02Icon,
+    icon: Grid01,
     tint: "text-emerald-600 dark:text-emerald-400",
     embeddable: true,
   },
   google_slide: {
     service: "google_slide",
     label: "Google Slides",
-    icon: Presentation01Icon,
+    icon: PresentationChart01,
     tint: "text-amber-600 dark:text-amber-400",
     embeddable: true,
   },
   google_drive: {
     service: "google_drive",
     label: "Google Drive",
-    icon: Folder01Icon,
+    icon: Folder,
     tint: "text-sky-600 dark:text-sky-400",
     embeddable: false,
   },
   figma: {
     service: "figma",
     label: "Figma",
-    icon: SparklesIcon,
+    icon: Stars01,
     tint: "text-fuchsia-600 dark:text-fuchsia-400",
     embeddable: true,
   },
   figjam: {
     service: "figjam",
     label: "FigJam",
-    icon: WorkflowSquare01Icon,
+    icon: Dataflow01,
     tint: "text-violet-600 dark:text-violet-400",
     embeddable: true,
   },
   miro: {
     service: "miro",
     label: "Miro",
-    icon: WorkflowSquare01Icon,
+    icon: Dataflow01,
     tint: "text-yellow-600 dark:text-yellow-400",
     embeddable: true,
   },
   github: {
     service: "github",
     label: "GitHub",
-    icon: GitBranchIcon,
+    icon: GitBranch01,
     tint: "text-foreground",
     embeddable: false,
   },
   notion: {
     service: "notion",
     label: "Notion",
-    icon: Book02Icon,
+    icon: BookOpen01,
     tint: "text-foreground",
     embeddable: false,
   },
   loom: {
     service: "loom",
     label: "Loom",
-    icon: PlayIcon,
+    icon: Play,
     tint: "text-purple-600 dark:text-purple-400",
     embeddable: true,
   },
   youtube: {
     service: "youtube",
     label: "YouTube",
-    icon: PlayIcon,
+    icon: Play,
     tint: "text-red-600 dark:text-red-400",
     embeddable: true,
   },
   canva: {
     service: "canva",
     label: "Canva",
-    icon: Presentation01Icon,
+    icon: PresentationChart01,
     tint: "text-cyan-600 dark:text-cyan-400",
     embeddable: false,
   },
   link: {
     service: "link",
     label: "Link",
-    icon: Attachment01Icon,
+    icon: Paperclip,
     tint: "text-muted-foreground",
     embeddable: false,
   },
@@ -145,13 +145,17 @@ export function detectService(rawUrl: string): ArtefactService {
   }
   if (host.endsWith("drive.google.com")) return "google_drive"
   if (host.endsWith("figma.com")) {
-    return path.includes("/board") || path.includes("/file/figjam") ? "figjam" : "figma"
+    return path.includes("/board") || path.includes("/file/figjam")
+      ? "figjam"
+      : "figma"
   }
   if (host.endsWith("miro.com")) return "miro"
   if (host.endsWith("github.com") || host.endsWith("github.io")) return "github"
-  if (host.endsWith("notion.so") || host.endsWith("notion.site")) return "notion"
+  if (host.endsWith("notion.so") || host.endsWith("notion.site"))
+    return "notion"
   if (host.endsWith("loom.com")) return "loom"
-  if (host.endsWith("youtube.com") || host.endsWith("youtu.be")) return "youtube"
+  if (host.endsWith("youtube.com") || host.endsWith("youtu.be"))
+    return "youtube"
   if (host.endsWith("canva.com")) return "canva"
   return "link"
 }
@@ -170,12 +174,21 @@ export function guessLabel(rawUrl: string): string {
     }
     if (service === "notion" || service === "figma" || service === "figjam") {
       const slug = segments[segments.length - 1] ?? ""
-      const words = slug.split("-").filter((w) => w && !/^[0-9a-f]{8,}$/i.test(w))
+      const words = slug
+        .split("-")
+        .filter((w) => w && !/^[0-9a-f]{8,}$/i.test(w))
       if (words.length) return titleCase(words.join(" "))
     }
     const last = segments[segments.length - 1] ?? u.hostname
-    if (last && last.length > 2 && !/^[0-9a-f-]{12,}$/i.test(last) && last !== "edit") {
-      return titleCase(last.replace(/[-_]+/g, " ").replace(/\.[a-z0-9]{2,4}$/i, ""))
+    if (
+      last &&
+      last.length > 2 &&
+      !/^[0-9a-f-]{12,}$/i.test(last) &&
+      last !== "edit"
+    ) {
+      return titleCase(
+        last.replace(/[-_]+/g, " ").replace(/\.[a-z0-9]{2,4}$/i, "")
+      )
     }
     return SERVICE_META[service].label
   } catch {
