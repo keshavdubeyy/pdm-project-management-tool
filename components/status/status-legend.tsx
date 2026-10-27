@@ -1,7 +1,5 @@
 "use client"
 
-import { HugeiconsIcon } from "@hugeicons/react"
-
 import { STATUS_ORDER, statusMeta } from "@/lib/status"
 import type { MilestoneStatus } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -25,7 +23,11 @@ export function StatusLegend({
   const interactive = Boolean(onToggle)
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-1.5", className)} role="group" aria-label="Status key">
+    <div
+      className={cn("flex flex-wrap items-center gap-1.5", className)}
+      role="group"
+      aria-label="Status key"
+    >
       {STATUS_ORDER.map((status) => {
         const meta = statusMeta(status)
         const isActive = !active?.length || active.includes(status)
@@ -33,10 +35,12 @@ export function StatusLegend({
 
         const content = (
           <>
-            <HugeiconsIcon icon={meta.icon} className={cn("size-3.5", meta.solid)} strokeWidth={2.2} aria-hidden />
+            <meta.icon className={cn("size-3.5", meta.solid)} aria-hidden />
             <span>{meta.shortLabel}</span>
             {count !== undefined && (
-              <span className="text-micro font-semibold opacity-70">{count}</span>
+              <span className="text-micro font-semibold opacity-70">
+                {count}
+              </span>
             )}
           </>
         )

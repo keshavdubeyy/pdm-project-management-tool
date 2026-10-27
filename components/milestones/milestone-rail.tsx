@@ -1,13 +1,12 @@
 "use client"
 
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Flag02Icon } from "@hugeicons/core-free-icons"
-
 import { DueBadge } from "@/components/common"
 import { StatusPill } from "@/components/status/status-pill"
 import type { MilestoneView } from "@/lib/selectors"
 import { statusMeta } from "@/lib/status"
 import { cn } from "@/lib/utils"
+
+import { Flag02 } from "@untitledui/icons"
 
 /** The twelve checkpoints as a rail.
  *
@@ -31,11 +30,13 @@ export function MilestoneRail({
       {views.map((view, index) => {
         const meta = statusMeta(view.status)
         const isCurrent =
-          view.dueWeek >= currentWeek && views.slice(0, index).every((v) => v.dueWeek < currentWeek)
+          view.dueWeek >= currentWeek &&
+          views.slice(0, index).every((v) => v.dueWeek < currentWeek)
         const last = index === views.length - 1
         const selected = view.instance.id === selectedId
         const progress = view.template.deliverables.length
-          ? view.instance.completedDeliverables.length / view.template.deliverables.length
+          ? view.instance.completedDeliverables.length /
+            view.template.deliverables.length
           : 0
 
         return (
@@ -52,10 +53,8 @@ export function MilestoneRail({
                   view.status === "returned" && "bg-status-returned-bg"
                 )}
               >
-                <HugeiconsIcon
-                  icon={meta.icon}
+                <meta.icon
                   className={cn(isCurrent ? "size-4" : "size-3.5", meta.solid)}
-                  strokeWidth={2.4}
                   aria-hidden
                 />
               </span>
@@ -69,7 +68,7 @@ export function MilestoneRail({
               className={cn(
                 "mb-2 min-w-0 flex-1 rounded-lg border px-3 py-2.5 text-left transition-colors",
                 selected
-                  ? "border-primary/40 bg-primary/[0.04]"
+                  ? "border-brand/40 bg-brand-solid/[0.04]"
                   : "border-transparent hover:border-border hover:bg-muted/50"
               )}
             >
@@ -79,7 +78,7 @@ export function MilestoneRail({
                 </span>
                 {view.template.isGate && (
                   <span className="inline-flex items-center gap-1 text-caption font-medium text-muted-foreground">
-                    <HugeiconsIcon icon={Flag02Icon} className="size-3" strokeWidth={2} />
+                    <Flag02 className="size-3" />
                     Gate
                   </span>
                 )}
@@ -89,7 +88,9 @@ export function MilestoneRail({
                 className={cn(
                   "mt-0.5 text-subhead text-foreground",
                   isCurrent && "text-foreground",
-                  !isCurrent && view.status === "accepted" && "text-muted-foreground"
+                  !isCurrent &&
+                    view.status === "accepted" &&
+                    "text-muted-foreground"
                 )}
               >
                 {view.template.title}
@@ -97,23 +98,26 @@ export function MilestoneRail({
 
               <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <StatusPill status={view.status} size="sm" />
-                {view.status !== "accepted" && <DueBadge dueDate={view.dueDate} hideIcon />}
+                {view.status !== "accepted" && (
+                  <DueBadge dueDate={view.dueDate} hideIcon />
+                )}
               </div>
 
-              {view.status !== "accepted" && view.template.deliverables.length > 1 && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
-                    <span
-                      className="block h-full rounded-full bg-primary/60 transition-[width]"
-                      style={{ width: `${Math.round(progress * 100)}%` }}
-                    />
-                  </span>
-                  <span className="shrink-0 text-caption text-muted-foreground">
-                    {view.instance.completedDeliverables.length}/
-                    {view.template.deliverables.length}
-                  </span>
-                </div>
-              )}
+              {view.status !== "accepted" &&
+                view.template.deliverables.length > 1 && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+                      <span
+                        className="block h-full rounded-full bg-brand-solid/60 transition-[width]"
+                        style={{ width: `${Math.round(progress * 100)}%` }}
+                      />
+                    </span>
+                    <span className="shrink-0 text-caption text-muted-foreground">
+                      {view.instance.completedDeliverables.length}/
+                      {view.template.deliverables.length}
+                    </span>
+                  </div>
+                )}
             </button>
           </li>
         )

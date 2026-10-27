@@ -1,35 +1,25 @@
 "use client"
 
 import * as React from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Attachment01Icon,
-  CheckmarkCircle02Icon,
-  DeliverySent02Icon,
-  LegalHammerIcon,
-  Undo02Icon,
-} from "@hugeicons/core-free-icons"
-
 import { AddArtefact } from "@/components/artefacts/add-artefact"
 import { ArtefactRow } from "@/components/artefacts/artefact-row"
-import { DueBadge, EmptyState, PersonAvatar, SectionHeading } from "@/components/common"
-import { StatusPill } from "@/components/status/status-pill"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Textarea } from "@/components/ui/textarea"
+  DueBadge,
+  EmptyState,
+  PersonAvatar,
+  SectionHeading,
+} from "@/components/common"
+import { StatusPill } from "@/components/status/status-pill"
+import { Button } from "@/components/untitled/base/buttons/button"
+import { Checkbox } from "@/components/untitled/base/checkbox/checkbox"
+import { ModalDialog } from "@/components/untitled/application/modals/modal-dialog"
+import { Label } from "@/components/untitled/base/input/label"
+import {
+  RadioButton,
+  RadioGroup,
+} from "@/components/untitled/base/radio-buttons/radio-buttons"
+import { SlideoutMenu } from "@/components/untitled/application/slideout-menus/slideout-menu"
+import { TextArea } from "@/components/untitled/base/textarea/textarea"
 import { formatTimestamp, timeAgo } from "@/lib/dates"
 import { canReview, canSubmitMilestone, isMemberOf } from "@/lib/permissions"
 import { personById } from "@/lib/selectors"
@@ -39,6 +29,8 @@ import { useProjectsStore } from "@/lib/store"
 import { report } from "@/lib/toast"
 import type { ReturnCategory } from "@/lib/types"
 import { cn } from "@/lib/utils"
+
+import { CheckCircle, FlipBackward, Paperclip, Send01 } from "@untitledui/icons"
 
 /** One checkpoint, opened beside whatever you were looking at.
  *
@@ -72,7 +64,9 @@ export function MilestoneSheet({
   const isTeam = isMemberOf(actor, project)
   const canSubmit = canSubmitMilestone(actor, project).allowed
   const canDecide = canReview(actor, project).allowed
-  const artefacts = db.artefacts.filter((a) => a.milestoneInstanceId === instance.id)
+  const artefacts = db.artefacts.filter(
+    (a) => a.milestoneInstanceId === instance.id
+  )
   const submissions = db.submissions
     .filter((s) => s.milestoneInstanceId === instance.id)
     .sort((a, b) => (a.submittedAt < b.submittedAt ? 1 : -1))
@@ -82,36 +76,46 @@ export function MilestoneSheet({
   const done = instance.completedDeliverables
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[560px]">
-        <SheetHeader className="border-b border-border">
-          <p className="text-th text-muted-foreground uppercase">
-            Week {view.dueWeek} · {template.phase}
-          </p>
-          <SheetTitle className="text-title">{template.title}</SheetTitle>
-          <SheetDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <StatusPill status={status} />
-            <DueBadge dueDate={view.dueDate} />
-          </SheetDescription>
-          <p className="mt-1 truncate text-caption text-muted-foreground">{project.title}</p>
-        </SheetHeader>
+    <SlideoutMenu
+      isDismissable
+      isOpen={open}
+      onOpenChange={onOpenChange}
+      className="sm:max-w-[560px]"
+    >
+      <SlideoutMenu.Header className="border-b border-secondary pb-4">
+        <p className="text-xs font-semibold text-tertiary uppercase">
+          Week {view.dueWeek} · {template.phase}
+        </p>
+        <h2 className="text-lg font-semibold text-primary">{template.title}</h2>
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <StatusPill status={status} />
+          <DueBadge dueDate={view.dueDate} />
+        </div>
+        <p className="mt-1 truncate text-xs text-tertiary">{project.title}</p>
+      </SlideoutMenu.Header>
 
-        <div className="space-y-6 p-4">
+      <SlideoutMenu.Content className="pb-6">
+        <div className="space-y-6">
           {template.description && (
-            <p className="text-meta text-muted-foreground">{template.description}</p>
+            <p className="text-meta text-muted-foreground">
+              {template.description}
+            </p>
           )}
 
           {instance.dueWeekOverride && (
             <p className="rounded-lg border border-status-under_review-br bg-status-under_review-bg px-3 py-2 text-caption text-status-under_review-fg">
               <span className="font-semibold">Date moved. </span>
-              Originally week {template.dueWeek}, now week {instance.dueWeekOverride}.{" "}
-              {instance.dueWeekOverrideReason}
+              Originally week {template.dueWeek}, now week{" "}
+              {instance.dueWeekOverride}. {instance.dueWeekOverrideReason}
             </p>
           )}
 
           {/* ------------------------------------------------ deliverables */}
           <section>
-            <SectionHeading count={done.length} hint={`of ${template.deliverables.length}`}>
+            <SectionHeading
+              count={done.length}
+              hint={`of ${template.deliverables.length}`}
+            >
               What this checkpoint asks for
             </SectionHeading>
             <ul className="space-y-0.5">
@@ -119,53 +123,61 @@ export function MilestoneSheet({
                 const checked = done.includes(deliverable)
                 return (
                   <li key={deliverable}>
-                    <label
-                      className={cn(
-                        "flex cursor-pointer items-start gap-2.5 rounded-lg px-2 py-1.5 text-meta transition-colors",
-                        isTeam && "hover:bg-muted/60",
-                        !isTeam && "cursor-default"
-                      )}
-                    >
-                      <Checkbox
-                        checked={checked}
-                        disabled={!isTeam}
-                        onCheckedChange={() =>
-                          report(toggleDeliverable(instance.id, deliverable))
-                        }
-                        className="mt-0.5"
-                      />
-                      <span className={cn(checked && "text-muted-foreground line-through")}>
-                        {deliverable}
-                      </span>
-                    </label>
+                    <Checkbox
+                      isSelected={checked}
+                      isDisabled={!isTeam}
+                      onChange={() =>
+                        report(toggleDeliverable(instance.id, deliverable))
+                      }
+                      className="px-2 py-1.5"
+                      label={
+                        <span
+                          className={cn(
+                            checked && "text-tertiary line-through"
+                          )}
+                        >
+                          {deliverable}
+                        </span>
+                      }
+                    />
                   </li>
                 )
               })}
             </ul>
           </section>
 
-          <Separator />
+          <hr className="h-px w-full border-none bg-border-secondary" />
 
           {/* ---------------------------------------------------- artefacts */}
           <section>
-            <SectionHeading count={artefacts.length}>Work attached</SectionHeading>
+            <SectionHeading count={artefacts.length}>
+              Work attached
+            </SectionHeading>
             {artefacts.length === 0 ? (
               <EmptyState
-                icon={Attachment01Icon}
-                title="Nothing attached yet"
-                body="Paste a link to the document, board or repository this checkpoint produced."
+                icon={Paperclip}
+                title="No links yet"
+                body="Add a link to the document, board or repository this checkpoint produced."
                 className="py-6"
               />
             ) : (
               <div className="space-y-1.5">
                 {artefacts.map((artefact) => (
-                  <ArtefactRow key={artefact.id} artefact={artefact} onRemove={isTeam} compact />
+                  <ArtefactRow
+                    key={artefact.id}
+                    artefact={artefact}
+                    onRemove={isTeam}
+                    compact
+                  />
                 ))}
               </div>
             )}
             {isTeam && (
               <div className="mt-3 rounded-xl border border-dashed border-border p-3">
-                <AddArtefact projectId={project.id} milestoneInstanceId={instance.id} />
+                <AddArtefact
+                  projectId={project.id}
+                  milestoneInstanceId={instance.id}
+                />
               </div>
             )}
           </section>
@@ -173,21 +185,31 @@ export function MilestoneSheet({
           {/* ------------------------------------------------------ actions */}
           {(canSubmit || canDecide) && (
             <>
-              <Separator />
+              <hr className="h-px w-full border-none bg-border-secondary" />
               <section className="space-y-2">
                 {canSubmit && status !== "accepted" && (
-                  <SubmitDialog view={view} artefactIds={artefacts.map((a) => a.id)} />
+                  <SubmitDialog
+                    view={view}
+                    artefactIds={artefacts.map((a) => a.id)}
+                  />
                 )}
-                {canDecide && (status === "submitted" || status === "under_review") && (
-                  <div className="flex flex-wrap gap-2">
-                    <ReviewDialog view={view} verdict="accept" />
-                    <ReviewDialog view={view} verdict="return" />
-                  </div>
-                )}
+                {canDecide &&
+                  (status === "submitted" || status === "under_review") && (
+                    <div className="flex flex-wrap gap-2">
+                      <ReviewDialog view={view} verdict="accept" />
+                      <ReviewDialog view={view} verdict="return" />
+                    </div>
+                  )}
                 {canDecide && status === "accepted" && (
                   <p className="text-caption text-muted-foreground">
-                    Accepted by {personById(db, instance.acceptedBy ?? "")?.name ?? "a mentor"} on{" "}
-                    {instance.acceptedAt ? formatTimestamp(instance.acceptedAt) : "—"}.
+                    Accepted by{" "}
+                    {personById(db, instance.acceptedBy ?? "")?.name ??
+                      "a mentor"}{" "}
+                    on{" "}
+                    {instance.acceptedAt
+                      ? formatTimestamp(instance.acceptedAt)
+                      : "—"}
+                    .
                   </p>
                 )}
               </section>
@@ -195,7 +217,7 @@ export function MilestoneSheet({
           )}
 
           {/* ------------------------------------------------------ history */}
-          <Separator />
+          <hr className="h-px w-full border-none bg-border-secondary" />
           <section>
             <SectionHeading>History</SectionHeading>
             {reviews.length === 0 && submissions.length === 0 ? (
@@ -220,7 +242,9 @@ export function MilestoneSheet({
                         <PersonAvatar person={reviewer} size="xs" />
                         <span className="text-meta font-medium">
                           {reviewer?.name ?? "A mentor"}{" "}
-                          {review.verdict === "accept" ? "accepted this" : "asked for changes"}
+                          {review.verdict === "accept"
+                            ? "accepted this"
+                            : "asked for changes"}
                         </span>
                         <span className="ml-auto text-caption opacity-70">
                           {timeAgo(review.createdAt)}
@@ -231,7 +255,9 @@ export function MilestoneSheet({
                           {RETURN_CATEGORY_LABEL[review.category]}
                         </p>
                       )}
-                      <p className="mt-1 text-meta whitespace-pre-line">{review.body}</p>
+                      <p className="mt-1 text-meta whitespace-pre-line">
+                        {review.body}
+                      </p>
                       <FeedbackFollowUp review={review} />
                     </li>
                   )
@@ -239,16 +265,16 @@ export function MilestoneSheet({
                 {submissions.map((submission) => {
                   const by = personById(db, submission.submittedBy)
                   return (
-                    <li key={submission.id} className="flex items-start gap-2 px-1 text-caption text-muted-foreground">
-                      <HugeiconsIcon
-                        icon={DeliverySent02Icon}
-                        className="mt-0.5 size-3.5 shrink-0"
-                        strokeWidth={2}
-                      />
+                    <li
+                      key={submission.id}
+                      className="flex items-start gap-2 px-1 text-caption text-muted-foreground"
+                    >
+                      <Send01 className="mt-0.5 size-3.5 shrink-0" />
                       <span>
                         Turned in by {by?.name ?? "the team"}
-                        {submission.attempt > 1 && ` (attempt ${submission.attempt})`} ·{" "}
-                        {formatTimestamp(submission.submittedAt)}
+                        {submission.attempt > 1 &&
+                          ` (attempt ${submission.attempt})`}{" "}
+                        · {formatTimestamp(submission.submittedAt)}
                         {submission.note && (
                           <span className="mt-0.5 block text-meta text-foreground">
                             “{submission.note}”
@@ -262,15 +288,20 @@ export function MilestoneSheet({
             )}
           </section>
         </div>
-      </SheetContent>
-    </Sheet>
+      </SlideoutMenu.Content>
+    </SlideoutMenu>
   )
 }
 
 /* ----------------------------------------------------------- follow-up */
 
-function FeedbackFollowUp({ review }: { review: import("@/lib/types").Review }) {
-  const { db, actor, markFeedbackAddressed, confirmFeedbackAddressed } = useProjectsStore()
+function FeedbackFollowUp({
+  review,
+}: {
+  review: import("@/lib/types").Review
+}) {
+  const { db, actor, markFeedbackAddressed, confirmFeedbackAddressed } =
+    useProjectsStore()
   const [note, setNote] = React.useState("")
   const project = db.projects.find((p) => p.id === review.projectId)
   if (!actor || !project || review.verdict !== "return") return null
@@ -281,9 +312,9 @@ function FeedbackFollowUp({ review }: { review: import("@/lib/types").Review }) 
   if (review.confirmedAt) {
     return (
       <p className="mt-2 flex items-center gap-1.5 text-caption opacity-80">
-        <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-3.5" strokeWidth={2} />
-        {personById(db, review.confirmedBy ?? "")?.name ?? "The mentor"} confirmed this was
-        addressed.
+        <CheckCircle className="size-3.5" />
+        {personById(db, review.confirmedBy ?? "")?.name ?? "The mentor"}{" "}
+        confirmed this was addressed.
       </p>
     )
   }
@@ -296,9 +327,11 @@ function FeedbackFollowUp({ review }: { review: import("@/lib/types").Review }) 
         {canConfirm && (
           <Button
             size="xs"
-            variant="outline"
+            color="secondary"
             className="mt-2"
-            onClick={() => report(confirmFeedbackAddressed(review.id), "Confirmed")}
+            onPress={() =>
+              report(confirmFeedbackAddressed(review.id), "Confirmed")
+            }
           >
             Confirm this is addressed
           </Button>
@@ -311,19 +344,19 @@ function FeedbackFollowUp({ review }: { review: import("@/lib/types").Review }) 
 
   return (
     <div className="mt-2 space-y-2">
-      <Textarea
+      <TextArea
         value={note}
-        onChange={(event) => setNote(event.target.value)}
+        onChange={setNote}
         placeholder="How did you address this?"
         rows={2}
-        className="bg-background/60 text-meta"
       />
       <Button
         size="xs"
-        variant="outline"
-        disabled={note.trim().length < 5}
-        onClick={() => {
-          if (report(markFeedbackAddressed(review.id, note), "Recorded")) setNote("")
+        color="secondary"
+        isDisabled={note.trim().length < 5}
+        onPress={() => {
+          if (report(markFeedbackAddressed(review.id, note), "Recorded"))
+            setNote("")
         }}
       >
         Record how you addressed it
@@ -334,7 +367,13 @@ function FeedbackFollowUp({ review }: { review: import("@/lib/types").Review }) 
 
 /* ------------------------------------------------------------- submit */
 
-function SubmitDialog({ view, artefactIds }: { view: MilestoneView; artefactIds: string[] }) {
+function SubmitDialog({
+  view,
+  artefactIds,
+}: {
+  view: MilestoneView
+  artefactIds: string[]
+}) {
   const { submitMilestone } = useProjectsStore()
   const [open, setOpen] = React.useState(false)
   const [note, setNote] = React.useState("")
@@ -342,14 +381,13 @@ function SubmitDialog({ view, artefactIds }: { view: MilestoneView; artefactIds:
   const resubmitting = view.status === "returned"
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
       <Button
-        variant={resubmitting ? "default" : "default"}
-        onClick={() => setOpen(true)}
-        disabled={nothingAttached}
+        onPress={() => setOpen(true)}
+        isDisabled={nothingAttached}
         className="w-full"
+        iconLeading={Send01}
       >
-        <HugeiconsIcon icon={DeliverySent02Icon} className="size-4" strokeWidth={2} />
         {resubmitting ? "Turn in again" : "Turn in this checkpoint"}
       </Button>
       {nothingAttached && (
@@ -357,59 +395,76 @@ function SubmitDialog({ view, artefactIds }: { view: MilestoneView; artefactIds:
           Attach at least one link before turning this in.
         </p>
       )}
-
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
+      <ModalDialog
+        isOpen={open}
+        onOpenChange={setOpen}
+        title={
+          <>
             {resubmitting ? "Turn in" : "Turn in"} {view.template.title}
-          </DialogTitle>
-          <DialogDescription>
+          </>
+        }
+        description={
+          <>
             {view.project.mentorIds.length === 1
               ? "Your mentor will be told straight away."
               : "Your mentors will be told straight away."}{" "}
             You can turn it in again later if it comes back.
-          </DialogDescription>
-        </DialogHeader>
-
+          </>
+        }
+        footer={
+          <>
+            <Button color="tertiary" slot="close">
+              Cancel
+            </Button>
+            <Button
+              onPress={() => {
+                if (
+                  report(
+                    submitMilestone(view.instance.id, note, artefactIds),
+                    "Turned in"
+                  )
+                ) {
+                  setNote("")
+                  setOpen(false)
+                }
+              }}
+            >
+              Turn in
+            </Button>
+          </>
+        }
+      >
         <div className="space-y-3">
           <div className="rounded-xl border border-border bg-muted/40 p-3">
             <p className="text-caption text-muted-foreground">
-              {artefactIds.length} {artefactIds.length === 1 ? "link" : "links"} attached
+              {artefactIds.length} {artefactIds.length === 1 ? "link" : "links"}{" "}
+              attached
             </p>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="submit-note">Anything your mentor should read first?</Label>
-            <Textarea
-              id="submit-note"
+            <TextArea
+              label="Anything your mentor should read first?"
               value={note}
-              onChange={(event) => setNote(event.target.value)}
+              onChange={setNote}
               rows={3}
               placeholder="Optional. Where you got stuck, what you would like them to look at."
             />
           </div>
         </div>
-
-        <DialogFooter>
-          <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
-          <Button
-            onClick={() => {
-              if (report(submitMilestone(view.instance.id, note, artefactIds), "Turned in")) {
-                setNote("")
-                setOpen(false)
-              }
-            }}
-          >
-            Turn in
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </ModalDialog>
+    </>
   )
 }
 
 /* ------------------------------------------------------------- review */
 
-function ReviewDialog({ view, verdict }: { view: MilestoneView; verdict: "accept" | "return" }) {
+function ReviewDialog({
+  view,
+  verdict,
+}: {
+  view: MilestoneView
+  verdict: "accept" | "return"
+}) {
   const { reviewSubmission } = useProjectsStore()
   const [open, setOpen] = React.useState(false)
   const [body, setBody] = React.useState("")
@@ -418,62 +473,88 @@ function ReviewDialog({ view, verdict }: { view: MilestoneView; verdict: "accept
   const accepting = verdict === "accept"
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
       <Button
-        variant={accepting ? "default" : "outline"}
-        onClick={() => setOpen(true)}
+        color={accepting ? "primary" : "secondary"}
+        onPress={() => setOpen(true)}
         className="flex-1"
+        iconLeading={accepting ? CheckCircle : FlipBackward}
       >
-        <HugeiconsIcon
-          icon={accepting ? CheckmarkCircle02Icon : Undo02Icon}
-          className="size-4"
-          strokeWidth={2}
-        />
         {accepting ? "Accept" : "Return for revisions"}
       </Button>
-
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
+      <ModalDialog
+        isOpen={open}
+        onOpenChange={setOpen}
+        title={
+          <>
             {accepting ? "Accept" : "Return"} {view.template.title}
-          </DialogTitle>
-          <DialogDescription>
+          </>
+        }
+        description={
+          <>
             {accepting
               ? "The team will see this and the checkpoint closes. You can reopen it later if you need to."
               : "The team will see your reason and can turn it in again. This is a normal step, not a mark against them."}
-          </DialogDescription>
-        </DialogHeader>
-
+          </>
+        }
+        footer={
+          <>
+            <Button color="tertiary" slot="close">
+              Cancel
+            </Button>
+            <Button
+              onPress={() => {
+                const result = reviewSubmission(
+                  view.instance.id,
+                  verdict,
+                  body,
+                  accepting ? undefined : category
+                )
+                if (
+                  report(
+                    result,
+                    accepting ? "Accepted" : "Returned to the team"
+                  )
+                ) {
+                  setBody("")
+                  setOpen(false)
+                }
+              }}
+            >
+              {accepting ? "Accept checkpoint" : "Return to the team"}
+            </Button>
+          </>
+        }
+      >
         <div className="space-y-4">
           {!accepting && (
             <div className="space-y-2">
-              <Label>What kind of change is needed?</Label>
               <RadioGroup
                 value={category}
-                onValueChange={(value) => setCategory(value as ReturnCategory)}
-                className="gap-1.5"
+                onChange={(value) => setCategory(value as ReturnCategory)}
+                className="gap-3"
               >
-                {(Object.keys(RETURN_CATEGORY_LABEL) as ReturnCategory[]).map((key) => (
-                  <Label
-                    key={key}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-meta font-normal hover:bg-muted/60"
-                  >
-                    <RadioGroupItem value={key} />
-                    {RETURN_CATEGORY_LABEL[key]}
-                  </Label>
-                ))}
+                <Label>What kind of change is needed?</Label>
+                {(Object.keys(RETURN_CATEGORY_LABEL) as ReturnCategory[]).map(
+                  (key) => (
+                    <RadioButton
+                      key={key}
+                      value={key}
+                      label={RETURN_CATEGORY_LABEL[key]}
+                    />
+                  )
+                )}
               </RadioGroup>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <Label htmlFor="review-body">
-              {accepting ? "Anything worth saying?" : "What has to change?"}
-            </Label>
-            <Textarea
-              id="review-body"
+            <TextArea
+              label={
+                accepting ? "Anything worth saying?" : "What has to change?"
+              }
               value={body}
-              onChange={(event) => setBody(event.target.value)}
+              onChange={setBody}
               rows={4}
               placeholder={
                 accepting
@@ -488,27 +569,7 @@ function ReviewDialog({ view, verdict }: { view: MilestoneView; verdict: "accept
             )}
           </div>
         </div>
-
-        <DialogFooter>
-          <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
-          <Button
-            onClick={() => {
-              const result = reviewSubmission(
-                view.instance.id,
-                verdict,
-                body,
-                accepting ? undefined : category
-              )
-              if (report(result, accepting ? "Accepted" : "Returned to the team")) {
-                setBody("")
-                setOpen(false)
-              }
-            }}
-          >
-            {accepting ? "Accept checkpoint" : "Return to the team"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </ModalDialog>
+    </>
   )
 }

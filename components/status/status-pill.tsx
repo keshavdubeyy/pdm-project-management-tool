@@ -1,5 +1,3 @@
-import { HugeiconsIcon } from "@hugeicons/react"
-
 import { statusMeta } from "@/lib/status"
 import type { MilestoneStatus } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -32,10 +30,8 @@ export function StatusPill({
         className
       )}
     >
-      <HugeiconsIcon
-        icon={meta.icon}
+      <meta.icon
         className={cn("shrink-0", size === "sm" ? "size-3" : "size-3.5")}
-        strokeWidth={2.2}
         aria-hidden
       />
       {showLabel ? (
@@ -58,11 +54,6 @@ export function StatusGlyph({
 }) {
   const meta = statusMeta(status)
   return (
-    <HugeiconsIcon
-      icon={meta.icon}
-      className={cn("size-4", meta.solid, className)}
-      strokeWidth={2.2}
-      aria-hidden
-    />
+    <meta.icon className={cn("size-4", meta.solid, className)} aria-hidden />
   )
 }

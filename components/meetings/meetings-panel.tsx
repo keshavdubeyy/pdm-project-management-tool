@@ -1,32 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  CalendarClockIcon,
-  CheckmarkCircle02Icon,
-  ExternalLinkIcon,
-  NoteEditIcon,
-  PlusSignIcon,
-} from "@hugeicons/core-free-icons"
-
 import { ActionItemList } from "@/components/meetings/action-items"
 import { AvatarStack, EmptyState, SectionHeading } from "@/components/common"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/untitled/base/buttons/button"
+import { Checkbox } from "@/components/untitled/base/checkbox/checkbox"
+import { ModalDialog } from "@/components/untitled/application/modals/modal-dialog"
+import { Input } from "@/components/untitled/base/input/input"
+import { Label } from "@/components/untitled/base/input/label"
+import { TextArea } from "@/components/untitled/base/textarea/textarea"
 import { formatDateLong, timeAgo, todayIso } from "@/lib/dates"
 import { isMemberOf } from "@/lib/permissions"
 import { openSinceLastMeeting, personById } from "@/lib/selectors"
@@ -34,6 +16,14 @@ import { useProjectsStore } from "@/lib/store"
 import { report } from "@/lib/toast"
 import type { Meeting, Project } from "@/lib/types"
 import { cn } from "@/lib/utils"
+
+import {
+  CheckCircle,
+  Clock,
+  Edit05,
+  LinkExternal01,
+  Plus,
+} from "@untitledui/icons"
 
 /** Meetings, minutes and what came out of them.
  *
@@ -45,7 +35,10 @@ export function MeetingsPanel({ project }: { project: Project }) {
   const meetings = db.meetings
     .filter((m) => m.projectId === project.id)
     .sort((a, b) => (a.date < b.date ? 1 : -1))
-  const { lastMeeting, open, closedSince } = openSinceLastMeeting(db, project.id)
+  const { lastMeeting, open, closedSince } = openSinceLastMeeting(
+    db,
+    project.id
+  )
   const allActions = db.actionItems
     .filter((a) => a.projectId === project.id)
     .sort((a, b) => (a.dueDate < b.dueDate ? -1 : 1))
@@ -58,13 +51,17 @@ export function MeetingsPanel({ project }: { project: Project }) {
       <section>
         <SectionHeading
           count={open.length}
-          hint={lastMeeting ? `since ${formatDateLong(lastMeeting.date)}` : undefined}
+          hint={
+            lastMeeting
+              ? `since ${formatDateLong(lastMeeting.date)}`
+              : undefined
+          }
         >
           Open since the last meeting
         </SectionHeading>
         {open.length === 0 ? (
           <div className="flex items-center gap-2.5 rounded-lg border border-status-accepted-br bg-status-accepted-bg px-3 py-2.5 text-meta text-status-accepted-fg">
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4" strokeWidth={2} />
+            <CheckCircle className="size-4" />
             Nothing carried over. Everything agreed last time is done.
           </div>
         ) : (
@@ -77,7 +74,7 @@ export function MeetingsPanel({ project }: { project: Project }) {
         )}
       </section>
 
-      <Separator />
+      <hr className="h-px w-full border-none bg-border-secondary" />
 
       {/* ------------------------------------------------- actions */}
       <section>
@@ -85,24 +82,31 @@ export function MeetingsPanel({ project }: { project: Project }) {
         <ActionItemList project={project} items={allActions} />
       </section>
 
-      <Separator />
+      <hr className="h-px w-full border-none bg-border-secondary" />
 
       {/* ------------------------------------------------ meetings */}
       <section>
-        <SectionHeading count={meetings.length} action={<NewMeetingDialog project={project} />}>
+        <SectionHeading
+          count={meetings.length}
+          action={<NewMeetingDialog project={project} />}
+        >
           Meetings
         </SectionHeading>
 
         {meetings.length === 0 ? (
           <EmptyState
-            icon={CalendarClockIcon}
-            title="No meetings recorded"
+            icon={Clock}
+            title="No meetings yet"
             body="Record a meeting so its decisions and actions have somewhere to live."
           />
         ) : (
           <ol className="space-y-3">
             {meetings.map((meeting) => (
-              <MeetingCard key={meeting.id} meeting={meeting} project={project} />
+              <MeetingCard
+                key={meeting.id}
+                meeting={meeting}
+                project={project}
+              />
             ))}
           </ol>
         )}
@@ -111,11 +115,19 @@ export function MeetingsPanel({ project }: { project: Project }) {
   )
 }
 
-function MeetingCard({ meeting, project }: { meeting: Meeting; project: Project }) {
+function MeetingCard({
+  meeting,
+  project,
+}: {
+  meeting: Meeting
+  project: Project
+}) {
   const { db, actor, confirmMinutes } = useProjectsStore()
   const minutes = db.minutes.find((m) => m.meetingId === meeting.id)
   const actions = db.actionItems.filter((a) => a.meetingId === meeting.id)
-  const attendees = meeting.attendeeIds.map((personId) => personById(db, personId))
+  const attendees = meeting.attendeeIds.map((personId) =>
+    personById(db, personId)
+  )
   const [editing, setEditing] = React.useState(false)
 
   if (!actor) return null
@@ -129,11 +141,7 @@ function MeetingCard({ meeting, project }: { meeting: Meeting; project: Project 
   return (
     <li className="rounded-xl border border-border bg-card">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2.5">
-        <HugeiconsIcon
-          icon={CalendarClockIcon}
-          className="size-4 text-muted-foreground"
-          strokeWidth={2}
-        />
+        <Clock className="size-4 text-muted-foreground" />
         <span className="text-subhead">{meeting.title}</span>
         <span className="text-caption text-muted-foreground">
           {formatDateLong(meeting.date)}
@@ -143,12 +151,14 @@ function MeetingCard({ meeting, project }: { meeting: Meeting; project: Project 
           <AvatarStack people={attendees} />
           {meeting.callUrl && (
             <Button
-              variant="ghost"
-              size="icon-sm" nativeButton={false}
-              render={<a href={meeting.callUrl} target="_blank" rel="noreferrer" aria-label="Open the call link" />}
-            >
-              <HugeiconsIcon icon={ExternalLinkIcon} className="size-4" strokeWidth={2} />
-            </Button>
+              color="tertiary"
+              size="xs"
+              href={meeting.callUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open the call link"
+              iconLeading={LinkExternal01}
+            />
           )}
         </div>
       </div>
@@ -161,27 +171,20 @@ function MeetingCard({ meeting, project }: { meeting: Meeting; project: Project 
             <MinuteBlock label="Next" body={minutes.next} />
             <div className="flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
               <span>
-                Recorded by {personById(db, minutes.recordedBy)?.name ?? "someone"} ·{" "}
+                Recorded by{" "}
+                {personById(db, minutes.recordedBy)?.name ?? "someone"} ·{" "}
                 {timeAgo(minutes.recordedAt)}
               </span>
               <span className="inline-flex items-center gap-1">
                 {minutes.confirmedByTeamAt && (
                   <span className="inline-flex items-center gap-0.5">
-                    <HugeiconsIcon
-                      icon={CheckmarkCircle02Icon}
-                      className="size-3 text-status-accepted-solid"
-                      strokeWidth={2}
-                    />
+                    <CheckCircle className="size-3 text-status-accepted-solid" />
                     team
                   </span>
                 )}
                 {minutes.confirmedByMentorAt && (
                   <span className="inline-flex items-center gap-0.5">
-                    <HugeiconsIcon
-                      icon={CheckmarkCircle02Icon}
-                      className="size-3 text-status-accepted-solid"
-                      strokeWidth={2}
-                    />
+                    <CheckCircle className="size-3 text-status-accepted-solid" />
                     mentor
                   </span>
                 )}
@@ -190,13 +193,19 @@ function MeetingCard({ meeting, project }: { meeting: Meeting; project: Project 
                 {needsMyConfirmation && (
                   <Button
                     size="xs"
-                    variant="outline"
-                    onClick={() => report(confirmMinutes(minutes.id), "Confirmed")}
+                    color="secondary"
+                    onPress={() =>
+                      report(confirmMinutes(minutes.id), "Confirmed")
+                    }
                   >
                     These are right
                   </Button>
                 )}
-                <Button size="xs" variant="ghost" onClick={() => setEditing(true)}>
+                <Button
+                  size="xs"
+                  color="tertiary"
+                  onPress={() => setEditing(true)}
+                >
                   Edit
                 </Button>
               </div>
@@ -211,10 +220,16 @@ function MeetingCard({ meeting, project }: { meeting: Meeting; project: Project 
           />
         )}
 
-        <Separator />
+        <hr className="h-px w-full border-none bg-border-secondary" />
         <div>
-          <p className="mb-2 text-th text-muted-foreground uppercase">Actions from this meeting</p>
-          <ActionItemList project={project} items={actions} meetingId={meeting.id} />
+          <p className="mb-2 text-th text-muted-foreground uppercase">
+            Actions from this meeting
+          </p>
+          <ActionItemList
+            project={project}
+            items={actions}
+            meetingId={meeting.id}
+          />
         </div>
       </div>
     </li>
@@ -226,7 +241,9 @@ function MinuteBlock({ label, body }: { label: string; body: string }) {
   return (
     <div>
       <p className="text-th text-muted-foreground uppercase">{label}</p>
-      <p className="mt-0.5 text-meta whitespace-pre-line text-foreground">{body}</p>
+      <p className="mt-0.5 text-meta whitespace-pre-line text-foreground">
+        {body}
+      </p>
     </div>
   )
 }
@@ -250,23 +267,37 @@ function MinutesEditor({
   return (
     <div className="space-y-3 rounded-xl border border-dashed border-border p-3">
       <p className="flex items-center gap-1.5 text-th text-muted-foreground uppercase">
-        <HugeiconsIcon icon={NoteEditIcon} className="size-3.5" strokeWidth={2} />
+        <Edit05 className="size-3.5" />
         Minutes
       </p>
-      <Field label="What was discussed" value={discussed} onChange={setDiscussed} />
+      <Field
+        label="What was discussed"
+        value={discussed}
+        onChange={setDiscussed}
+      />
       <Field label="What was decided" value={decided} onChange={setDecided} />
-      <Field label="What happens next" value={next} onChange={setNext} rows={2} />
+      <Field
+        label="What happens next"
+        value={next}
+        onChange={setNext}
+        rows={2}
+      />
       <div className="flex justify-end gap-1.5">
         {onCancel && (
-          <Button size="sm" variant="ghost" onClick={onCancel}>
+          <Button size="xs" color="tertiary" onPress={onCancel}>
             Cancel
           </Button>
         )}
         <Button
-          size="sm"
-          disabled={!discussed.trim() && !decided.trim()}
-          onClick={() => {
-            if (report(saveMinutes(meeting.id, { discussed, decided, next }), "Minutes saved")) {
+          size="xs"
+          isDisabled={!discussed.trim() && !decided.trim()}
+          onPress={() => {
+            if (
+              report(
+                saveMinutes(meeting.id, { discussed, decided, next }),
+                "Minutes saved"
+              )
+            ) {
               onDone()
             }
           }}
@@ -292,15 +323,12 @@ function Field({
   const id = React.useId()
   return (
     <div className="space-y-1">
-      <Label htmlFor={id} className="text-caption">
-        {label}
-      </Label>
-      <Textarea
+      <TextArea
         id={id}
+        label={label}
         rows={rows}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="text-meta"
+        onChange={onChange}
       />
     </div>
   )
@@ -317,55 +345,64 @@ function NewMeetingDialog({ project }: { project: Project }) {
   const [attendees, setAttendees] = React.useState<string[]>(everyone)
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2} />
+    <>
+      <Button
+        color="secondary"
+        size="xs"
+        onPress={() => setOpen(true)}
+        iconLeading={Plus}
+      >
         Record a meeting
       </Button>
-
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Record a meeting</DialogTitle>
-          <DialogDescription>
-            Minutes and actions hang off this, so record it even if it already happened.
-          </DialogDescription>
-        </DialogHeader>
-
+      <ModalDialog
+        isOpen={open}
+        onOpenChange={setOpen}
+        title={<>Record a meeting</>}
+        description={
+          <>
+            Minutes and actions hang off this, so record it even if it already
+            happened.
+          </>
+        }
+        footer={
+          <>
+            <Button color="tertiary" slot="close">
+              Cancel
+            </Button>
+            <Button
+              onPress={() => {
+                const result = addMeeting(project.id, {
+                  title,
+                  date,
+                  time,
+                  attendeeIds: attendees,
+                  callUrl,
+                })
+                if (report(result, "Meeting recorded")) setOpen(false)
+              }}
+            >
+              Record meeting
+            </Button>
+          </>
+        }
+      >
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="meeting-title">Title</Label>
-            <Input
-              id="meeting-title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-            />
+            <Input label="Title" value={title} onChange={setTitle} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="meeting-date">Date</Label>
-              <Input
-                id="meeting-date"
-                type="date"
-                value={date}
-                onChange={(event) => setDate(event.target.value)}
-              />
+              <Input label="Date" type="date" value={date} onChange={setDate} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="meeting-time">Time</Label>
-              <Input
-                id="meeting-time"
-                type="time"
-                value={time}
-                onChange={(event) => setTime(event.target.value)}
-              />
+              <Input label="Time" type="time" value={time} onChange={setTime} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="meeting-url">Call link</Label>
             <Input
-              id="meeting-url"
+              label="Call link"
               value={callUrl}
-              onChange={(event) => setCallUrl(event.target.value)}
+              onChange={setCallUrl}
               placeholder="https://meet.google.com/…"
             />
           </div>
@@ -376,49 +413,28 @@ function NewMeetingDialog({ project }: { project: Project }) {
                 const person = personById(db, personId)
                 if (!person) return null
                 return (
-                  <label
+                  <Checkbox
                     key={personId}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1 text-meta hover:bg-muted/60"
-                  >
-                    <Checkbox
-                      checked={attendees.includes(personId)}
-                      onCheckedChange={() =>
-                        setAttendees((prev) =>
-                          prev.includes(personId)
-                            ? prev.filter((x) => x !== personId)
-                            : [...prev, personId]
-                        )
-                      }
-                    />
-                    {person.name}
-                    <span className="text-caption text-muted-foreground">
-                      {project.mentorIds.includes(personId) ? "mentor" : "team"}
-                    </span>
-                  </label>
+                    isSelected={attendees.includes(personId)}
+                    onChange={() =>
+                      setAttendees((prev) =>
+                        prev.includes(personId)
+                          ? prev.filter((x) => x !== personId)
+                          : [...prev, personId]
+                      )
+                    }
+                    label={person.name}
+                    hint={
+                      project.mentorIds.includes(personId) ? "mentor" : "team"
+                    }
+                    className="px-2 py-1"
+                  />
                 )
               })}
             </div>
           </div>
         </div>
-
-        <DialogFooter>
-          <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
-          <Button
-            onClick={() => {
-              const result = addMeeting(project.id, {
-                title,
-                date,
-                time,
-                attendeeIds: attendees,
-                callUrl,
-              })
-              if (report(result, "Meeting recorded")) setOpen(false)
-            }}
-          >
-            Record meeting
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </ModalDialog>
+    </>
   )
 }

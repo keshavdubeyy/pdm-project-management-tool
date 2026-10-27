@@ -3,7 +3,10 @@
 import * as React from "react"
 
 import { StatusGlyph } from "@/components/status/status-pill"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipTrigger,
+} from "@/components/untitled/base/tooltip/tooltip"
 import { describeDue, timeAgo } from "@/lib/dates"
 import type { MilestoneView } from "@/lib/selectors"
 import { statusMeta } from "@/lib/status"
@@ -39,7 +42,9 @@ export function BatchGrid({
   onSelect: (view: MilestoneView) => void
 }) {
   const [focus, setFocus] = React.useState({ row: 0, col: 0 })
-  const [hover, setHover] = React.useState<{ row: number; col: number } | null>(null)
+  const [hover, setHover] = React.useState<{ row: number; col: number } | null>(
+    null
+  )
   const cellRefs = React.useRef<(HTMLDivElement | null)[][]>([])
 
   const move = (rowDelta: number, colDelta: number) => {
@@ -51,7 +56,11 @@ export function BatchGrid({
     })
   }
 
-  const onKeyDown = (event: React.KeyboardEvent, rowIndex: number, colIndex: number) => {
+  const onKeyDown = (
+    event: React.KeyboardEvent,
+    rowIndex: number,
+    colIndex: number
+  ) => {
     switch (event.key) {
       case "ArrowRight":
         event.preventDefault()
@@ -76,7 +85,8 @@ export function BatchGrid({
         break
       case "End":
         event.preventDefault()
-        if (event.ctrlKey || event.metaKey) setFocusTo(rows.length - 1, columns.length - 1)
+        if (event.ctrlKey || event.metaKey)
+          setFocusTo(rows.length - 1, columns.length - 1)
         else setFocusTo(rowIndex, columns.length - 1)
         break
       case "PageDown":
@@ -115,7 +125,11 @@ export function BatchGrid({
         onMouseLeave={() => setHover(null)}
       >
         {/* header */}
-        <div role="row" aria-rowindex={1} className="sticky top-0 z-20 flex bg-card">
+        <div
+          role="row"
+          aria-rowindex={1}
+          className="sticky top-0 z-20 flex bg-card"
+        >
           <div
             role="columnheader"
             aria-colindex={1}
@@ -135,11 +149,21 @@ export function BatchGrid({
                 className={cn(
                   "w-[76px] shrink-0 border-b border-border px-1 py-2 text-center",
                   hover?.col === colIndex && "bg-muted/60",
-                  isCurrent && "bg-primary/[0.06]"
+                  isCurrent && "bg-brand-solid/[0.06]"
                 )}
               >
-                <Tooltip>
-                  <TooltipTrigger render={<span className="block cursor-default" />}>
+                <Tooltip
+                  title={
+                    <>
+                      <span className="block font-medium">{column.title}</span>
+                      <span className="block opacity-80">
+                        Week {column.dueWeek} · {column.phase}
+                      </span>
+                    </>
+                  }
+                  placement="bottom"
+                >
+                  <TooltipTrigger className="block cursor-default">
                     <span className="block text-th font-semibold text-foreground">
                       W{column.dueWeek}
                     </span>
@@ -147,12 +171,6 @@ export function BatchGrid({
                       {shortTitle(column.title)}
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-[240px]">
-                    <span className="block font-medium">{column.title}</span>
-                    <span className="block opacity-80">
-                      Week {column.dueWeek} · {column.phase}
-                    </span>
-                  </TooltipContent>
                 </Tooltip>
               </div>
             )
@@ -175,8 +193,12 @@ export function BatchGrid({
                 hover?.row === rowIndex && "bg-muted/40"
               )}
             >
-              <p className="truncate text-meta font-medium text-foreground">{row.label}</p>
-              <p className="truncate text-caption text-muted-foreground">{row.sublabel}</p>
+              <p className="truncate text-meta font-medium text-foreground">
+                {row.label}
+              </p>
+              <p className="truncate text-caption text-muted-foreground">
+                {row.sublabel}
+              </p>
             </div>
 
             {columns.map((column, colIndex) => {
@@ -190,14 +212,17 @@ export function BatchGrid({
                   role="gridcell"
                   aria-colindex={colIndex + 2}
                   ref={(element) => {
-                    cellRefs.current[rowIndex] = cellRefs.current[rowIndex] ?? []
+                    cellRefs.current[rowIndex] =
+                      cellRefs.current[rowIndex] ?? []
                     cellRefs.current[rowIndex][colIndex] = element
                   }}
                   tabIndex={focused ? 0 : -1}
                   aria-label={cellLabel(row, column, view)}
                   onKeyDown={(event) => onKeyDown(event, rowIndex, colIndex)}
                   onFocus={() => setFocus({ row: rowIndex, col: colIndex })}
-                  onMouseEnter={() => setHover({ row: rowIndex, col: colIndex })}
+                  onMouseEnter={() =>
+                    setHover({ row: rowIndex, col: colIndex })
+                  }
                   onClick={() => view && onSelect(view)}
                   className={cn(
                     "flex w-[76px] shrink-0 cursor-pointer items-center justify-center border-b border-border py-1.5 outline-none",
@@ -207,17 +232,26 @@ export function BatchGrid({
                   )}
                 >
                   {view ? (
-                    <Tooltip>
-                      <TooltipTrigger render={<span className="flex items-center justify-center" />}>
+                    <Tooltip
+                      title={
+                        <>
+                          <span className="block font-medium">
+                            {column.title}
+                          </span>
+                          <span className="block opacity-90">
+                            {cellStory(view)}
+                          </span>
+                        </>
+                      }
+                    >
+                      <TooltipTrigger className="flex items-center justify-center">
                         <StatusGlyph status={view.status} />
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[260px]">
-                        <span className="block font-medium">{column.title}</span>
-                        <span className="block opacity-90">{cellStory(view)}</span>
-                      </TooltipContent>
                     </Tooltip>
                   ) : (
-                    <span className="text-caption text-muted-foreground">—</span>
+                    <span className="text-caption text-muted-foreground">
+                      —
+                    </span>
                   )}
                 </div>
               )
@@ -245,7 +279,11 @@ function shortTitle(title: string) {
     .replace("Updated Plan and Requirements", "Re-plan")
 }
 
-function cellLabel(row: Row, column: MilestoneTemplateItem, view?: MilestoneView) {
+function cellLabel(
+  row: Row,
+  column: MilestoneTemplateItem,
+  view?: MilestoneView
+) {
   if (!view) return `${row.label}, ${column.title}: not applicable`
   return `${row.label}, ${column.title}: ${statusMeta(view.status).label}. ${describeDue(view.dueDate).label}.`
 }

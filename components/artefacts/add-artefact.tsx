@@ -1,16 +1,19 @@
 "use client"
 
 import * as React from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { PlusSignIcon } from "@hugeicons/core-free-icons"
-
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { detectService, guessLabel, isValidUrl, SERVICE_META } from "@/lib/links"
+import { Button } from "@/components/untitled/base/buttons/button"
+import { Input } from "@/components/untitled/base/input/input"
+import {
+  detectService,
+  guessLabel,
+  isValidUrl,
+  SERVICE_META,
+} from "@/lib/links"
 import { useProjectsStore } from "@/lib/store"
 import { report } from "@/lib/toast"
 import { cn } from "@/lib/utils"
+
+import { Plus } from "@untitledui/icons"
 
 /** Paste a link, get a labelled artefact.
  *
@@ -61,14 +64,12 @@ export function AddArtefact({
   return (
     <form onSubmit={submit} className={cn("space-y-3", className)}>
       <div className="space-y-1.5">
-        <Label htmlFor="artefact-url">Link to the work</Label>
         <Input
-          id="artefact-url"
+          label="Link to the work"
           value={url}
-          onChange={(event) => setUrl(event.target.value)}
+          onChange={setUrl}
           placeholder="Paste a Google Doc, Figma file, Miro board or GitHub repo…"
           autoComplete="off"
-          spellCheck={false}
         />
         {url && !valid && (
           <p className="text-caption text-destructive">
@@ -77,7 +78,7 @@ export function AddArtefact({
         )}
         {meta && (
           <p className="flex items-center gap-1.5 text-caption text-muted-foreground">
-            <HugeiconsIcon icon={meta.icon} className={cn("size-3.5", meta.tint)} strokeWidth={2} />
+            <meta.icon className={cn("size-3.5", meta.tint)} />
             Recognised as {meta.label}
             {meta.embeddable && " · can be previewed inside a review"}
           </p>
@@ -85,20 +86,23 @@ export function AddArtefact({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="artefact-label">What is it called?</Label>
         <Input
-          id="artefact-label"
+          label="What is it called?"
           value={label}
-          onChange={(event) => {
+          onChange={(value) => {
             setTouchedLabel(true)
-            setLabel(event.target.value)
+            setLabel(value)
           }}
           placeholder="Customer Validation Report"
         />
       </div>
 
-      <Button type="submit" size="sm" disabled={!valid || !label.trim()}>
-        <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2} />
+      <Button
+        type="submit"
+        size="xs"
+        isDisabled={!valid || !label.trim()}
+        iconLeading={Plus}
+      >
         Add link
       </Button>
     </form>

@@ -1,16 +1,12 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 
-import { AccountMenu } from "@/components/shell/account-menu"
-import { AppSidebar } from "@/components/shell/app-sidebar"
-import { CommandPalette } from "@/components/shell/command-palette"
-import { NotificationBell } from "@/components/shell/notification-bell"
-import { Separator } from "@/components/ui/separator"
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { Skeleton } from "@/components/ui/skeleton"
+import { PasswordSetupPrompt } from "@/components/password-setup-prompt"
+import { ProjectTitlePrompt } from "@/components/project-title-prompt"
+import { AppTopbar } from "@/components/shell/app-topbar"
+import { hasServerSession } from "@/lib/remote"
 import { useProjectsStore } from "@/lib/store"
 
 const PUBLIC_ROUTES = ["/signin", "/design-system", "/updates"]
@@ -22,12 +18,26 @@ const PUBLIC_ROUTES = ["/signin", "/design-system", "/updates"]
 export function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { ready, session } = useProjectsStore()
+  const { ready, session, signOut } = useProjectsStore()
   const isPublic = PUBLIC_ROUTES.some((route) => pathname.startsWith(route))
 
   React.useEffect(() => {
     if (ready && !session && !isPublic) router.replace("/signin")
   }, [isPublic, ready, router, session])
+
+  // A tab that remembers a person but holds no server sign-in (an old session,
+  // or one that expired) is signed out, so it is never shown data it cannot
+  // save.
+  React.useEffect(() => {
+    if (!ready || !session) return
+    let cancelled = false
+    hasServerSession().then((ok) => {
+      if (!ok && !cancelled) signOut()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [ready, session, signOut])
 
   if (!ready) return <BootSkeleton />
 
@@ -39,34 +49,25 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
   if (pathname.startsWith("/signin")) return <>{children}</>
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset className="min-w-0 overflow-x-hidden">
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-4 supports-backdrop-filter:bg-background/70 supports-backdrop-filter:backdrop-blur">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="data-vertical:h-4 data-vertical:self-auto" />
-          <WeekIndicator />
-          <div className="ml-auto flex items-center gap-2">
-            <CommandPalette />
-            <NotificationBell />
-            <AccountMenu />
-          </div>
-        </header>
-        <main className="flex min-w-0 flex-1 flex-col gap-6 overflow-x-hidden p-4 md:p-6">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+    <div className="flex min-h-svh flex-col">
+      <AppTopbar />
+      <PasswordSetupPrompt />
+      <ProjectTitlePrompt />
+      <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
+        <main className="flex min-w-0 flex-1 flex-col gap-6 overflow-x-clip p-4 md:p-6">
+          {children}
+        </main>
+      </div>
+    </div>
   )
 }
 
-function WeekIndicator() {
-  const { week, batch } = useProjectsStore()
+function Skeleton({ className }: { className?: string }) {
   return (
-    <Link href="/checkpoints" className="flex min-w-0 items-baseline gap-2 rounded-md px-1 py-0.5">
-      <span className="truncate text-meta font-medium text-foreground">{batch.label}</span>
-      <span className="hidden shrink-0 text-caption text-muted-foreground sm:inline">
-        Week {week} of 28
-      </span>
-    </Link>
+    <div
+      aria-hidden
+      className={`animate-pulse rounded-md bg-secondary ${className ?? ""}`}
+    />
   )
 }
 

@@ -1,12 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Delete02Icon, ExternalLinkIcon, ViewIcon } from "@hugeicons/core-free-icons"
-
 import { PersonAvatar } from "@/components/common"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useConfirm } from "@/components/confirm-dialog"
+import { Button } from "@/components/untitled/base/buttons/button"
+import { ModalDialog } from "@/components/untitled/application/modals/modal-dialog"
 import { timeAgo } from "@/lib/dates"
 import { embedUrl, hostOf, SERVICE_META } from "@/lib/links"
 import { personById } from "@/lib/selectors"
@@ -14,6 +12,8 @@ import { useProjectsStore } from "@/lib/store"
 import { report } from "@/lib/toast"
 import type { Artefact } from "@/lib/types"
 import { cn } from "@/lib/utils"
+
+import { Eye, LinkExternal01, Trash01 } from "@untitledui/icons"
 
 /** A piece of work that lives somewhere else.
  *
@@ -31,6 +31,7 @@ export function ArtefactRow({
   compact?: boolean
 }) {
   const { db, removeArtefact } = useProjectsStore()
+  const { confirm, dialog: confirmDialog } = useConfirm()
   const [previewing, setPreviewing] = React.useState(false)
   const meta = SERVICE_META[artefact.service]
   const embed = embedUrl(artefact.url)
@@ -44,14 +45,11 @@ export function ArtefactRow({
           compact ? "py-2" : "py-2.5"
         )}
       >
-        <HugeiconsIcon
-          icon={meta.icon}
-          className={cn("size-4 shrink-0", meta.tint)}
-          strokeWidth={2}
-          aria-hidden
-        />
+        <meta.icon className={cn("size-4 shrink-0", meta.tint)} aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-meta font-medium text-foreground">{artefact.label}</p>
+          <p className="truncate text-meta font-medium text-foreground">
+            {artefact.label}
+          </p>
           <p className="truncate text-caption text-muted-foreground">
             {meta.label}
             {!compact && addedBy && ` · added by ${addedBy.name.split(" ")[0]}`}
@@ -63,62 +61,74 @@ export function ArtefactRow({
         <div className="flex shrink-0 items-center gap-0.5">
           {embed && (
             <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setPreviewing(true)}
+              color="tertiary"
+              size="xs"
+              onPress={() => setPreviewing(true)}
               aria-label={`Preview ${artefact.label}`}
-            >
-              <HugeiconsIcon icon={ViewIcon} className="size-4" strokeWidth={2} />
-            </Button>
+              iconLeading={Eye}
+            />
           )}
           <Button
-            variant="ghost"
-            size="icon-sm"
-            nativeButton={false}
-            render={
-              <a href={artefact.url} target="_blank" rel="noreferrer" aria-label={`Open ${artefact.label}`} />
-            }
-          >
-            <HugeiconsIcon icon={ExternalLinkIcon} className="size-4" strokeWidth={2} />
-          </Button>
+            color="tertiary"
+            size="xs"
+            href={artefact.url}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Open ${artefact.label}`}
+            iconLeading={LinkExternal01}
+          />
           {onRemove && (
             <Button
-              variant="ghost"
-              size="icon-sm"
+              color="tertiary-destructive"
+              size="xs"
               aria-label={`Remove ${artefact.label}`}
-              onClick={() => report(removeArtefact(artefact.id), "Link removed")}
-            >
-              <HugeiconsIcon icon={Delete02Icon} className="size-4" strokeWidth={2} />
-            </Button>
+              onPress={() =>
+                confirm({
+                  title: `Remove "${artefact.label}"?`,
+                  description: "The link is removed from this project.",
+                  confirmLabel: "Remove",
+                  destructive: true,
+                  onConfirm: () =>
+                    report(removeArtefact(artefact.id), "Link removed"),
+                })
+              }
+              iconLeading={Trash01}
+            />
           )}
         </div>
       </div>
 
+      {confirmDialog}
       {embed && (
-        <Dialog open={previewing} onOpenChange={setPreviewing}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>{artefact.label}</DialogTitle>
-            </DialogHeader>
-            <div className="aspect-[4/3] w-full overflow-hidden rounded-xl border border-border bg-muted">
-              <iframe
-                src={embed}
-                title={artefact.label}
-                className="size-full"
-                allowFullScreen
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              />
-            </div>
-            <p className="text-caption text-muted-foreground">
-              Shown from {meta.label}. If it stays blank, the document is private and only its
-              owner can open it —{" "}
-              <a href={artefact.url} target="_blank" rel="noreferrer" className="underline">
-                open it there instead
-              </a>
-              .
-            </p>
-          </DialogContent>
-        </Dialog>
+        <ModalDialog
+          isOpen={previewing}
+          onOpenChange={setPreviewing}
+          size="4xl"
+          title={artefact.label}
+        >
+          <div className="aspect-[4/3] w-full overflow-hidden rounded-xl border border-border bg-muted">
+            <iframe
+              src={embed}
+              title={artefact.label}
+              className="size-full"
+              allowFullScreen
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            />
+          </div>
+          <p className="text-caption text-muted-foreground">
+            Shown from {meta.label}. If it stays blank, the document is private
+            and only its owner can open it —{" "}
+            <a
+              href={artefact.url}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              open it there instead
+            </a>
+            .
+          </p>
+        </ModalDialog>
       )}
     </>
   )

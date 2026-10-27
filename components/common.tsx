@@ -1,14 +1,26 @@
 "use client"
 
+import Image from "next/image"
 import * as React from "react"
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
-
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Avatar } from "@/components/untitled/base/avatar/avatar"
+import {
+  Tooltip,
+  TooltipTrigger,
+} from "@/components/untitled/base/tooltip/tooltip"
 import { describeDue } from "@/lib/dates"
-import { initialsOf } from "@/lib/selectors"
+import {
+  hasProjectTitle,
+  initialsOf,
+  PROJECT_TITLE_PLACEHOLDER,
+} from "@/lib/selectors"
 import type { Person } from "@/lib/types"
 import { cn } from "@/lib/utils"
+
+/** Any icon from `@untitledui/icons`, or anything else that takes a class. */
+export type IconComponent = React.ComponentType<{
+  className?: string
+  "aria-hidden"?: boolean | "true" | "false"
+}>
 
 /* --------------------------------------------------------------- headings */
 
@@ -17,20 +29,37 @@ export function PageHeader({
   description,
   actions,
   meta,
+  divider = true,
 }: {
   title: string
   description?: string
   actions?: React.ReactNode
   meta?: React.ReactNode
+  /** The rule under the header. On by default; pass false to drop it. */
+  divider?: boolean
 }) {
   return (
-    <div className="flex flex-col gap-3 border-b border-border pb-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div
+      className={
+        divider
+          ? "flex flex-col gap-3 border-b border-border pb-5"
+          : "flex flex-col gap-3"
+      }
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
         <div className="min-w-0 space-y-1">
-          <h1 className="text-page text-foreground">{title}</h1>
-          {description && <p className="max-w-2xl text-meta text-muted-foreground">{description}</p>}
+          <h1 className="truncate text-page text-foreground" title={title}>
+            {title}
+          </h1>
+          {description && (
+            <p className="max-w-2xl text-meta text-muted-foreground">
+              {description}
+            </p>
+          )}
         </div>
-        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+        {actions && (
+          <div className="flex shrink-0 items-center gap-2">{actions}</div>
+        )}
       </div>
       {meta}
     </div>
@@ -53,9 +82,13 @@ export function SectionHeading({
       <div className="flex items-baseline gap-2">
         <h2 className="text-section text-foreground">{children}</h2>
         {count !== undefined && (
-          <span className="text-meta font-medium text-muted-foreground">{count}</span>
+          <span className="text-meta font-medium text-muted-foreground">
+            {count}
+          </span>
         )}
-        {hint && <span className="text-caption text-muted-foreground">{hint}</span>}
+        {hint && (
+          <span className="text-caption text-muted-foreground">{hint}</span>
+        )}
       </div>
       {action}
     </div>
@@ -65,13 +98,16 @@ export function SectionHeading({
 /* ------------------------------------------------------------ empty state */
 
 export function EmptyState({
-  icon,
+  icon: Icon,
+  image,
   title,
   body,
   action,
   className,
 }: {
-  icon?: IconSvgElement
+  icon?: IconComponent
+  /** An illustration from /public, shown above the title in place of the icon. */
+  image?: string
   title: string
   body?: string
   action?: React.ReactNode
@@ -80,20 +116,26 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-6 py-10 text-center",
+        "flex flex-col items-center justify-center px-6 py-10 text-center",
         className
       )}
     >
-      {icon && (
-        <HugeiconsIcon
-          icon={icon}
-          className="mb-3 size-8 text-muted-foreground/60"
-          strokeWidth={1.6}
-          aria-hidden
+      {image && (
+        <Image
+          src={image}
+          alt=""
+          width={160}
+          height={160}
+          className="mb-3 size-40 object-contain"
         />
       )}
+      {!image && Icon && (
+        <Icon className="mb-3 size-8 text-fg-quaternary" aria-hidden />
+      )}
       <p className="text-subhead text-foreground">{title}</p>
-      {body && <p className="mt-1 max-w-sm text-meta text-muted-foreground">{body}</p>}
+      {body && (
+        <p className="mt-1 max-w-sm text-meta text-muted-foreground">{body}</p>
+      )}
       {action && <div className="mt-4">{action}</div>}
     </div>
   )
@@ -113,13 +155,12 @@ export function PersonAvatar({
   const name = person?.name ?? "Unknown"
   return (
     <Avatar
-      size={size === "default" ? "default" : "sm"}
-      className={cn(size === "xs" && "size-5", className)}
-    >
-      <AvatarFallback className={cn(size === "xs" ? "text-[9px]" : "text-[10px]")}>
-        {initialsOf(name)}
-      </AvatarFallback>
-    </Avatar>
+      size={size === "default" ? "sm" : "xs"}
+      src={person?.avatarUrl}
+      initials={initialsOf(name)}
+      alt={name}
+      className={className}
+    />
   )
 }
 
@@ -132,12 +173,17 @@ export function PersonChip({
   suffix?: string
   className?: string
 }) {
-  if (!person) return <span className="text-meta text-muted-foreground">Unassigned</span>
+  if (!person)
+    return <span className="text-meta text-muted-foreground">Unassigned</span>
   return (
     <span className={cn("inline-flex min-w-0 items-center gap-1.5", className)}>
       <PersonAvatar person={person} size="xs" />
       <span className="truncate text-meta text-foreground">{person.name}</span>
-      {suffix && <span className="shrink-0 text-caption text-muted-foreground">{suffix}</span>}
+      {suffix && (
+        <span className="shrink-0 text-caption text-muted-foreground">
+          {suffix}
+        </span>
+      )}
     </span>
   )
 }
@@ -159,12 +205,20 @@ export function AvatarStack({
   return (
     <span className={cn("flex items-center", className)}>
       {shown.map((person) => (
-        <span key={person.id} className="-ml-1.5 first:ml-0" title={person.name}>
-          <PersonAvatar person={person} size="xs" className="ring-2 ring-background" />
+        <span
+          key={person.id}
+          className="-ml-1.5 first:ml-0"
+          title={person.name}
+        >
+          <PersonAvatar
+            person={person}
+            size="xs"
+            className="ring-2 ring-background"
+          />
         </span>
       ))}
       {rest > 0 && (
-        <span className="-ml-1.5 flex size-5 items-center justify-center rounded-full bg-muted text-[9px] font-semibold text-muted-foreground ring-2 ring-background">
+        <span className="-ml-1.5 flex size-5 items-center justify-center rounded-full bg-secondary text-[9px] font-semibold text-tertiary ring-2 ring-background">
           +{rest}
         </span>
       )}
@@ -195,22 +249,17 @@ export function DueBadge({
   }[info.tone]
 
   return (
-    <Tooltip>
+    <Tooltip title={<>{info.full}</>}>
       <TooltipTrigger
-        render={
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 text-meta font-medium whitespace-nowrap",
-              tone,
-              className
-            )}
-          />
-        }
+        className={cn(
+          "inline-flex items-center gap-1 text-meta font-medium whitespace-nowrap",
+          tone,
+          className
+        )}
       >
         {!hideIcon && <span aria-hidden>·</span>}
         {info.label}
       </TooltipTrigger>
-      <TooltipContent>{info.full}</TooltipContent>
     </Tooltip>
   )
 }
@@ -251,7 +300,11 @@ export function MetricTile({
       >
         {value}
       </p>
-      {hint && <p className="mt-auto pt-1 text-caption text-muted-foreground">{hint}</p>}
+      {hint && (
+        <p className="mt-auto pt-1 text-caption text-muted-foreground">
+          {hint}
+        </p>
+      )}
     </div>
   )
 }
@@ -266,8 +319,24 @@ export function InlineHint({ children }: { children: React.ReactNode }) {
 export function ToValidate({ children }: { children: React.ReactNode }) {
   return (
     <p className="rounded-lg border border-status-under_review-br bg-status-under_review-bg px-3 py-2 text-caption text-status-under_review-fg">
-      <span className="font-semibold">Still to confirm with faculty. </span>
+      <span className="font-semibold">Still to confirm with mentors. </span>
       {children}
     </p>
+  )
+}
+
+/** A project's title, or a grey placeholder until its team has written one. */
+export function ProjectTitle({
+  project,
+  className,
+}: {
+  project: { title: string }
+  className?: string
+}) {
+  const named = hasProjectTitle(project)
+  return (
+    <span className={cn(className, !named && "text-muted-foreground")}>
+      {named ? project.title : PROJECT_TITLE_PLACEHOLDER}
+    </span>
   )
 }

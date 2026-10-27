@@ -1,6 +1,9 @@
 "use client"
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipTrigger,
+} from "@/components/untitled/base/tooltip/tooltip"
 import { describeDue } from "@/lib/dates"
 import type { MilestoneView } from "@/lib/selectors"
 import { statusMeta } from "@/lib/status"
@@ -39,7 +42,8 @@ export function ProgressCells({
                 // Colour only. Nothing in a data view changes size on hover:
                 // twenty-two strips of twelve segments would be a field of
                 // movement under the pointer.
-                onSelect && "cursor-pointer transition-colors duration-fast-01 ease-standard"
+                onSelect &&
+                  "cursor-pointer transition-colors duration-fast-01 ease-standard"
               )}
               style={{ backgroundColor: fill(view.status) }}
             />
@@ -47,35 +51,27 @@ export function ProgressCells({
         )
 
         return (
-          <Tooltip key={view.instance.id}>
+          <Tooltip
+            key={view.instance.id}
+            placement="top"
+            title={
+              <>
+                <span className="block font-medium">
+                  Week {view.dueWeek} · {view.template.title}
+                </span>
+                <span className="block opacity-90">
+                  {meta.label} · {describeDue(view.dueDate).label}
+                </span>
+              </>
+            }
+          >
             <TooltipTrigger
-              render={
-                onSelect ? (
-                  <button
-                    type="button"
-                    aria-label={label}
-                    onClick={(event) => {
-                      event.preventDefault()
-                      event.stopPropagation()
-                      onSelect(view)
-                    }}
-                    className="min-w-0 flex-1"
-                  />
-                ) : (
-                  <span aria-label={label} className="min-w-0 flex-1" />
-                )
-              }
+              aria-label={label}
+              onPress={onSelect ? () => onSelect(view) : undefined}
+              className={cn("min-w-0 flex-1", onSelect && "cursor-pointer")}
             >
               {cell}
             </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-[250px]">
-              <span className="block font-medium">
-                Week {view.dueWeek} · {view.template.title}
-              </span>
-              <span className="block opacity-90">
-                {meta.label} · {describeDue(view.dueDate).label}
-              </span>
-            </TooltipContent>
           </Tooltip>
         )
       })}

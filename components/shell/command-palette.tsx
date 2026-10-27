@@ -2,32 +2,30 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  InboxIcon,
-  MilestoneIcon,
-  Search01Icon,
-  SparklesIcon,
-  UserSwitchIcon,
-} from "@hugeicons/core-free-icons"
-
-import { Button } from "@/components/ui/button"
+  Autocomplete,
+  Input as AriaInput,
+  SearchField,
+  useFilter,
+} from "react-aria-components"
 import {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  CommandShortcut,
-} from "@/components/ui/command"
-import { Kbd } from "@/components/ui/kbd"
+  Dialog,
+  Modal,
+  ModalOverlay,
+} from "@/components/untitled/application/modals/modal"
+import { Dropdown } from "@/components/untitled/base/dropdown/dropdown"
 import { navFor } from "@/lib/nav"
 import { ROLE_LABEL, projectsFor } from "@/lib/permissions"
 import { reviewQueue } from "@/lib/selectors"
 import { useProjectsStore } from "@/lib/store"
+
+import {
+  Flag03,
+  Inbox01,
+  SearchLg,
+  Stars01,
+  SwitchHorizontal01,
+} from "@untitledui/icons"
 
 /** Everything reachable from one keystroke.
  *
@@ -49,6 +47,8 @@ export function CommandPalette() {
     return () => document.removeEventListener("keydown", onKey)
   }, [])
 
+  const { contains } = useFilter({ sensitivity: "base" })
+
   const go = (href: string) => {
     setOpen(false)
     router.push(href)
@@ -69,93 +69,125 @@ export function CommandPalette() {
     const extras =
       actor.role === "student"
         ? []
-        : [{ label: "Waiting on you", href: "/projects?filter=waiting", icon: InboxIcon }]
-    return [...fromNav, ...extras, { label: "Design system", href: "/design-system", icon: SparklesIcon }]
+        : [
+            {
+              label: "Waiting on you",
+              href: "/projects?filter=waiting",
+              icon: Inbox01,
+            },
+          ]
+    return [
+      ...fromNav,
+      ...extras,
+      { label: "Design system", href: "/design-system", icon: Stars01 },
+    ]
   }, [actor, db])
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
+      <button
+        type="button"
         onClick={() => setOpen(true)}
-        className="h-8 gap-2 text-muted-foreground"
+        className="flex h-9 w-full items-center gap-2 rounded-lg bg-primary px-3 text-sm text-placeholder shadow-xs ring-1 ring-primary outline-hidden ring-inset hover:bg-primary_hover focus-visible:ring-2 focus-visible:ring-brand"
       >
-        <HugeiconsIcon icon={Search01Icon} className="size-3.5" strokeWidth={2} />
-        <span className="hidden sm:inline">Search</span>
-        <Kbd className="hidden sm:inline-flex">⌘K</Kbd>
-      </Button>
+        <SearchLg className="size-4 shrink-0 text-fg-quaternary" />
+        <span className="min-w-0 flex-1 truncate text-left">Search</span>
+        <kbd className="rounded px-1 py-px text-xs font-medium text-quaternary ring-1 ring-primary ring-inset">
+          ⌘K
+        </kbd>
+      </button>
 
-      <CommandDialog
-        open={open}
-        onOpenChange={setOpen}
-        title="Search and commands"
-        description="Jump to a project, a page, or switch role"
-      >
-        <Command>
-            <CommandInput placeholder="Search teams, projects and pages…" />
-            <CommandList>
-            <CommandEmpty>
-              No matches. Try a team name, a project title, or a page like “Checkpoints”.
-            </CommandEmpty>
+      <ModalOverlay isDismissable isOpen={open} onOpenChange={setOpen}>
+        <Modal className="sm:max-w-xl">
+          <Dialog aria-label="Search and commands" className="flex flex-col">
+            <Autocomplete filter={contains}>
+              <SearchField
+                autoFocus
+                aria-label="Search teams, projects and pages"
+                className="flex items-center gap-2 border-b border-secondary px-4 py-3"
+              >
+                <SearchLg className="size-5 shrink-0 text-fg-quaternary" />
+                <AriaInput
+                  placeholder="Search teams, projects and pages…"
+                  className="w-full bg-transparent text-md text-primary outline-hidden placeholder:text-placeholder"
+                />
+              </SearchField>
+              <Dropdown.Menu
+                aria-label="Results"
+                className="max-h-96 px-0 py-1"
+                renderEmptyState={() => (
+                  <p className="px-4 py-6 text-center text-sm text-tertiary">
+                    No matches. Try a team name, a project title, or a page like
+                    “Checkpoints”.
+                  </p>
+                )}
+              >
+                <Dropdown.Section>
+                  <Dropdown.SectionHeader className="px-4 pt-2 pb-1 text-xs font-medium text-tertiary">
+                    Go to
+                  </Dropdown.SectionHeader>
+                  {pages.map((page) => (
+                    <Dropdown.Item
+                      key={page.href}
+                      id={`page-${page.href}`}
+                      textValue={page.label}
+                      icon={page.icon}
+                      label={page.label}
+                      onAction={() => go(page.href)}
+                    />
+                  ))}
+                </Dropdown.Section>
 
-            <CommandGroup heading="Go to">
-              {pages.map((page) => (
-                <CommandItem key={page.href} value={`page ${page.label}`} onSelect={() => go(page.href)}>
-                  <HugeiconsIcon icon={page.icon} className="size-4" strokeWidth={2} />
-                  {page.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+                {myProjects.length > 0 && (
+                  <Dropdown.Section>
+                    <Dropdown.SectionHeader className="px-4 pt-3 pb-1 text-xs font-medium text-tertiary">
+                      {actor?.role === "student" ? "Your project" : "Projects"}
+                    </Dropdown.SectionHeader>
+                    {myProjects.slice(0, 30).map((project) => {
+                      const team = db.teams.find((t) => t.id === project.teamId)
+                      return (
+                        <Dropdown.Item
+                          key={project.id}
+                          id={`project-${project.id}`}
+                          textValue={`${project.title} ${team?.name ?? ""}`}
+                          icon={Flag03}
+                          label={project.title}
+                          addon={team?.name}
+                          onAction={() => go(`/projects/${project.id}`)}
+                        />
+                      )
+                    })}
+                  </Dropdown.Section>
+                )}
 
-            {myProjects.length > 0 && (
-              <>
-                <CommandSeparator />
-                <CommandGroup heading={actor?.role === "student" ? "Your project" : "Projects"}>
-                  {myProjects.slice(0, 30).map((project) => {
-                    const team = db.teams.find((t) => t.id === project.teamId)
-                    return (
-                      <CommandItem
-                        key={project.id}
-                        value={`project ${project.title} ${team?.name ?? ""}`}
-                        onSelect={() => go(`/projects/${project.id}`)}
-                      >
-                        <HugeiconsIcon icon={MilestoneIcon} className="size-4" strokeWidth={2} />
-                        <span className="min-w-0 flex-1 truncate">{project.title}</span>
-                        {team && <CommandShortcut>{team.name}</CommandShortcut>}
-                      </CommandItem>
-                    )
-                  })}
-                </CommandGroup>
-              </>
-            )}
-
-            {currentUser && currentUser.roles.length > 1 && (
-              <>
-                <CommandSeparator />
-                <CommandGroup heading="Switch role">
-                  {currentUser.roles
-                    .filter((role) => role !== actor?.role)
-                    .map((role) => (
-                      <CommandItem
-                        key={role}
-                        value={`switch role ${ROLE_LABEL[role]}`}
-                        onSelect={() => {
-                          setActiveRole(role)
-                          setOpen(false)
-                          router.push("/")
-                        }}
-                      >
-                        <HugeiconsIcon icon={UserSwitchIcon} className="size-4" strokeWidth={2} />
-                        Act as {ROLE_LABEL[role].toLowerCase()}
-                      </CommandItem>
-                    ))}
-                </CommandGroup>
-              </>
-            )}
-            </CommandList>
-        </Command>
-      </CommandDialog>
+                {currentUser && currentUser.roles.length > 1 && (
+                  <Dropdown.Section>
+                    <Dropdown.SectionHeader className="px-4 pt-3 pb-1 text-xs font-medium text-tertiary">
+                      Switch role
+                    </Dropdown.SectionHeader>
+                    {currentUser.roles
+                      .filter((role) => role !== actor?.role)
+                      .map((role) => (
+                        <Dropdown.Item
+                          key={role}
+                          id={`role-${role}`}
+                          textValue={`switch role ${ROLE_LABEL[role]}`}
+                          icon={SwitchHorizontal01}
+                          label={`Act as ${ROLE_LABEL[role].toLowerCase()}`}
+                          onAction={() => {
+                            setActiveRole(role)
+                            setOpen(false)
+                            router.push("/")
+                          }}
+                        />
+                      ))}
+                  </Dropdown.Section>
+                )}
+              </Dropdown.Menu>
+            </Autocomplete>
+          </Dialog>
+        </Modal>
+      </ModalOverlay>
     </>
   )
 }
