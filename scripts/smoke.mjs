@@ -74,10 +74,12 @@ const ROUTES = {
   ],
 }
 
+// Tab label on the sign-in screen for each role. The demo-account button on
+// that screen fills in the credentials.
 const WHO = {
-  coordinator: "Raman",
-  mentor: "Prakash",
-  student: "Rahul Saha",
+  coordinator: "Coordinator",
+  mentor: "Faculty",
+  student: "Student",
 }
 
 const problems = []
@@ -105,37 +107,36 @@ page.on("console", (message) => {
 })
 page.on("requestfailed", (request) => note(`request failed — ${request.url().slice(0, 120)}`))
 
-async function signIn(fragment) {
+async function signIn(tabLabel) {
   await page.goto(`${BASE}/signin`, { waitUntil: "networkidle2" })
   await page.waitForSelector("button", { timeout: 20000 })
   await wait(500)
-  // open the person combobox, type, take the first match
-  await page.evaluate(() => {
-    const trigger = Array.from(document.querySelectorAll("button")).find((b) =>
-      (b.textContent ?? "").includes("Pick a person")
+  const went = await page.evaluate((tabLabel) => {
+    const buttons = Array.from(document.querySelectorAll("button"))
+    const tab = buttons.find((b) => (b.textContent ?? "").trim() === tabLabel)
+    tab?.click()
+    return Boolean(tab)
+  }, tabLabel)
+  if (!went) note(`no "${tabLabel}" tab on the sign-in screen`)
+  await wait(300)
+  const filled = await page.evaluate(() => {
+    const demo = Array.from(document.querySelectorAll("button")).find((b) =>
+      (b.textContent ?? "").includes("pdm@123")
     )
-    trigger?.click()
+    demo?.click()
+    return Boolean(demo)
   })
-  await wait(500)
-  await page.keyboard.type(fragment, { delay: 8 })
-  await wait(500)
-  const picked = await page.evaluate(() => {
-    const option = document.querySelector('[cmdk-item]')
-    if (!option) return false
-    option.click()
-    return true
-  })
-  if (!picked) note(`could not find "${fragment}" in the sign-in combobox`)
-  await wait(500)
-  const went = await page.evaluate(() => {
+  if (!filled) note(`no demo account for "${tabLabel}"`)
+  await wait(300)
+  const submitted = await page.evaluate(() => {
     const go = Array.from(document.querySelectorAll("button")).find(
-      (b) => (b.textContent ?? "").trim() === "Continue"
+      (b) => (b.textContent ?? "").trim() === "Sign in"
     )
     if (!go) return false
     go.click()
     return true
   })
-  if (!went) note(`could not continue as "${fragment}"`)
+  if (!submitted) note(`could not sign in as "${tabLabel}"`)
   await wait(1300)
 }
 
