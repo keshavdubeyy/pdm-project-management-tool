@@ -12,7 +12,7 @@ import {
   TooltipTrigger,
 } from "@/components/untitled/base/tooltip/tooltip"
 import { addDays, describeDue, todayIso } from "@/lib/dates"
-import { canVerifyAction, isMemberOf } from "@/lib/permissions"
+import { canVerifyAction, isCoordinator, isMemberOf } from "@/lib/permissions"
 import { personById } from "@/lib/selectors"
 import { useProjectsStore } from "@/lib/store"
 import { report } from "@/lib/toast"
@@ -67,7 +67,10 @@ export function ActionItemList({
   if (!actor) return null
   // With nothing yet, the editor is simply there; no empty state to click past.
   const empty = items.length === 0
-  const showForm = allowAdd && (adding || (empty && !simple))
+  // The programme coordinator reads a team's action items; the team and its
+  // mentors write them. So for the coordinator there is no way to add.
+  const canAdd = allowAdd && !isCoordinator(actor)
+  const showForm = canAdd && (adding || (empty && !simple))
   const canVerify = canVerifyAction(actor, project)
   const people = [...project.teamMemberIds, ...project.mentorIds]
   // Newest on top; anything ticked off sinks to the bottom.
@@ -94,7 +97,7 @@ export function ActionItemList({
   return (
     <div className="space-y-2">
       {empty ? (
-        !allowAdd && (
+        !canAdd && (
           <EmptyState
             icon={ClipboardCheck}
             title="No open actions"
@@ -209,7 +212,7 @@ export function ActionItemList({
         </ul>
       )}
 
-      {allowAdd &&
+      {canAdd &&
         (showForm && !simple ? (
           <div className="space-y-2 rounded-xl border border-dashed border-border p-3">
             <Input

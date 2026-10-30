@@ -43,7 +43,7 @@ function OwnCheckpoints() {
     return (
       <EmptyState
         title="You are not on a project yet"
-        body="Your twelve checkpoints appear here once the coordinator adds you to a team."
+        body="Your checkpoints appear here once the coordinator adds you to a team."
       />
     )
   }
@@ -55,7 +55,7 @@ function OwnCheckpoints() {
     <>
       <PageHeader
         title="Checkpoints"
-        description={`${project.title} · twelve checkpoints across twenty-eight weeks.`}
+        description={`${project.title} · ${views.length} checkpoints across ${Math.max(0, ...views.map((v) => v.dueWeek))} weeks.`}
         meta={
           <div className="flex items-baseline gap-3">
             <span className="text-stat text-foreground">

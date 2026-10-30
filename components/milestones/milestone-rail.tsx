@@ -99,7 +99,7 @@ export function MilestoneRail({
               <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <StatusPill status={view.status} size="sm" />
                 {view.status !== "accepted" && (
-                  <DueBadge dueDate={view.dueDate} hideIcon />
+                  <DueBadge dueDate={view.dueDate} hideIcon plain />
                 )}
               </div>
 

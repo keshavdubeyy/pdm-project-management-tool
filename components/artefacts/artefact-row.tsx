@@ -6,7 +6,7 @@ import { useConfirm } from "@/components/confirm-dialog"
 import { Button } from "@/components/untitled/base/buttons/button"
 import { ModalDialog } from "@/components/untitled/application/modals/modal-dialog"
 import { timeAgo } from "@/lib/dates"
-import { embedUrl, hostOf, SERVICE_META } from "@/lib/links"
+import { embedUrl, hostOf, normalizeUrl, SERVICE_META } from "@/lib/links"
 import { personById } from "@/lib/selectors"
 import { useProjectsStore } from "@/lib/store"
 import { report } from "@/lib/toast"
@@ -71,7 +71,7 @@ export function ArtefactRow({
           <Button
             color="tertiary"
             size="xs"
-            href={artefact.url}
+            href={normalizeUrl(artefact.url)}
             target="_blank"
             rel="noreferrer"
             aria-label={`Open ${artefact.label}`}
@@ -119,7 +119,7 @@ export function ArtefactRow({
             Shown from {meta.label}. If it stays blank, the document is private
             and only its owner can open it —{" "}
             <a
-              href={artefact.url}
+              href={normalizeUrl(artefact.url)}
               target="_blank"
               rel="noreferrer"
               className="underline"

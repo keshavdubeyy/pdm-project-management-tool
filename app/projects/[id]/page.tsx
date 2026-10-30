@@ -53,6 +53,7 @@ export default function ProjectPage() {
 
   // A notification can deep-link straight to a checkpoint.
   const requested = searchParams.get("milestone")
+  const requestedComment = searchParams.get("comment")
   React.useEffect(() => {
     if (!requested) return
     const match = views.find((v) => v.instance.id === requested)
@@ -73,13 +74,28 @@ export default function ProjectPage() {
 
   // A mentor or the coordinator opens a team to the same two tabs a student
   // has at home, with a way back to the list they came from.
-  if (actor.role === "mentor" || actor.role === "coordinator") {
+  if (
+    actor.role === "student" ||
+    actor.role === "mentor" ||
+    actor.role === "coordinator"
+  ) {
     return (
       <ProjectHome
+        // A different notification link is a different place to land, so the
+        // page starts over for it rather than keeping what was open.
+        key={`${requested ?? ""}:${requestedComment ?? ""}`}
         project={project}
-        backHref="/"
-        backLabel={actor.role === "coordinator" ? "Overview" : "Your teams"}
+        backHref={
+          actor.role === "student"
+            ? undefined
+            : actor.role === "coordinator"
+              ? "/teams"
+              : "/"
+        }
+        backLabel={actor.role === "coordinator" ? "Teams" : "Your teams"}
         initialTab={searchParams.get("tab") ?? undefined}
+        initialMilestone={requested ?? undefined}
+        initialComment={requestedComment ?? undefined}
       />
     )
   }
