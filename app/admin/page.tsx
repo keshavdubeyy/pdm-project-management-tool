@@ -569,10 +569,48 @@ function TeamDialog({
 /* ----------------------------------------------------------------- audit */
 
 function AuditTab() {
-  const { db } = useProjectsStore()
+  const { db, clearCommentsAndNotifications } = useProjectsStore()
+  const { confirm, dialog: confirmDialog } = useConfirm()
+  const stored = db.comments.length + db.notifications.length
 
   return (
     <div className="space-y-3">
+      {/* For clearing what testing left behind. It asks first, and says exactly
+        what goes. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-4">
+        <div className="max-w-xl space-y-0.5">
+          <p className="text-subhead text-foreground">Clear test data</p>
+          <p className="text-meta text-muted-foreground">
+            Removes every comment on a checkpoint&apos;s progress and every
+            notification, for everyone. Currently {db.comments.length}{" "}
+            {db.comments.length === 1 ? "comment" : "comments"} and{" "}
+            {db.notifications.length}{" "}
+            {db.notifications.length === 1 ? "notification" : "notifications"}.
+            The activity log keeps its record.
+          </p>
+        </div>
+        <Button
+          color="secondary-destructive"
+          isDisabled={stored === 0}
+          onPress={() =>
+            confirm({
+              title: "Clear all comments and notifications?",
+              description: `This permanently removes ${db.comments.length} ${db.comments.length === 1 ? "comment" : "comments"} and ${db.notifications.length} ${db.notifications.length === 1 ? "notification" : "notifications"}, for everyone. It cannot be undone.`,
+              confirmLabel: "Clear them",
+              destructive: true,
+              onConfirm: () =>
+                report(
+                  clearCommentsAndNotifications(),
+                  "Comments and notifications cleared"
+                ),
+            })
+          }
+        >
+          Clear comments and notifications
+        </Button>
+      </div>
+      {confirmDialog}
+
       <p className="max-w-2xl text-meta text-muted-foreground">
         Every status change, override and allocation edit, with who did it. A
         coordinator acting outside their own mentoring line is recorded as an
