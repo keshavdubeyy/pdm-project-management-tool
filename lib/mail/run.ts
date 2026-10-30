@@ -72,6 +72,7 @@ export async function runMail(options: {
   const { data: logged, error: logError } = await admin
     .from("mail_log")
     .select("id")
+    .eq("status", "sent")
     .gte("sent_at", since)
   if (logError) {
     if (mode === "live")
@@ -104,6 +105,9 @@ export async function runMail(options: {
     `${candidates.length - everyone.length} of ${candidates.length} people not mailed: own password not set yet`
   )
   const queue: { mail: Mail; logId: string; why: string; notificationIds?: string[] }[] = []
+  // The team a mail is about, for the developer dashboard's per-team counts.
+  const projectOf = (personId: string) =>
+    db.projects.find((p) => p.teamMemberIds.includes(personId))?.id ?? null
 
   // Comments, mentions, actions, meetings: once a conversation has gone quiet.
   for (const person of everyone) {
@@ -181,9 +185,18 @@ export async function runMail(options: {
         html: renderHtml(q.mail),
       })
     } catch (error) {
-      summary.failed.push(
-        `${q.mail.to.email}: ${error instanceof Error ? error.message : "failed"}`
-      )
+      const reason = error instanceof Error ? error.message : "failed"
+      summary.failed.push(`${q.mail.to.email}: ${reason}`)
+      // Its own id, so the failure is counted but does not count as sent.
+      await admin.from("mail_log").insert({
+        id: `failed:${q.logId}:${now.getTime()}`,
+        kind: q.mail.kind,
+        person_id: q.mail.to.id,
+        project_id: projectOf(q.mail.to.id),
+        status: "failed",
+        error: reason.slice(0, 300),
+        detail: { subject: q.mail.subject },
+      })
       continue
     }
     // Recorded straight after each send, so a crash part-way does not resend.
@@ -191,6 +204,7 @@ export async function runMail(options: {
       id: q.logId,
       kind: q.mail.kind,
       person_id: q.mail.to.id,
+      project_id: projectOf(q.mail.to.id),
       detail: { subject: q.mail.subject },
     })
     if (q.notificationIds)

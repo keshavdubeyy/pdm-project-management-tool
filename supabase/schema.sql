@@ -192,3 +192,74 @@ create policy "progress files signed in" on storage.objects
 
 -- Roster change: Panem Chaitanya Pavan Kumar has left the programme.
 delete from public.people where id = 'p-2025204023';
+
+-- The mail log. One row per mail the job tried to send; its id is also what
+-- stops a scheduled mail going out twice. Only the server reads or writes it
+-- (the service-role key bypasses row level security), so there are no policies.
+create table if not exists public.mail_log (
+  id text primary key,
+  kind text not null,
+  person_id text,
+  detail jsonb,
+  sent_at timestamptz not null default now()
+);
+-- Added later, so a table that already exists gains them: which team the mail
+-- was about, and whether it went. A failed send is logged with an id of its
+-- own so it never blocks the retry.
+alter table public.mail_log add column if not exists project_id text;
+alter table public.mail_log add column if not exists status text not null default 'sent';
+alter table public.mail_log add column if not exists error text;
+create index if not exists mail_log_sent_at on public.mail_log (sent_at desc);
+alter table public.mail_log enable row level security;
+
+-- Sizes for the developer dashboard. Storage and database sizes are not
+-- readable through the API, so this reads them in the database. Only the
+-- server (service role) may call it.
+create or replace function public.dev_storage_stats()
+returns jsonb
+language sql
+security definer
+set search_path = public, storage
+as $$
+  select jsonb_build_object(
+    'dbBytes', pg_database_size(current_database()),
+    'buckets', coalesce((
+      select jsonb_agg(jsonb_build_object('bucket', bucket_id, 'bytes', bytes, 'files', files))
+      from (
+        select bucket_id,
+               coalesce(sum((metadata->>'size')::bigint), 0) as bytes,
+               count(*) as files
+        from storage.objects group by bucket_id
+      ) b
+    ), '[]'::jsonb),
+    'byProject', coalesce((
+      select jsonb_agg(jsonb_build_object('projectId', project_id, 'bytes', bytes, 'files', files))
+      from (
+        select split_part(name, '/', 1) as project_id,
+               coalesce(sum((metadata->>'size')::bigint), 0) as bytes,
+               count(*) as files
+        from storage.objects
+        where bucket_id = 'progress-files'
+        group by 1
+      ) p
+    ), '[]'::jsonb),
+    'largest', coalesce((
+      select jsonb_agg(jsonb_build_object('bucket', bucket_id, 'name', name, 'bytes', bytes))
+      from (
+        select bucket_id, name, (metadata->>'size')::bigint as bytes
+        from storage.objects
+        where metadata->>'size' is not null
+        order by (metadata->>'size')::bigint desc
+        limit 10
+      ) l
+    ), '[]'::jsonb),
+    'tables', coalesce((
+      select jsonb_agg(jsonb_build_object('table', c.relname, 'bytes', pg_total_relation_size(c.oid), 'rows', greatest(c.reltuples, 0)::bigint))
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public' and c.relkind = 'r'
+    ), '[]'::jsonb)
+  );
+$$;
+revoke all on function public.dev_storage_stats() from public, anon, authenticated;
+grant execute on function public.dev_storage_stats() to service_role;

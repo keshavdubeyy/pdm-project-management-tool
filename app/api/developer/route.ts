@@ -1,21 +1,14 @@
-import { createClient } from "@supabase/supabase-js"
+import { developerAdmin } from "@/lib/developer-auth"
+import { STALE_AFTER_DAYS } from "@/lib/funnel"
 
 /** Who is using the app, for the developer's /developer page.
  *
  * Sign-in times live in Supabase Auth, which the browser's publishable key
- * cannot read, so this runs on the server with the service-role key. That key
- * is only ever read here and is never sent to the browser. The caller must be
- * signed in, and their email must be on the DEVELOPER_EMAILS list.
+ * cannot read, so this runs on the server with the service-role key. The
+ * caller must be on the DEVELOPER_EMAILS list; see lib/developer-auth.ts.
  */
 
 export const dynamic = "force-dynamic"
-
-const DEVELOPER_EMAILS = (
-  process.env.DEVELOPER_EMAILS ?? "keshav.dubey@students.iiit.ac.in"
-)
-  .split(",")
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean)
 
 type Row = { data: Record<string, unknown> }
 
@@ -28,6 +21,10 @@ export type DeveloperPerson = {
   hasAccount: boolean
   /** When the temporary password was handed over on /get-password. */
   assignedAt: string | null
+  /** When the account was made. Mentors and the coordinator are given their
+   * password by the coordinator, not on /get-password, so this stands in for
+   * when theirs was issued. */
+  accountCreatedAt: string | null
   lastSignInAt: string | null
   passwordSet: boolean
   notes: number
@@ -39,28 +36,42 @@ export type DeveloperPerson = {
   activityDates: string[]
 }
 
+export type FunnelRole = "student" | "mentor" | "coordinator"
+
+/** Each stage is a subset of the one before it, except the three problem
+ * buckets, which split the people who are not yet on their own password. */
+export type Funnel = {
+  total: number
+  hasAccount: number
+  assigned: number
+  signedIn: number
+  ownPassword: number
+  /** Signed in, never changed the temporary password. */
+  stillTemporary: number
+  /** Still temporary and issued more than STALE_AFTER_DAYS ago. */
+  staleTemporary: number
+  /** Password collected, never signed in. */
+  stuck: number
+  /** No account, or no password collected yet. */
+  notStarted: number
+}
+
+const emptyFunnel = (): Funnel => ({
+  total: 0,
+  hasAccount: 0,
+  assigned: 0,
+  signedIn: 0,
+  ownPassword: 0,
+  stillTemporary: 0,
+  staleTemporary: 0,
+  stuck: 0,
+  notStarted: 0,
+})
+
 export async function GET(request: Request) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !serviceKey) {
-    return Response.json(
-      { error: "SUPABASE_SERVICE_ROLE_KEY is not set on the server." },
-      { status: 500 }
-    )
-  }
-
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "")
-  if (!token) return Response.json({ error: "Sign in first." }, { status: 401 })
-
-  const admin = createClient(url, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-
-  const { data: caller } = await admin.auth.getUser(token)
-  const email = caller.user?.email?.toLowerCase()
-  if (!email || !DEVELOPER_EMAILS.includes(email)) {
-    return Response.json({ error: "Not allowed." }, { status: 403 })
-  }
+  const auth = await developerAdmin(request)
+  if ("error" in auth) return auth.error
+  const { admin } = auth
 
   const users = []
   for (let page = 1; ; page++) {
@@ -106,6 +117,7 @@ export async function GET(request: Request) {
       assignedAt:
         (user?.app_metadata?.tempPasswordShownAt as string | undefined) ??
         null,
+      accountCreatedAt: user?.created_at ?? null,
       lastSignInAt: user?.last_sign_in_at ?? null,
       passwordSet: Boolean(user?.user_metadata?.password_set),
       notes: 0,
@@ -138,5 +150,33 @@ export async function GET(request: Request) {
   tally(actions, "createdBy", "createdAt", "actions")
   tally(artefacts, "addedBy", "addedAt", "links")
 
-  return Response.json({ people: [...stats.values()] })
+  const funnel: Record<FunnelRole, Funnel> = {
+    student: emptyFunnel(),
+    mentor: emptyFunnel(),
+    coordinator: emptyFunnel(),
+  }
+  const staleBefore = Date.now() - STALE_AFTER_DAYS * 86_400_000
+  for (const p of stats.values()) {
+    // Someone who is both a mentor and the coordinator counts in each row.
+    for (const role of Object.keys(funnel) as FunnelRole[]) {
+      if (!p.roles.includes(role)) continue
+      const f = funnel[role]
+      const issuedAt =
+        role === "student" ? p.assignedAt : p.accountCreatedAt
+      f.total++
+      if (p.hasAccount) f.hasAccount++
+      if (issuedAt) f.assigned++
+      if (p.lastSignInAt) f.signedIn++
+      if (p.passwordSet) f.ownPassword++
+      if (p.lastSignInAt && !p.passwordSet) {
+        f.stillTemporary++
+        if (issuedAt && Date.parse(issuedAt) < staleBefore)
+          f.staleTemporary++
+      }
+      if (issuedAt && !p.lastSignInAt) f.stuck++
+      if (!issuedAt) f.notStarted++
+    }
+  }
+
+  return Response.json({ people: [...stats.values()], funnel })
 }
