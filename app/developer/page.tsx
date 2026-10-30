@@ -14,7 +14,13 @@ type Load =
   | { state: "error"; message: string }
   | { state: "ready"; people: DeveloperPerson[] }
 
-type Filter = "all" | "signed-in" | "not-yet"
+type Filter =
+  | "all"
+  | "assigned"
+  | "not-assigned"
+  | "signed-in"
+  | "waiting"
+  | "temporary"
 
 /** The developer's view of who is actually using the app. The server decides
  * who may see it; this page only shows what it is given. */
@@ -69,9 +75,15 @@ export default function DeveloperPage() {
     .filter((p) =>
       filter === "all"
         ? true
-        : filter === "signed-in"
-          ? p.lastSignInAt
-          : !p.lastSignInAt
+        : filter === "assigned"
+          ? p.assignedAt
+          : filter === "not-assigned"
+            ? !p.assignedAt
+            : filter === "signed-in"
+              ? p.lastSignInAt
+              : filter === "waiting"
+                ? p.assignedAt && !p.lastSignInAt
+                : p.lastSignInAt && !p.passwordSet
     )
     .sort(
       (a, b) =>
@@ -81,8 +93,10 @@ export default function DeveloperPage() {
     )
 
   const all = load.people
-  const signedIn = all.filter((p) => p.lastSignInAt).length
   const students = all.filter((p) => p.roles.includes("student"))
+  const assigned = students.filter((p) => p.assignedAt).length
+  const signedIn = students.filter((p) => p.lastSignInAt).length
+  const ownPassword = students.filter((p) => p.passwordSet).length
   const activeThisWeek = all.filter((p) => inRange(p, weekAgo) > 0).length
 
   return (
@@ -92,17 +106,22 @@ export default function DeveloperPage() {
         description="Who has signed in, who has not, and who is adding meeting notes and progress."
       />
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         <MetricTile
-          label="Signed in"
-          value={`${signedIn} / ${all.length}`}
-          hint="Have logged in at least once"
+          label="Assigned"
+          value={`${assigned} / ${students.length}`}
+          hint="Students who collected a temporary password"
+          tone={assigned < students.length ? "warn" : "good"}
         />
         <MetricTile
-          label="Not yet"
-          value={String(all.length - signedIn)}
-          hint="Never logged in"
-          tone={all.length - signedIn > 0 ? "warn" : "good"}
+          label="Signed in"
+          value={`${signedIn} / ${students.length}`}
+          hint="Students who have logged in at least once"
+        />
+        <MetricTile
+          label="Own password"
+          value={`${ownPassword} / ${students.length}`}
+          hint="Students who changed the temporary password"
         />
         <MetricTile
           label="Active this week"
@@ -116,12 +135,15 @@ export default function DeveloperPage() {
         />
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(
           [
             ["all", "Everyone"],
+            ["assigned", "Assigned"],
+            ["not-assigned", "Not assigned"],
             ["signed-in", "Signed in"],
-            ["not-yet", "Not yet"],
+            ["waiting", "Assigned, not signed in"],
+            ["temporary", "Signed in, still temporary"],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -140,10 +162,11 @@ export default function DeveloperPage() {
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full min-w-[820px] text-left text-sm">
+        <table className="w-full min-w-[920px] text-left text-sm">
           <thead className="bg-muted text-caption text-muted-foreground uppercase">
             <tr>
               <th className="px-3 py-2">Person</th>
+              <th className="px-3 py-2">Assigned</th>
               <th className="px-3 py-2">Signed in</th>
               <th className="px-3 py-2">Password</th>
               <th className="px-3 py-2 text-right">Notes</th>
@@ -164,18 +187,41 @@ export default function DeveloperPage() {
                   </p>
                 </td>
                 <td className="px-3 py-2">
+                  {p.assignedAt ? (
+                    <Badge color="success" size="sm">
+                      {timeAgo(p.assignedAt)}
+                    </Badge>
+                  ) : (
+                    <Badge color={p.hasAccount ? "warning" : "gray"} size="sm">
+                      {p.hasAccount ? "Not assigned" : "No account"}
+                    </Badge>
+                  )}
+                </td>
+                <td className="px-3 py-2">
                   {p.lastSignInAt ? (
                     <Badge color="success" size="sm">
                       {timeAgo(p.lastSignInAt)}
                     </Badge>
                   ) : (
                     <Badge color={p.hasAccount ? "warning" : "gray"} size="sm">
-                      {p.hasAccount ? "Never" : "No account"}
+                      {p.hasAccount ? "Not yet" : "No account"}
                     </Badge>
                   )}
                 </td>
-                <td className="px-3 py-2 text-muted-foreground">
-                  {p.passwordSet ? "Own" : "Issued"}
+                <td className="px-3 py-2">
+                  {!p.hasAccount ? (
+                    <Badge color="gray" size="sm">
+                      —
+                    </Badge>
+                  ) : p.passwordSet ? (
+                    <Badge color="success" size="sm">
+                      Own password
+                    </Badge>
+                  ) : (
+                    <Badge color="warning" size="sm">
+                      Temporary
+                    </Badge>
+                  )}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums">{p.notes}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{p.actions}</td>

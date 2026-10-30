@@ -38,3 +38,6 @@ next-env.d.ts
 
 # generated sign-in passwords: never commit
 scripts/credentials*.csv
+
+# generated mail previews
+mail-preview/

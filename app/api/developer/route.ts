@@ -26,6 +26,8 @@ export type DeveloperPerson = {
   roles: string[]
   /** Whether an account exists for them. */
   hasAccount: boolean
+  /** When the temporary password was handed over on /get-password. */
+  assignedAt: string | null
   lastSignInAt: string | null
   passwordSet: boolean
   notes: number
@@ -101,6 +103,9 @@ export async function GET(request: Request) {
       email: pEmail,
       roles: (p.roles as string[]) ?? [],
       hasAccount: Boolean(user),
+      assignedAt:
+        (user?.app_metadata?.tempPasswordShownAt as string | undefined) ??
+        null,
       lastSignInAt: user?.last_sign_in_at ?? null,
       passwordSet: Boolean(user?.user_metadata?.password_set),
       notes: 0,
