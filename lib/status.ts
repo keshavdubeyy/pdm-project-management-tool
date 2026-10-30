@@ -67,8 +67,8 @@ export const STATUS_META: Record<MilestoneStatus, StatusMeta> = {
   },
   submitted: {
     value: "submitted",
-    label: "Turned in",
-    shortLabel: "Turned in",
+    label: "Submitted",
+    shortLabel: "Submitted",
     icon: Send01,
     description: "The team has handed it in. The mentor has not opened it yet.",
     bucket: "waiting",

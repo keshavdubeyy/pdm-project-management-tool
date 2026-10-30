@@ -45,14 +45,17 @@ export function isMentorOf(actor: Actor, project: Project) {
 }
 
 export function isMemberOf(actor: Actor, project: Project) {
-  return actor.role === "student" && project.teamMemberIds.includes(actor.person.id)
+  return (
+    actor.role === "student" && project.teamMemberIds.includes(actor.person.id)
+  )
 }
 
 /** Every project this actor is responsible for, in their current role. */
 export function projectsFor(db: Database, actor: Actor): Project[] {
   const live = db.projects.filter((p) => !p.archived)
   if (isCoordinator(actor)) return live
-  if (actor.role === "mentor") return live.filter((p) => p.mentorIds.includes(actor.person.id))
+  if (actor.role === "mentor")
+    return live.filter((p) => p.mentorIds.includes(actor.person.id))
   return live.filter((p) => p.teamMemberIds.includes(actor.person.id))
 }
 
@@ -61,7 +64,11 @@ export function projectsFor(db: Database, actor: Actor): Project[] {
  * Visibility beyond the team and its mentors is a per-project setting rather
  * than a default, because whether mentors want to see each other's projects is
  * still an open question with the faculty. The safe default is closed. */
-export function canViewProject(actor: Actor, project: Project, db: Database): boolean {
+export function canViewProject(
+  actor: Actor,
+  project: Project,
+  db: Database
+): boolean {
   if (isCoordinator(actor)) return true
   if (isMentorOf(actor, project)) return true
   if (isMemberOf(actor, project)) return true
@@ -69,7 +76,9 @@ export function canViewProject(actor: Actor, project: Project, db: Database): bo
   if (project.visibility === "batch") {
     if (actor.role === "student") {
       return db.projects.some(
-        (p) => p.batchId === project.batchId && p.teamMemberIds.includes(actor.person.id)
+        (p) =>
+          p.batchId === project.batchId &&
+          p.teamMemberIds.includes(actor.person.id)
       )
     }
     return true
@@ -81,7 +90,11 @@ export function canViewProject(actor: Actor, project: Project, db: Database): bo
 }
 
 export function canEditProject(actor: Actor, project: Project) {
-  return isCoordinator(actor) || isMemberOf(actor, project) || isMentorOf(actor, project)
+  return (
+    isCoordinator(actor) ||
+    isMemberOf(actor, project) ||
+    isMentorOf(actor, project)
+  )
 }
 
 export function canCreateProject(actor: Actor) {
@@ -116,28 +129,39 @@ export function canSetMilestoneStatus(
     if (mentor || coordinator) return { allowed: true }
     return {
       allowed: false,
-      reason: "Only the mentor can accept or return a checkpoint. Your team can turn it in.",
+      reason:
+        "Only the mentor can accept or return a checkpoint. Your team can turn it in.",
     }
   }
 
   if (next === "overdue") {
-    return { allowed: false, reason: "Overdue is set by the calendar, not by a person." }
+    return {
+      allowed: false,
+      reason: "Overdue is set by the calendar, not by a person.",
+    }
   }
 
   return { allowed: true }
 }
 
-export function canSubmitMilestone(actor: Actor, project: Project): TransitionCheck {
+export function canSubmitMilestone(
+  actor: Actor,
+  project: Project
+): TransitionCheck {
   if (isMemberOf(actor, project)) return { allowed: true }
   if (isCoordinator(actor)) return { allowed: true }
   if (isMentorOf(actor, project)) {
-    return { allowed: false, reason: "Only the team can turn their own work in." }
+    return {
+      allowed: false,
+      reason: "Only the team can turn their own work in.",
+    }
   }
   return { allowed: false, reason: "This project is not yours to change." }
 }
 
 export function canReview(actor: Actor, project: Project): TransitionCheck {
-  if (isMentorOf(actor, project) || isCoordinator(actor)) return { allowed: true }
+  if (isMentorOf(actor, project) || isCoordinator(actor))
+    return { allowed: true }
   return { allowed: false, reason: "Only this project's mentor can review it." }
 }
 
@@ -149,10 +173,18 @@ export function isOverride(actor: Actor, project: Project) {
 /* ---------------------------------------------------- meetings & actions */
 
 export function canRecordMeeting(actor: Actor, project: Project) {
-  return isMemberOf(actor, project) || isMentorOf(actor, project) || isCoordinator(actor)
+  return (
+    isMemberOf(actor, project) ||
+    isMentorOf(actor, project) ||
+    isCoordinator(actor)
+  )
 }
 
-export function canCompleteAction(actor: Actor, project: Project, item: ActionItem) {
+export function canCompleteAction(
+  actor: Actor,
+  project: Project,
+  item: ActionItem
+) {
   if (isCoordinator(actor)) return true
   if (item.ownerId === actor.person.id) return true
   return isMentorOf(actor, project)
@@ -177,10 +209,34 @@ export function canSeeFacultyChannel(actor: Actor) {
   return actor.role === "mentor" || isCoordinator(actor)
 }
 
+/* ------------------------------------------------------------- comments */
+
+/** The team, its mentors and the coordinator talk on a checkpoint's progress. */
+export function canComment(actor: Actor, project: Project) {
+  return (
+    isMemberOf(actor, project) ||
+    isMentorOf(actor, project) ||
+    isCoordinator(actor)
+  )
+}
+
 /* ------------------------------------------------------------ artefacts */
 
 export function canAddArtefact(actor: Actor, project: Project) {
   return isMemberOf(actor, project)
+}
+
+export function canSubmitWeekly(
+  actor: Actor,
+  project: Project
+): TransitionCheck {
+  if (actor.role === "student" && isMemberOf(actor, project)) {
+    return { allowed: true }
+  }
+  return {
+    allowed: false,
+    reason: "Only the team can submit its weekly progress.",
+  }
 }
 
 /* ------------------------------------------------------------ describing */

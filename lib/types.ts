@@ -127,6 +127,16 @@ export type ProjectDraft = {
 
 /* --------------------------------------------------------- milestones */
 
+/** One line of work inside an activity, with the artefact it produces when the
+ * sheet names one. */
+export type SubActivity = { title: string; output?: string }
+
+/** A block of work under a checkpoint, e.g. "Customer Research". */
+export type MilestoneActivity = {
+  title: string
+  subActivities: SubActivity[]
+}
+
 /** One dated checkpoint in a batch's calendar. */
 export type MilestoneTemplateItem = {
   id: string
@@ -140,8 +150,13 @@ export type MilestoneTemplateItem = {
   title: string
   /** Week number counted from the batch start date. */
   dueWeek: number
-  /** The named artefacts inside this checkpoint. */
+  /** The named artefacts inside this checkpoint. Teams tick these off by name,
+   * so a name is never changed once a batch is running. */
   deliverables: string[]
+  /** The same work as the programme sheet lays it out: activities, each with
+   * its sub-activities. Absent on a checkpoint a coordinator added by hand;
+   * `activitiesOf` falls back to the deliverables then. */
+  activities?: MilestoneActivity[]
   /** Set on the two checkpoints the programme treats as gates. */
   isGate?: boolean
   description?: string
@@ -217,6 +232,12 @@ export type Artefact = {
   note?: string
   addedBy: string
   addedAt: string
+  /** Set when the team changes what it handed in. On the first link of an
+   * entry, which stands for the whole entry. */
+  editedAt?: string
+  /** Checkpoints (by instance id) this document is linked to, besides the one it
+   * was handed in on. A document in the project's library can support several. */
+  linkedTo?: string[]
 }
 
 export type Submission = {
@@ -230,6 +251,50 @@ export type Submission = {
   submittedAt: string
   note: string
   artefactIds: string[]
+}
+
+/* ----------------------------------------------------- weekly progress */
+
+export type WeeklyFile = {
+  name: string
+  size: number
+  /** Where the file sits in the private `progress-files` bucket. */
+  path: string
+}
+
+/** One team's report for one project week. Nothing is stored for a week that
+ * has not been reported: pending and upcoming are worked out from the
+ * calendar, so there is no row to keep in step with it. */
+export type WeeklyProgress = {
+  id: string
+  projectId: string
+  /** Week number counted from the batch start date. */
+  week: number
+  summary: string
+  files: WeeklyFile[]
+  submittedBy: string
+  submittedAt: string
+}
+
+/* ------------------------------------------------------------ comments */
+
+/** A comment on a checkpoint's progress. A thread is its first comment and the
+ * replies to it. Nothing is erased: a deleted comment keeps its place with a
+ * `deletedAt`, so the thread still reads in order and the log still has it. */
+export type ProgressComment = {
+  id: string
+  projectId: string
+  milestoneInstanceId: string
+  /** Set on a reply; replies are one level deep. */
+  parentId?: string
+  authorId: string
+  body: string
+  /** Who is tagged in the body with @name. The body keeps the plain text, so it
+   * reads the same everywhere, and this says whom each @name stands for. */
+  mentions?: string[]
+  createdAt: string
+  editedAt?: string
+  deletedAt?: string
 }
 
 export type ReviewVerdict = "accept" | "return"
@@ -373,6 +438,8 @@ export type NotificationKind =
   | "action_item"
   | "announcement"
   | "meeting"
+  | "mention"
+  | "comment"
 
 export type AppNotification = {
   id: string
@@ -383,6 +450,9 @@ export type AppNotification = {
   href: string
   createdAt: string
   readAt?: string
+  /** Who did the thing this is about, so the panel can show their face. Absent
+   * on notices nobody caused, like a deadline coming up. */
+  actorId?: string
 }
 
 /* --------------------------------------------------------- audit */
@@ -403,6 +473,8 @@ export type Session = {
   /** Which of the person's roles they are currently acting in. */
   activeRole: Role
   signedInAt: string
+  /** preview: a testing session that never touches the server. */
+  preview?: boolean
 }
 
 /* ------------------------------------------------------------ store */
@@ -420,6 +492,12 @@ export type Database = {
   milestoneTemplate: MilestoneTemplateItem[]
   milestones: MilestoneInstance[]
   artefacts: Artefact[]
+  /** Absent in a database saved before weekly progress existed; the loader
+   * fills it in. */
+  weeklyProgress: WeeklyProgress[]
+  /** Absent in a database saved before comments existed; the loader fills it
+   * in. */
+  comments: ProgressComment[]
   submissions: Submission[]
   reviews: Review[]
   meetings: Meeting[]
@@ -431,4 +509,33 @@ export type Database = {
   announcementReads: AnnouncementRead[]
   notifications: AppNotification[]
   audit: AuditEvent[]
+}
+
+/* -------------------------------------------------------- activity log */
+
+export type ActivityChange = { field: string; from?: string; to?: string }
+
+/** One line of a team's activity log.
+ *
+ * The log is append-only: an entry is written once and never changed or
+ * removed, by anyone. It is not part of `Database`, because it grows without
+ * limit and every team's history should not be loaded into every browser; it
+ * is written to the server as it happens and read one team at a time.
+ *
+ * Who is a snapshot, not a lookup: the name and role are kept as they were,
+ * so the entry still reads the same after someone changes their name. */
+export type ActivityEvent = {
+  id: string
+  projectId: string
+  /** When it happened, ISO, UTC. */
+  at: string
+  actorId: string
+  actorName: string
+  actorRole: Role
+  /** A stable name, noun.verb, such as `progress.submitted`. */
+  action: string
+  target: { type: string; id: string; label: string }
+  summary: string
+  /** What changed, field by field, for an edit. */
+  changes?: ActivityChange[]
 }

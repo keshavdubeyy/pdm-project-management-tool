@@ -1,5 +1,10 @@
 import { currentWeek, dueDateForWeek, todayIso } from "@/lib/dates"
-import { type Actor, effectiveStatus, isCoordinator, projectsFor } from "@/lib/permissions"
+import {
+  type Actor,
+  effectiveStatus,
+  isCoordinator,
+  projectsFor,
+} from "@/lib/permissions"
 import { AWAITING_MENTOR } from "@/lib/status"
 import type {
   ActionItem,
@@ -31,7 +36,10 @@ export type MilestoneView = {
   latestReview?: Review
 }
 
-export function milestoneViews(db: Database, projectIds?: string[]): MilestoneView[] {
+export function milestoneViews(
+  db: Database,
+  projectIds?: string[]
+): MilestoneView[] {
   const batchStart = db.batches[0]?.startDate ?? todayIso()
   const week = currentWeek(batchStart)
   const templates = new Map(db.milestoneTemplate.map((t) => [t.id, t]))
@@ -82,20 +90,30 @@ export function personName(db: Database, personId: string): string {
 }
 
 export function initialsOf(name: string): string {
-  const parts = name.replace(/[^\p{L}\s]/gu, "").trim().split(/\s+/)
+  const parts = name
+    .replace(/[^\p{L}\s]/gu, "")
+    .trim()
+    .split(/\s+/)
   if (!parts.length) return "?"
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
 /** The checkpoints a team should be looking at right now. */
-export function upcomingFor(db: Database, projectId: string, limit = 3): MilestoneView[] {
+export function upcomingFor(
+  db: Database,
+  projectId: string,
+  limit = 3
+): MilestoneView[] {
   const views = milestoneViews(db, [projectId])
   const open = views.filter((v) => v.status !== "accepted")
   return open.slice(0, limit)
 }
 
-export function nextDue(db: Database, projectId: string): MilestoneView | undefined {
+export function nextDue(
+  db: Database,
+  projectId: string
+): MilestoneView | undefined {
   return upcomingFor(db, projectId, 1)[0]
 }
 
@@ -134,7 +152,8 @@ export function needsAttention(db: Database, actor: Actor): AttentionReason[] {
       const overdue = views.filter((v) => v.status === "overdue")
       const returned = views.filter((v) => v.status === "returned")
       const actions = db.actionItems.filter(
-        (a) => a.projectId === project.id && a.status === "open" && a.dueDate < today
+        (a) =>
+          a.projectId === project.id && a.status === "open" && a.dueDate < today
       )
       const meetings = db.meetings
         .filter((m) => m.projectId === project.id)
@@ -142,7 +161,8 @@ export function needsAttention(db: Database, actor: Actor): AttentionReason[] {
       const last = meetings[0]
       const daysSinceMeeting = last
         ? Math.round(
-            (new Date(`${today}T00:00:00Z`).getTime() - new Date(`${last.date}T00:00:00Z`).getTime()) /
+            (new Date(`${today}T00:00:00Z`).getTime() -
+              new Date(`${last.date}T00:00:00Z`).getTime()) /
               86_400_000
           )
         : null
@@ -157,17 +177,23 @@ export function needsAttention(db: Database, actor: Actor): AttentionReason[] {
         reasons.push(`${returned.length} returned and not yet resubmitted`)
       }
       if (actions.length) {
-        reasons.push(`${actions.length} action${actions.length === 1 ? "" : "s"} past their date`)
+        reasons.push(
+          `${actions.length} action${actions.length === 1 ? "" : "s"} past their date`
+        )
       }
       // "No meeting recorded" only counts as a reason to look when the project
       // is also quiet. On its own it usually means the meeting happened and
       // nobody wrote it down, which would put most of the cohort on this list
       // and make it worth ignoring.
       const recentlyActive = views.some(
-        (v) => v.instance.updatedAt >= new Date(Date.now() - 14 * 86_400_000).toISOString()
+        (v) =>
+          v.instance.updatedAt >=
+          new Date(Date.now() - 14 * 86_400_000).toISOString()
       )
       if (daysSinceMeeting === null && !recentlyActive) {
-        reasons.push("No meeting recorded, and nothing has moved in a fortnight")
+        reasons.push(
+          "No meeting recorded, and nothing has moved in a fortnight"
+        )
       } else if (daysSinceMeeting !== null && daysSinceMeeting > 21) {
         reasons.push(`No meeting recorded for ${daysSinceMeeting} days`)
       }
@@ -194,7 +220,11 @@ export function openSinceLastMeeting(db: Database, projectId: string) {
   const items = db.actionItems.filter((a) => a.projectId === projectId)
   const open = items.filter((a) => a.status === "open")
   const closedSince = last
-    ? items.filter((a) => a.status === "done" && (a.completedAt ?? "") >= `${last.date}T00:00:00Z`)
+    ? items.filter(
+        (a) =>
+          a.status === "done" &&
+          (a.completedAt ?? "") >= `${last.date}T00:00:00Z`
+      )
     : items.filter((a) => a.status === "done")
   return { lastMeeting: last, open, closedSince }
 }
@@ -208,7 +238,10 @@ export function actionItemsFor(db: Database, personId: string): ActionItem[] {
 /* ----------------------------------------------------------- announcements */
 
 /** Everyone an announcement reaches. */
-export function audienceMembers(db: Database, announcement: Announcement): string[] {
+export function audienceMembers(
+  db: Database,
+  announcement: Announcement
+): string[] {
   const { audience, authorId } = announcement
   switch (audience.kind) {
     case "team": {
@@ -223,19 +256,26 @@ export function audienceMembers(db: Database, announcement: Announcement): strin
       return Array.from(new Set(projects.flatMap((p) => p.teamMemberIds)))
     }
     case "batch": {
-      const projects = db.projects.filter((p) => p.batchId === audience.batchId && !p.archived)
+      const projects = db.projects.filter(
+        (p) => p.batchId === audience.batchId && !p.archived
+      )
       const students = projects.flatMap((p) => p.teamMemberIds)
       const mentors = projects.flatMap((p) => p.mentorIds)
       return Array.from(new Set([...students, ...mentors]))
     }
     case "faculty":
       return db.people
-        .filter((p) => p.roles.includes("mentor") || p.roles.includes("coordinator"))
+        .filter(
+          (p) => p.roles.includes("mentor") || p.roles.includes("coordinator")
+        )
         .map((p) => p.id)
   }
 }
 
-export function describeAudience(db: Database, announcement: Announcement): string {
+export function describeAudience(
+  db: Database,
+  announcement: Announcement
+): string {
   const { audience } = announcement
   switch (audience.kind) {
     case "team": {
@@ -268,7 +308,8 @@ export function announcementsFor(db: Database, actor: Actor): Announcement[] {
 }
 
 export function readCount(db: Database, announcementId: string): number {
-  return db.announcementReads.filter((r) => r.announcementId === announcementId).length
+  return db.announcementReads.filter((r) => r.announcementId === announcementId)
+    .length
 }
 
 export function readersOf(db: Database, announcementId: string): string[] {
@@ -279,7 +320,10 @@ export function readersOf(db: Database, announcementId: string): string[] {
 
 /* ---------------------------------------------------------- notifications */
 
-export function notificationsFor(db: Database, personId: string): AppNotification[] {
+export function notificationsFor(
+  db: Database,
+  personId: string
+): AppNotification[] {
   return db.notifications
     .filter((n) => n.personId === personId)
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
@@ -287,7 +331,8 @@ export function notificationsFor(db: Database, personId: string): AppNotificatio
 }
 
 export function unreadCount(db: Database, personId: string): number {
-  return db.notifications.filter((n) => n.personId === personId && !n.readAt).length
+  return db.notifications.filter((n) => n.personId === personId && !n.readAt)
+    .length
 }
 
 /* -------------------------------------------------------------- measures */
@@ -306,14 +351,16 @@ export type Measures = {
 }
 
 export function measures(db: Database, projectIds?: string[]): Measures {
-  const ids = projectIds ?? db.projects.filter((p) => !p.archived).map((p) => p.id)
+  const ids =
+    projectIds ?? db.projects.filter((p) => !p.archived).map((p) => p.id)
   const views = milestoneViews(db, ids)
   const batchStart = db.batches[0]?.startDate ?? todayIso()
   const week = currentWeek(batchStart)
 
   const dueSoFar = views.filter((v) => v.dueWeek <= week)
   const onTime = dueSoFar.filter(
-    (v) => v.instance.submittedAt && v.instance.submittedAt.slice(0, 10) <= v.dueDate
+    (v) =>
+      v.instance.submittedAt && v.instance.submittedAt.slice(0, 10) <= v.dueDate
   )
 
   const feedbackGaps = db.reviews
@@ -322,7 +369,9 @@ export function measures(db: Database, projectIds?: string[]): Measures {
       const submission = db.submissions.find((s) => s.id === r.submissionId)
       if (!submission) return null
       return (
-        (new Date(r.createdAt).getTime() - new Date(submission.submittedAt).getTime()) / 3_600_000
+        (new Date(r.createdAt).getTime() -
+          new Date(submission.submittedAt).getTime()) /
+        3_600_000
       )
     })
     .filter((n): n is number => n !== null && n >= 0)
@@ -332,13 +381,19 @@ export function measures(db: Database, projectIds?: string[]): Measures {
   const closed = actions.filter((a) => a.status === "done")
 
   const meetings = db.meetings.filter((m) => ids.includes(m.projectId))
-  const withMinutes = meetings.filter((m) => db.minutes.some((mi) => mi.meetingId === m.id))
+  const withMinutes = meetings.filter((m) =>
+    db.minutes.some((mi) => mi.meetingId === m.id)
+  )
 
   const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString()
   const active = new Set(
     [
-      ...db.milestones.filter((m) => ids.includes(m.projectId) && m.updatedAt >= weekAgo),
-      ...db.submissions.filter((s) => ids.includes(s.projectId) && s.submittedAt >= weekAgo),
+      ...db.milestones.filter(
+        (m) => ids.includes(m.projectId) && m.updatedAt >= weekAgo
+      ),
+      ...db.submissions.filter(
+        (s) => ids.includes(s.projectId) && s.submittedAt >= weekAgo
+      ),
     ].map((x) => x.projectId)
   )
 
@@ -348,7 +403,9 @@ export function measures(db: Database, projectIds?: string[]): Measures {
       ? feedbackGaps[Math.floor(feedbackGaps.length / 2)]
       : null,
     actionClosureRate: actions.length ? closed.length / actions.length : null,
-    meetingsWithMinutes: meetings.length ? withMinutes.length / meetings.length : null,
+    meetingsWithMinutes: meetings.length
+      ? withMinutes.length / meetings.length
+      : null,
     teamsActiveThisWeek: active.size,
     totalTeams: ids.length,
     acceptedCount: views.filter((v) => v.status === "accepted").length,
@@ -356,7 +413,9 @@ export function measures(db: Database, projectIds?: string[]): Measures {
   }
 }
 
-export function statusCounts(views: MilestoneView[]): Record<MilestoneStatus, number> {
+export function statusCounts(
+  views: MilestoneView[]
+): Record<MilestoneStatus, number> {
   const counts = {
     not_started: 0,
     in_progress: 0,
@@ -382,4 +441,14 @@ export function hasProjectTitle(project: { title: string }) {
 /** The title as plain text, for a notification or a search string. */
 export function projectLabel(project: { title: string }) {
   return hasProjectTitle(project) ? project.title : "A project"
+}
+
+/** The people who can be tagged on a project's comments: its team, its mentors
+ * and the programme coordinator, which is everyone who can read the thread. */
+export function mentionablePeople(db: Database, project: Project): Person[] {
+  const ids = new Set([...project.teamMemberIds, ...project.mentorIds])
+  db.people
+    .filter((p) => p.roles.includes("coordinator"))
+    .forEach((p) => ids.add(p.id))
+  return db.people.filter((p) => ids.has(p.id))
 }

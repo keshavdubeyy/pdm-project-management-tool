@@ -11,6 +11,7 @@ import {
   subscribeToChanges,
 } from "@/lib/db"
 import {
+  appendActivity,
   applyChange,
   fetchShared,
   migrateLocal,
@@ -22,22 +23,28 @@ import {
   withDemoActivity,
   withoutActivity,
 } from "@/lib/seed"
-import { detectService } from "@/lib/links"
+import { detectService, normalizeUrl } from "@/lib/links"
 import { milestoneTemplateFor } from "@/lib/milestone-template"
 import {
   type Actor,
   canAnnounceTo,
+  canComment,
   canEditProject,
   canReview,
   canSetMilestoneStatus,
   canSubmitMilestone,
+  canSubmitWeekly,
   effectiveStatus,
   isCoordinator,
   isMemberOf,
   isMentorOf,
   isOverride,
 } from "@/lib/permissions"
-import { audienceMembers, projectLabel } from "@/lib/selectors"
+import {
+  audienceMembers,
+  mentionablePeople,
+  projectLabel,
+} from "@/lib/selectors"
 import {
   readSession,
   signIn as persistSignIn,
@@ -46,6 +53,8 @@ import {
 } from "@/lib/session"
 import type {
   ActionItem,
+  ActivityChange,
+  ActivityEvent,
   Announcement,
   AnnouncementAudience,
   AppNotification,
@@ -61,6 +70,7 @@ import type {
   Note,
   NoteComment,
   Person,
+  ProgressComment,
   Project,
   ProjectDraft,
   ReturnCategory,
@@ -70,11 +80,62 @@ import type {
   Submission,
   Team,
   TeamDraft,
+  WeeklyFile,
+  WeeklyProgress,
 } from "@/lib/types"
 
 /* ------------------------------------------------------------------ types */
 
-export type ActionResult = { ok: true } | { ok: false; reason: string }
+export type ActionResult =
+  | {
+      ok: true
+      /** The id of what was made, when something was. */ id?: string
+    }
+  | { ok: false; reason: string }
+
+/** Of the checkpoints (instance ids) someone asked to link, those that really
+ * are this project's, once each. */
+function ownCheckpoints(
+  db: Database,
+  projectId: string,
+  ids: string[] | undefined
+): string[] {
+  const own = new Set(
+    db.milestones.filter((m) => m.projectId === projectId).map((m) => m.id)
+  )
+  return Array.from(new Set(ids ?? [])).filter((x) => own.has(x))
+}
+
+/** The tagged people who are allowed to be: on the thread, and not the author. */
+function validMentions(
+  ids: string[] | undefined,
+  allowed: { id: string }[],
+  author: string
+): string[] {
+  const ok = new Set(allowed.map((p) => p.id))
+  return Array.from(new Set(ids ?? [])).filter((x) => ok.has(x) && x !== author)
+}
+
+/** Notes save as you type, so a note edit goes in the log at most once in this
+ * long per person per note, not once for every pause in typing. A rename is
+ * always logged. Kept in memory: it only has to stop one sitting from flooding
+ * the log. */
+const NOTE_EDIT_LOG_MS = 10 * 60 * 1000
+const noteEditLogged = new Map<string, number>()
+
+/** A line of free text, short enough for a log entry. */
+const clip = (text: string, max = 200) =>
+  text.length > max ? `${text.slice(0, max)}…` : text
+
+/** What an action says about itself for the activity log. The rest of an entry,
+ * who and when, is filled in by `write`. */
+type LogInput = {
+  action: string
+  projectId: string
+  target: ActivityEvent["target"]
+  summary: string
+  changes?: ActivityChange[]
+}
 
 const ok: ActionResult = { ok: true }
 const deny = (reason: string): ActionResult => ({ ok: false, reason })
@@ -94,7 +155,7 @@ type StoreValue = {
   week: number
   batch: Batch
 
-  signIn: (personId: string, role?: Role) => void
+  signIn: (personId: string, role?: Role, preview?: boolean) => void
   signOut: () => void
   setActiveRole: (role: Role) => void
 
@@ -107,7 +168,9 @@ type StoreValue = {
   submitMilestone: (
     milestoneId: string,
     note: string,
-    artefactIds: string[]
+    artefactIds: string[],
+    /** Links added in the same step, so one form can attach and hand in. */
+    newLinks?: { url: string; label?: string }[]
   ) => ActionResult
   reviewSubmission: (
     milestoneId: string,
@@ -132,9 +195,51 @@ type StoreValue = {
       label?: string
       milestoneInstanceId?: string | null
       note?: string
+      /** Checkpoints (instance ids) the document supports. */
+      linkedTo?: string[]
     }
   ) => ActionResult
   removeArtefact: (artefactId: string) => ActionResult
+  updateArtefact: (
+    artefactId: string,
+    input: {
+      url: string
+      label?: string
+      note?: string
+      /** Replaces the linked checkpoints when given; left alone when not. */
+      linkedTo?: string[]
+    }
+  ) => ActionResult
+  /** One entry in the progress log is several links; these act on all of them
+   * in a single change, so the log never holds half of one. */
+  removeProgressEntry: (artefactIds: string[]) => ActionResult
+
+  // comments on a checkpoint's progress
+  addComment: (
+    milestoneId: string,
+    body: string,
+    parentId?: string,
+    /** People tagged with @name in the body. */
+    mentions?: string[]
+  ) => ActionResult
+  editComment: (
+    commentId: string,
+    body: string,
+    mentions?: string[]
+  ) => ActionResult
+  deleteComment: (commentId: string) => ActionResult
+
+  updateProgressEntry: (
+    artefactIds: string[],
+    input: { title: string; urls: string[]; note?: string }
+  ) => ActionResult
+
+  // weekly progress
+  submitWeeklyProgress: (
+    projectId: string,
+    week: number,
+    input: { summary: string; files: WeeklyFile[] }
+  ) => ActionResult
 
   // meetings, minutes, actions
   addMeeting: (
@@ -235,6 +340,12 @@ type StoreValue = {
     }
   ) => ActionResult
 
+  /** Submits an existing document as the progress for checkpoints it has been
+   * linked to, in one step: each becomes Submitted and its mentors are told. */
+  submitDocument: (artefactId: string, milestoneIds: string[]) => ActionResult
+  /** Coordinator only: empties the comments on progress and everyone's
+   * notifications, for when what is there is test data. */
+  clearCommentsAndNotifications: () => ActionResult
   resetAll: () => void
   /** Loads generated activity for stress-testing, or clears it again. */
   setDemoData: (on: boolean) => void
@@ -257,6 +368,11 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const [sharedFor, setSharedFor] = React.useState<string | null>(null)
   const sharedReady = Boolean(session) && sharedFor === session?.personId
   const [ready, setReady] = React.useState(false)
+  // preview: a testing session never reads or writes the server.
+  const previewRef = React.useRef(false)
+  React.useEffect(() => {
+    previewRef.current = Boolean(session?.preview)
+  }, [session?.preview])
 
   // localStorage is not available while rendering on the server, so the real
   // state lands on mount. `ready` keeps the UI from flashing a signed-out
@@ -273,48 +389,60 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     if (!ready) return
     let cancelled = false
     const who = session?.personId ?? null
-    fetchShared().then((remote) => {
-      if (cancelled) return
-      if (!remote) {
+    // preview: a testing session loads nothing from the server.
+    ;(session?.preview ? Promise.resolve(null) : fetchShared()).then(
+      (remote) => {
+        if (cancelled) return
+        if (!remote) {
+          setSharedFor(who)
+          return
+        }
+        // Titles are written by students now, so a browser's older copy of the
+        // projects must never seed the server; the seed's blank titles do.
+        const local = {
+          ...loadDatabase(),
+          projects: buildSeedDatabase().projects,
+        }
+        const useRemote = migrateLocal(local, remote)
+        setDb((current) => {
+          const merged = { ...current, ...useRemote }
+          // The server may still hold an earlier email for someone; the roster's
+          // wins, and the correction is written back for everyone else.
+          const next = withSeedEmails(merged)
+          if (next !== merged) pushDiff(merged, next)
+          saveDatabase(next, { broadcast: false })
+          dbRef.current = next
+          return next
+        })
         setSharedFor(who)
-        return
       }
-      // Titles are written by students now, so a browser's older copy of the
-      // projects must never seed the server; the seed's blank titles do.
-      const local = {
-        ...loadDatabase(),
-        projects: buildSeedDatabase().projects,
-      }
-      const useRemote = migrateLocal(local, remote)
-      setDb((current) => {
-        const merged = { ...current, ...useRemote }
-        // The server may still hold an earlier email for someone; the roster's
-        // wins, and the correction is written back for everyone else.
-        const next = withSeedEmails(merged)
-        if (next !== merged) pushDiff(merged, next)
-        saveDatabase(next, { broadcast: false })
-        dbRef.current = next
-        return next
-      })
-      setSharedFor(who)
-    })
-    const stop = subscribeShared((change) =>
-      setDb((current) => {
-        const next = applyChange(current, change)
-        saveDatabase(next, { broadcast: false })
-        dbRef.current = next
-        return next
-      })
     )
+    const stop = session?.preview
+      ? () => {}
+      : subscribeShared((change) =>
+          setDb((current) => {
+            const next = applyChange(current, change)
+            saveDatabase(next, { broadcast: false })
+            dbRef.current = next
+            return next
+          })
+        )
     return () => {
       cancelled = true
       stop()
     }
-  }, [ready, session?.personId])
+  }, [ready, session?.personId, session?.preview])
 
   // Another tab wrote. Pick it up so a mentor watching in a second window sees
   // a submission land without refreshing.
   React.useEffect(() => subscribeToChanges(() => setDb(loadDatabase())), [])
+
+  const commit = React.useCallback((next: Database) => {
+    if (!previewRef.current) pushDiff(dbRef.current, next) // preview
+    dbRef.current = next
+    setDb(next)
+    saveDatabase(next)
+  }, [])
 
   // Deadline reminders. There is no server to run a nightly job, so they are
   // generated when the app loads and keyed by checkpoint and date, which makes
@@ -366,20 +494,15 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     })
 
     if (!fresh.length) return
-    const next = {
+    // Through `commit`, so the reminders reach the server too: notifications
+    // are shared now, and a reminder that stayed in this browser would be wiped
+    // when the server's copy loads. Each has a fixed id, so every browser
+    // making the same one is the same row.
+    commit({
       ...current,
       notifications: [...fresh, ...current.notifications].slice(0, 1000),
-    }
-    setDb(next)
-    saveDatabase(next)
-  }, [ready])
-
-  const commit = React.useCallback((next: Database) => {
-    pushDiff(dbRef.current, next)
-    dbRef.current = next
-    setDb(next)
-    saveDatabase(next)
-  }, [])
+    })
+  }, [ready, commit])
 
   const currentUser = React.useMemo(
     () =>
@@ -426,16 +549,37 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     [db.milestoneTemplate]
   )
 
+  /** What to call a checkpoint in the log. */
+  const checkpointTitle = React.useCallback(
+    (milestoneId: string) => {
+      const m = db.milestones.find((x) => x.id === milestoneId)
+      return (
+        db.milestoneTemplate.find((t) => t.id === m?.templateItemId)?.title ??
+        "Checkpoint"
+      )
+    },
+    [db.milestones, db.milestoneTemplate]
+  )
+
   /** Every mutation goes through here so that nothing bypasses the audit
    * trail, and so a coordinator acting outside their own mentees is recorded
    * as an override rather than silently allowed. */
   const write = React.useCallback(
     (
       mutate: (draft: Database) => void,
-      audit?: { action: string; subject: string; detail?: string }
+      audit?: { action: string; subject: string; detail?: string },
+      log?: LogInput | LogInput[]
     ) => {
       const next: Database = structuredClone(db)
       mutate(next)
+      // Whatever notices this change created are from the person making it, so
+      // the panel can show who. Set here once, not at each place that notifies.
+      if (actor) {
+        const had = new Set(db.notifications.map((n) => n.id))
+        next.notifications = next.notifications.map((n) =>
+          had.has(n.id) || n.actorId ? n : { ...n, actorId: actor.person.id }
+        )
+      }
       if (audit && actor) {
         next.audit = [
           {
@@ -450,6 +594,21 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
         ].slice(0, 500)
       }
       commit(next)
+      // The activity log is written once and kept: it is sent to the server as
+      // it happens and is never part of the data that can be edited or cleared.
+      if (log && actor && !previewRef.current /* preview */) {
+        const at = new Date().toISOString()
+        appendActivity(
+          (Array.isArray(log) ? log : [log]).map((entry) => ({
+            id: id("log"),
+            at,
+            actorId: actor.person.id,
+            actorName: actor.person.name,
+            actorRole: actor.role,
+            ...entry,
+          }))
+        )
+      }
     },
     [actor, commit, db]
   )
@@ -468,13 +627,22 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
 
   /* ------------------------------------------------------------ session */
 
-  const doSignIn = React.useCallback((personId: string, role?: Role) => {
-    const person = loadDatabase().people.find((p) => p.id === personId)
-    if (!person) return
-    const chosen =
-      role && person.roles.includes(role) ? role : preferredRole(person)
-    setSession(persistSignIn(personId, chosen))
-  }, [])
+  const doSignIn = React.useCallback(
+    (personId: string, role?: Role, preview?: boolean) => {
+      const person = loadDatabase().people.find((p) => p.id === personId)
+      if (!person) return
+      const chosen =
+        role && person.roles.includes(role) ? role : preferredRole(person)
+      const next = persistSignIn(personId, chosen)
+      if (preview) {
+        // preview: testing session, kept off the server.
+        next.preview = true
+        writeSession(next)
+      }
+      setSession(next)
+    },
+    []
+  )
 
   const doSignOut = React.useCallback(() => {
     clearSession()
@@ -512,11 +680,24 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
           action: "milestone.status",
           subject: milestoneId,
           detail: `${next}${isOverride(actor, found.project) ? " (coordinator override)" : ""}`,
+        },
+        {
+          action: "checkpoint.status_changed",
+          projectId: found.project.id,
+          target: {
+            type: "checkpoint",
+            id: milestoneId,
+            label: checkpointTitle(milestoneId),
+          },
+          summary: `Status changed from ${found.milestone.status} to ${next}`,
+          changes: [
+            { field: "status", from: found.milestone.status, to: next },
+          ],
         }
       )
       return ok
     },
-    [actor, projectOfMilestone, write]
+    [actor, checkpointTitle, projectOfMilestone, write]
   )
 
   const toggleDeliverable = React.useCallback(
@@ -527,43 +708,79 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       if (!isMemberOf(actor, found.project) && !isCoordinator(actor)) {
         return deny("Only the team ticks off its own deliverables.")
       }
-      write((draft) => {
-        const m = draft.milestones.find((x) => x.id === milestoneId)!
-        m.completedDeliverables = m.completedDeliverables.includes(deliverable)
-          ? m.completedDeliverables.filter((d) => d !== deliverable)
-          : [...m.completedDeliverables, deliverable]
-        if (m.status === "not_started" && m.completedDeliverables.length) {
-          m.status = "in_progress"
-          m.startedAt = m.startedAt ?? new Date().toISOString()
+      const ticking =
+        !found.milestone.completedDeliverables.includes(deliverable)
+      write(
+        (draft) => {
+          const m = draft.milestones.find((x) => x.id === milestoneId)!
+          m.completedDeliverables = m.completedDeliverables.includes(
+            deliverable
+          )
+            ? m.completedDeliverables.filter((d) => d !== deliverable)
+            : [...m.completedDeliverables, deliverable]
+          if (m.status === "not_started" && m.completedDeliverables.length) {
+            m.status = "in_progress"
+            m.startedAt = m.startedAt ?? new Date().toISOString()
+          }
+          m.updatedAt = new Date().toISOString()
+        },
+        undefined,
+        {
+          action: ticking
+            ? "checkpoint.item_ticked"
+            : "checkpoint.item_unticked",
+          projectId: found.project.id,
+          target: {
+            type: "checkpoint",
+            id: milestoneId,
+            label: checkpointTitle(milestoneId),
+          },
+          summary: `${ticking ? "Ticked" : "Unticked"} “${deliverable}”`,
         }
-        m.updatedAt = new Date().toISOString()
-      })
+      )
       return ok
     },
-    [actor, projectOfMilestone, write]
+    [actor, checkpointTitle, projectOfMilestone, write]
   )
 
   const submitMilestone = React.useCallback(
     (
       milestoneId: string,
       note: string,
-      artefactIds: string[]
+      artefactIds: string[],
+      newLinks?: { url: string; label?: string }[]
     ): ActionResult => {
       if (!actor) return deny("Sign in first.")
       const found = projectOfMilestone(milestoneId)
       if (!found) return deny("That checkpoint no longer exists.")
       const check = canSubmitMilestone(actor, found.project)
       if (!check.allowed) return deny(check.reason ?? "Not permitted.")
-      if (!artefactIds.length)
-        return deny("Attach at least one piece of work before turning it in.")
+      const links = (newLinks ?? []).filter((l) => l.url.trim())
+      if (!artefactIds.length && links.length === 0)
+        return deny("Add a link to your work before submitting.")
 
       const now = new Date().toISOString()
+      // The note belongs to the submission, so it sits on the first link only
+      // and is not repeated down the log.
+      const created: Artefact[] = links.map((link, i) => ({
+        id: id("art"),
+        projectId: found.project.id,
+        milestoneInstanceId: milestoneId,
+        label: link.label?.trim() || "Untitled",
+        url: normalizeUrl(link.url),
+        service: detectService(normalizeUrl(link.url)),
+        note: i === 0 ? note.trim() || undefined : undefined,
+        addedBy: actor.person.id,
+        addedAt: now,
+      }))
+      const attached = [...created.map((a) => a.id), ...artefactIds]
       const attempt =
         db.submissions.filter((s) => s.milestoneInstanceId === milestoneId)
           .length + 1
 
       write(
         (draft) => {
+          if (created.length) draft.artefacts = [...created, ...draft.artefacts]
           const m = draft.milestones.find((x) => x.id === milestoneId)!
           m.status = "submitted"
           m.submittedAt = now
@@ -576,7 +793,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
             submittedBy: actor.person.id,
             submittedAt: now,
             note,
-            artefactIds,
+            artefactIds: attached,
           }
           draft.submissions = [submission, ...draft.submissions]
           const item = draft.milestoneTemplate.find(
@@ -584,12 +801,12 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
           )
           notify(draft, found.project.mentorIds, {
             kind: "submission",
-            title: `${projectLabel(found.project).slice(0, 48)} turned in ${item?.title ?? "a checkpoint"}`,
+            title: `${projectLabel(found.project).slice(0, 48)} submitted ${item?.title ?? "a checkpoint"}`,
             body:
               attempt > 1
                 ? `Resubmission, attempt ${attempt}.`
                 : "Waiting on your review.",
-            href: "/projects?filter=waiting",
+            href: `/projects/${found.project.id}?tab=plan&milestone=${milestoneId}`,
             createdAt: now,
           })
         },
@@ -597,11 +814,129 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
           action: "milestone.submit",
           subject: milestoneId,
           detail: `attempt ${attempt}`,
+        },
+        {
+          action: attempt > 1 ? "progress.resubmitted" : "progress.submitted",
+          projectId: found.project.id,
+          target: {
+            type: "progress",
+            id: milestoneId,
+            label: checkpointTitle(milestoneId),
+          },
+          summary: `Submitted ${checkpointTitle(milestoneId)} with ${created.length} ${created.length === 1 ? "link" : "links"}${attempt > 1 ? ` (attempt ${attempt})` : ""}`,
+          changes: [
+            { field: "status", from: found.milestone.status, to: "submitted" },
+            ...(created.length
+              ? [
+                  {
+                    field: "links",
+                    to: created.map((a) => a.url).join(", "),
+                  },
+                ]
+              : []),
+            ...(note.trim() ? [{ field: "note", to: note.trim() }] : []),
+          ],
         }
       )
       return ok
     },
-    [actor, db.submissions, projectOfMilestone, write]
+    [actor, checkpointTitle, db.submissions, projectOfMilestone, write]
+  )
+
+  const submitDocument = React.useCallback(
+    (artefactId: string, milestoneIds: string[]): ActionResult => {
+      if (!actor) return deny("Sign in first.")
+      const artefact = db.artefacts.find((a) => a.id === artefactId)
+      const project = artefact ? findProject(artefact.projectId) : undefined
+      if (!artefact || !project) return deny("That document no longer exists.")
+      const check = canSubmitMilestone(actor, project)
+      if (!check.allowed) return deny(check.reason ?? "Not permitted.")
+
+      // Only this project's checkpoints that are still waiting on the team: one
+      // that is already in, or accepted, is left as it is.
+      const targets = ownCheckpoints(db, project.id, milestoneIds)
+        .map((mid) => db.milestones.find((m) => m.id === mid))
+        .filter(
+          (m): m is MilestoneInstance =>
+            Boolean(m) &&
+            m!.status !== "submitted" &&
+            m!.status !== "under_review" &&
+            m!.status !== "accepted"
+        )
+      if (targets.length === 0)
+        return deny("Those checkpoints are already submitted.")
+
+      const now = new Date().toISOString()
+      const attempts = new Map(
+        targets.map((t) => [
+          t.id,
+          db.submissions.filter((s) => s.milestoneInstanceId === t.id).length +
+            1,
+        ])
+      )
+
+      // One change for all of them: separate ones would each start from the same
+      // old data and overwrite one another.
+      write(
+        (draft) => {
+          targets.forEach((target) => {
+            const m = draft.milestones.find((x) => x.id === target.id)!
+            const attempt = attempts.get(target.id)!
+            m.status = "submitted"
+            m.submittedAt = now
+            m.updatedAt = now
+            const submission: Submission = {
+              id: id("sub"),
+              milestoneInstanceId: target.id,
+              projectId: project.id,
+              attempt,
+              submittedBy: actor.person.id,
+              submittedAt: now,
+              note: "",
+              artefactIds: [artefactId],
+            }
+            draft.submissions = [submission, ...draft.submissions]
+            const item = draft.milestoneTemplate.find(
+              (t) => t.id === m.templateItemId
+            )
+            notify(draft, project.mentorIds, {
+              kind: "submission",
+              title: `${projectLabel(project).slice(0, 48)} submitted ${item?.title ?? "a checkpoint"}`,
+              body:
+                attempt > 1
+                  ? `Resubmission, attempt ${attempt}.`
+                  : "Waiting on your review.",
+              href: `/projects/${project.id}?tab=plan&milestone=${target.id}`,
+              createdAt: now,
+            })
+          })
+        },
+        {
+          action: "milestone.submit",
+          subject: targets[0].id,
+          detail: "document",
+        },
+        targets.map((target) => ({
+          action:
+            attempts.get(target.id)! > 1
+              ? "progress.resubmitted"
+              : "progress.submitted",
+          projectId: project.id,
+          target: {
+            type: "progress",
+            id: target.id,
+            label: checkpointTitle(target.id),
+          },
+          summary: `Submitted ${checkpointTitle(target.id)} with the document “${artefact.label}”`,
+          changes: [
+            { field: "status", from: target.status, to: "submitted" },
+            { field: "document", to: artefact.url },
+          ],
+        }))
+      )
+      return ok
+    },
+    [actor, checkpointTitle, db, findProject, write]
   )
 
   const openForReview = React.useCallback(
@@ -710,11 +1045,38 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
           detail: isOverride(actor, found.project)
             ? "coordinator override"
             : undefined,
+        },
+        {
+          action:
+            verdict === "accept"
+              ? "checkpoint.accepted"
+              : "checkpoint.returned",
+          projectId: found.project.id,
+          target: {
+            type: "checkpoint",
+            id: milestoneId,
+            label: checkpointTitle(milestoneId),
+          },
+          summary:
+            verdict === "accept"
+              ? `Accepted ${checkpointTitle(milestoneId)}${isOverride(actor, found.project) ? " (coordinator override)" : ""}`
+              : `Returned ${checkpointTitle(milestoneId)} for revisions`,
+          changes: [
+            {
+              field: "status",
+              from: found.milestone.status,
+              to: verdict === "accept" ? "accepted" : "returned",
+            },
+            ...(verdict === "return" && category
+              ? [{ field: "reason", to: category }]
+              : []),
+            { field: "feedback", to: body.trim() },
+          ],
         }
       )
       return ok
     },
-    [actor, db.submissions, projectOfMilestone, write]
+    [actor, checkpointTitle, db.submissions, projectOfMilestone, write]
   )
 
   const setDueWeekOverride = React.useCallback(
@@ -744,11 +1106,32 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
           }
           m.updatedAt = new Date().toISOString()
         },
-        { action: "milestone.dueDate", subject: milestoneId, detail: reason }
+        { action: "milestone.dueDate", subject: milestoneId, detail: reason },
+        {
+          action: "checkpoint.due_week_changed",
+          projectId: found.project.id,
+          target: {
+            type: "checkpoint",
+            id: milestoneId,
+            label: checkpointTitle(milestoneId),
+          },
+          summary:
+            weekValue === null
+              ? "Put the due week back to the original"
+              : `Moved the due week to week ${weekValue}`,
+          changes: [
+            {
+              field: "due week",
+              from: String(found.milestone.dueWeekOverride ?? ""),
+              to: weekValue === null ? "" : String(weekValue),
+            },
+            ...(reason.trim() ? [{ field: "reason", to: reason.trim() }] : []),
+          ],
+        }
       )
       return ok
     },
-    [actor, projectOfMilestone, write]
+    [actor, checkpointTitle, projectOfMilestone, write]
   )
 
   const markFeedbackAddressed = React.useCallback(
@@ -798,32 +1181,65 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
         label?: string
         milestoneInstanceId?: string | null
         note?: string
+        linkedTo?: string[]
       }
     ): ActionResult => {
       if (!actor) return deny("Sign in first.")
       const project = findProject(projectId)
       if (!project) return deny("That project no longer exists.")
-      // Progress is the team's own record: mentors and the coordinator read it.
+      // Documentation is the team's own record: mentors and the coordinator read
+      // it.
       if (!isMemberOf(actor, project)) {
         return deny("This project is not yours to change.")
       }
+      const linkedTo = ownCheckpoints(db, projectId, input.linkedTo)
       const artefact: Artefact = {
         id: id("art"),
         projectId,
         milestoneInstanceId: input.milestoneInstanceId ?? null,
         label: input.label?.trim() || "Untitled",
-        url: input.url.trim(),
+        url: normalizeUrl(input.url),
         service: detectService(input.url),
         note: input.note?.trim() || undefined,
+        linkedTo: linkedTo.length ? linkedTo : undefined,
         addedBy: actor.person.id,
         addedAt: new Date().toISOString(),
       }
-      write((draft) => {
-        draft.artefacts = [artefact, ...draft.artefacts]
-      })
-      return ok
+      write(
+        (draft) => {
+          draft.artefacts = [artefact, ...draft.artefacts]
+        },
+        undefined,
+        {
+          action: "document.added",
+          projectId,
+          target: { type: "document", id: artefact.id, label: artefact.label },
+          summary: `Added the document “${artefact.label}”`,
+          changes: [
+            { field: "link", to: artefact.url },
+            ...(linkedTo.length
+              ? [
+                  {
+                    field: "linked to",
+                    to: linkedTo.map(checkpointTitle).join(", "),
+                  },
+                ]
+              : []),
+          ],
+        }
+      )
+      return { ok: true, id: artefact.id }
     },
-    [actor, findProject, write]
+    [actor, checkpointTitle, db, findProject, write]
+  )
+
+  /** The checkpoint an upload belongs to, if it belongs to one. */
+  const milestoneOfArtefact = React.useCallback(
+    (artefact: Artefact) =>
+      artefact.milestoneInstanceId
+        ? db.milestones.find((m) => m.id === artefact.milestoneInstanceId)
+        : undefined,
+    [db.milestones]
   )
 
   const removeArtefact = React.useCallback(
@@ -831,26 +1247,548 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       if (!actor) return deny("Sign in first.")
       const artefact = db.artefacts.find((a) => a.id === artefactId)
       const project = artefact ? findProject(artefact.projectId) : undefined
-      if (!artefact || !project) return deny("That link no longer exists.")
+      if (!artefact || !project) return deny("That upload no longer exists.")
       if (!isMemberOf(actor, project) && !isCoordinator(actor)) {
-        return deny("Only the team can remove its own links.")
+        return deny("Only the team can delete its own progress.")
       }
-      const used = db.submissions.some((s) =>
-        s.artefactIds.includes(artefactId)
+      const milestone = milestoneOfArtefact(artefact)
+      if (milestone?.status === "accepted")
+        return deny("Your mentor has accepted this, so it stays on the record.")
+
+      write(
+        (draft) => {
+          draft.artefacts = draft.artefacts.filter((a) => a.id !== artefactId)
+          // A submission keeps its place in the history; it just no longer
+          // points at work that is gone.
+          draft.submissions.forEach((sub) => {
+            sub.artefactIds = sub.artefactIds.filter((x) => x !== artefactId)
+          })
+          // Take back the last thing handed in and the checkpoint is no longer
+          // submitted.
+          if (milestone) {
+            const m = draft.milestones.find((x) => x.id === milestone.id)
+            const left = draft.artefacts.some(
+              (a) => a.milestoneInstanceId === milestone.id
+            )
+            if (
+              m &&
+              !left &&
+              (m.status === "submitted" || m.status === "under_review")
+            ) {
+              m.status = "in_progress"
+              delete m.submittedAt
+              m.updatedAt = new Date().toISOString()
+            }
+          }
+        },
+        { action: "artefact.remove", subject: artefactId },
+        {
+          action: "document.deleted",
+          projectId: project.id,
+          target: { type: "document", id: artefactId, label: artefact.label },
+          summary: `Deleted the document “${artefact.label}”`,
+          changes: [{ field: "link", from: artefact.url }],
+        }
       )
-      if (used)
-        return deny(
-          "This is attached to work already turned in, so it stays on the record."
-        )
-      write((draft) => {
-        draft.artefacts = draft.artefacts.filter((a) => a.id !== artefactId)
-      })
       return ok
     },
-    [actor, db.artefacts, db.submissions, findProject, write]
+    [actor, db.artefacts, findProject, milestoneOfArtefact, write]
+  )
+
+  const updateArtefact = React.useCallback(
+    (
+      artefactId: string,
+      input: {
+        url: string
+        label?: string
+        note?: string
+        linkedTo?: string[]
+      }
+    ): ActionResult => {
+      if (!actor) return deny("Sign in first.")
+      const artefact = db.artefacts.find((a) => a.id === artefactId)
+      const project = artefact ? findProject(artefact.projectId) : undefined
+      if (!artefact || !project) return deny("That upload no longer exists.")
+      if (!isMemberOf(actor, project))
+        return deny("Only the team can edit its own progress.")
+      if (!input.url.trim()) return deny("Add a link to your work.")
+      if (milestoneOfArtefact(artefact)?.status === "accepted")
+        return deny("Your mentor has accepted this, so it stays on the record.")
+
+      const url = normalizeUrl(input.url)
+      const label = input.label?.trim() || artefact.label
+      const note = input.note?.trim() || undefined
+      const linkedTo =
+        input.linkedTo === undefined
+          ? artefact.linkedTo
+          : ownCheckpoints(db, project.id, input.linkedTo)
+      const before = (artefact.linkedTo ?? []).join(",")
+      const after = (linkedTo ?? []).join(",")
+      const changes = [
+        ...(artefact.label !== label
+          ? [{ field: "title", from: artefact.label, to: label }]
+          : []),
+        ...(artefact.url !== url
+          ? [{ field: "link", from: artefact.url, to: url }]
+          : []),
+        ...((artefact.note ?? "") !== (note ?? "")
+          ? [{ field: "note", from: artefact.note ?? "", to: note ?? "" }]
+          : []),
+        ...(before !== after
+          ? [
+              {
+                field: "linked to",
+                from: (artefact.linkedTo ?? []).map(checkpointTitle).join(", "),
+                to: (linkedTo ?? []).map(checkpointTitle).join(", "),
+              },
+            ]
+          : []),
+      ]
+      if (changes.length === 0) return ok
+
+      write(
+        (draft) => {
+          const a = draft.artefacts.find((x) => x.id === artefactId)!
+          a.url = url
+          a.service = detectService(a.url)
+          a.label = label
+          a.note = note
+          a.linkedTo = linkedTo?.length ? linkedTo : undefined
+        },
+        { action: "artefact.update", subject: artefactId },
+        {
+          action: "document.edited",
+          projectId: project.id,
+          target: { type: "document", id: artefactId, label },
+          summary: `Edited the document “${label}”`,
+          changes,
+        }
+      )
+      return ok
+    },
+    [actor, checkpointTitle, db, findProject, milestoneOfArtefact, write]
+  )
+
+  const removeProgressEntry = React.useCallback(
+    (artefactIds: string[]): ActionResult => {
+      if (!actor) return deny("Sign in first.")
+      const items = artefactIds
+        .map((x) => db.artefacts.find((a) => a.id === x))
+        .filter((a): a is Artefact => Boolean(a))
+      const project = items[0] ? findProject(items[0].projectId) : undefined
+      if (!items[0] || !project) return deny("That upload no longer exists.")
+      if (!isMemberOf(actor, project) && !isCoordinator(actor))
+        return deny("Only the team can delete its own progress.")
+      const milestone = milestoneOfArtefact(items[0])
+      if (milestone?.status === "accepted")
+        return deny("Your mentor has accepted this, so it stays on the record.")
+
+      const gone = new Set(items.map((a) => a.id))
+      write(
+        (draft) => {
+          draft.artefacts = draft.artefacts.filter((a) => !gone.has(a.id))
+          draft.submissions.forEach((sub) => {
+            sub.artefactIds = sub.artefactIds.filter((x) => !gone.has(x))
+          })
+          if (milestone) {
+            const m = draft.milestones.find((x) => x.id === milestone.id)
+            const left = draft.artefacts.some(
+              (a) => a.milestoneInstanceId === milestone.id
+            )
+            if (
+              m &&
+              !left &&
+              (m.status === "submitted" || m.status === "under_review")
+            ) {
+              m.status = "in_progress"
+              delete m.submittedAt
+              m.updatedAt = new Date().toISOString()
+            }
+          }
+        },
+        { action: "artefact.remove", subject: items[0].id },
+        {
+          action: "progress.deleted",
+          projectId: project.id,
+          target: {
+            type: "progress",
+            id: items[0].id,
+            label: items[0].label,
+          },
+          summary: `Deleted “${items[0].label}” (${items.length} ${items.length === 1 ? "link" : "links"})`,
+          changes: [
+            { field: "links", from: items.map((a) => a.url).join(", ") },
+          ],
+        }
+      )
+      return ok
+    },
+    [actor, db.artefacts, findProject, milestoneOfArtefact, write]
+  )
+
+  const updateProgressEntry = React.useCallback(
+    (
+      artefactIds: string[],
+      input: { title: string; urls: string[]; note?: string }
+    ): ActionResult => {
+      if (!actor) return deny("Sign in first.")
+      const items = artefactIds
+        .map((x) => db.artefacts.find((a) => a.id === x))
+        .filter((a): a is Artefact => Boolean(a))
+      const first = items[0]
+      const project = first ? findProject(first.projectId) : undefined
+      if (!first || !project) return deny("That upload no longer exists.")
+      if (!isMemberOf(actor, project))
+        return deny("Only the team can edit its own progress.")
+      const title = input.title.trim()
+      const urls = input.urls.map((u) => u.trim()).filter(Boolean)
+      if (!title) return deny("Give it a title.")
+      if (urls.length === 0) return deny("Add at least one link.")
+      if (milestoneOfArtefact(first)?.status === "accepted")
+        return deny("Your mentor has accepted this, so it stays on the record.")
+
+      // Saving without changing anything is not an edit, so it leaves no stamp.
+      const nextUrls = urls.map(normalizeUrl)
+      const unchanged =
+        nextUrls.length === items.length &&
+        nextUrls.every((u, i) => u === items[i].url) &&
+        items.every((a) => a.label === title) &&
+        (items[0].note ?? "") === (input.note?.trim() ?? "")
+      if (unchanged) return ok
+
+      const editedAt = new Date().toISOString()
+      write(
+        (draft) => {
+          const added: Artefact[] = []
+          urls.forEach((raw, i) => {
+            const url = normalizeUrl(raw)
+            const existing = items[i]
+            if (existing) {
+              const a = draft.artefacts.find((x) => x.id === existing.id)!
+              a.url = url
+              a.service = detectService(url)
+              a.label = title
+              // The note belongs to the entry, so it sits on the first link.
+              a.note = i === 0 ? input.note?.trim() || undefined : undefined
+              if (i === 0) a.editedAt = editedAt
+            } else {
+              added.push({
+                id: id("art"),
+                projectId: first.projectId,
+                milestoneInstanceId: first.milestoneInstanceId,
+                label: title,
+                url,
+                service: detectService(url),
+                addedBy: first.addedBy,
+                // Same moment as the rest, which is what keeps it in the entry.
+                addedAt: first.addedAt,
+              })
+            }
+          })
+          const gone = new Set(items.slice(urls.length).map((a) => a.id))
+          draft.artefacts = [
+            ...added,
+            ...draft.artefacts.filter((a) => !gone.has(a.id)),
+          ]
+          draft.submissions.forEach((sub) => {
+            const kept = sub.artefactIds.filter((x) => !gone.has(x))
+            sub.artefactIds = sub.artefactIds.includes(first.id)
+              ? [...kept, ...added.map((a) => a.id)]
+              : kept
+          })
+        },
+        { action: "artefact.update", subject: first.id },
+        {
+          action: "progress.edited",
+          projectId: project.id,
+          target: { type: "progress", id: first.id, label: title },
+          summary: `Edited “${title}”`,
+          changes: [
+            ...(items[0].label !== title
+              ? [{ field: "title", from: items[0].label, to: title }]
+              : []),
+            ...(items.map((a) => a.url).join(", ") !== nextUrls.join(", ")
+              ? [
+                  {
+                    field: "links",
+                    from: items.map((a) => a.url).join(", "),
+                    to: nextUrls.join(", "),
+                  },
+                ]
+              : []),
+            ...((items[0].note ?? "") !== (input.note?.trim() ?? "")
+              ? [
+                  {
+                    field: "note",
+                    from: items[0].note ?? "",
+                    to: input.note?.trim() ?? "",
+                  },
+                ]
+              : []),
+          ],
+        }
+      )
+      return ok
+    },
+    [actor, db.artefacts, findProject, milestoneOfArtefact, write]
+  )
+
+  /* ----------------------------------------------------------- comments */
+
+  /** Where a comment notice goes: the checkpoint, with the comment named so the
+   * page can open it, scroll to it and mark it. */
+  const threadHref = (
+    projectId: string,
+    milestoneId: string,
+    commentId?: string
+  ) =>
+    `/projects/${projectId}?tab=plan&milestone=${milestoneId}${commentId ? `&comment=${commentId}` : ""}`
+
+  const addComment = React.useCallback(
+    (
+      milestoneId: string,
+      body: string,
+      parentId?: string,
+      mentionIds?: string[]
+    ): ActionResult => {
+      if (!actor) return deny("Sign in first.")
+      const found = projectOfMilestone(milestoneId)
+      if (!found) return deny("That checkpoint no longer exists.")
+      if (!canComment(actor, found.project))
+        return deny("Only the team and its mentors can comment here.")
+      const text = body.trim()
+      if (!text) return deny("Write something first.")
+
+      const parent = parentId
+        ? db.comments.find((c) => c.id === parentId)
+        : undefined
+      if (
+        parentId &&
+        (!parent ||
+          parent.milestoneInstanceId !== milestoneId ||
+          parent.parentId ||
+          parent.deletedAt)
+      )
+        return deny("That comment is no longer there to reply to.")
+
+      // Only people who can read the thread can be tagged in it, and not oneself.
+      const tagged = validMentions(
+        mentionIds,
+        mentionablePeople(db, found.project),
+        actor.person.id
+      )
+
+      const now = new Date().toISOString()
+      const comment: ProgressComment = {
+        id: id("cmt"),
+        projectId: found.project.id,
+        milestoneInstanceId: milestoneId,
+        parentId,
+        authorId: actor.person.id,
+        body: text,
+        mentions: tagged.length ? tagged : undefined,
+        createdAt: now,
+      }
+      // The other side hears about it, and so does anyone already in the thread.
+      const fromTeam = isMemberOf(actor, found.project)
+      const thread = parent
+        ? [parent, ...db.comments.filter((c) => c.parentId === parent.id)]
+        : []
+      // Someone tagged gets the notice that says so, not a second, general one.
+      const recipients = [
+        ...(fromTeam ? found.project.mentorIds : found.project.teamMemberIds),
+        ...thread.map((c) => c.authorId),
+      ].filter((x) => x !== actor.person.id && !tagged.includes(x))
+      const title = checkpointTitle(milestoneId)
+
+      write(
+        (draft) => {
+          draft.comments = [...draft.comments, comment]
+          notify(draft, recipients, {
+            kind: "comment",
+            title: `${actor.person.name} ${parent ? "replied on" : "commented on"} ${title}`,
+            body: text.slice(0, 100),
+            href: threadHref(found.project.id, milestoneId, comment.id),
+            createdAt: now,
+          })
+          notify(draft, tagged, {
+            kind: "mention",
+            title: `${actor.person.name} mentioned you on ${title}`,
+            body: text.slice(0, 100),
+            href: threadHref(found.project.id, milestoneId, comment.id),
+            createdAt: now,
+          })
+        },
+        undefined,
+        {
+          action: parent ? "comment.replied" : "comment.created",
+          projectId: found.project.id,
+          target: { type: "comment", id: comment.id, label: title },
+          summary: `${parent ? "Replied" : "Commented"} on ${title}`,
+          changes: [
+            { field: "comment", to: text },
+            ...(tagged.length
+              ? [
+                  {
+                    field: "mentions",
+                    to: tagged
+                      .map((x) => db.people.find((p) => p.id === x)?.name ?? x)
+                      .join(", "),
+                  },
+                ]
+              : []),
+          ],
+        }
+      )
+      return ok
+    },
+    [actor, checkpointTitle, db, projectOfMilestone, write]
+  )
+
+  const editComment = React.useCallback(
+    (commentId: string, body: string, mentionIds?: string[]): ActionResult => {
+      if (!actor) return deny("Sign in first.")
+      const comment = db.comments.find((c) => c.id === commentId)
+      if (!comment || comment.deletedAt)
+        return deny("That comment is no longer there.")
+      if (comment.authorId !== actor.person.id)
+        return deny("You can only edit your own comments.")
+      const project = findProject(comment.projectId)
+      const text = body.trim()
+      if (!text) return deny("A comment cannot be empty.")
+      if (text === comment.body) return ok
+
+      const tagged = project
+        ? validMentions(
+            mentionIds,
+            mentionablePeople(db, project),
+            actor.person.id
+          )
+        : []
+      // Only people newly tagged in the edit are told; the rest already were.
+      const added = tagged.filter((x) => !(comment.mentions ?? []).includes(x))
+      const title = checkpointTitle(comment.milestoneInstanceId)
+
+      write(
+        (draft) => {
+          const c = draft.comments.find((x) => x.id === commentId)!
+          c.body = text
+          c.mentions = tagged.length ? tagged : undefined
+          c.editedAt = new Date().toISOString()
+          notify(draft, added, {
+            kind: "mention",
+            title: `${actor.person.name} mentioned you on ${title}`,
+            body: text.slice(0, 100),
+            href: threadHref(
+              comment.projectId,
+              comment.milestoneInstanceId,
+              commentId
+            ),
+            createdAt: c.editedAt,
+          })
+        },
+        undefined,
+        {
+          action: "comment.edited",
+          projectId: comment.projectId,
+          target: {
+            type: "comment",
+            id: commentId,
+            label: checkpointTitle(comment.milestoneInstanceId),
+          },
+          summary: `Edited a comment on ${checkpointTitle(comment.milestoneInstanceId)}`,
+          changes: [{ field: "comment", from: comment.body, to: text }],
+        }
+      )
+      return ok
+    },
+    [actor, checkpointTitle, db, findProject, write]
+  )
+
+  const deleteComment = React.useCallback(
+    (commentId: string): ActionResult => {
+      if (!actor) return deny("Sign in first.")
+      const comment = db.comments.find((c) => c.id === commentId)
+      if (!comment || comment.deletedAt)
+        return deny("That comment is no longer there.")
+      if (comment.authorId !== actor.person.id)
+        return deny("You can only delete your own comments.")
+
+      // The comment stays in the thread as "deleted", and its words stay in the
+      // log, so nothing said here is ever lost from the record.
+      write(
+        (draft) => {
+          const c = draft.comments.find((x) => x.id === commentId)!
+          c.deletedAt = new Date().toISOString()
+        },
+        undefined,
+        {
+          action: "comment.deleted",
+          projectId: comment.projectId,
+          target: {
+            type: "comment",
+            id: commentId,
+            label: checkpointTitle(comment.milestoneInstanceId),
+          },
+          summary: `Deleted a comment on ${checkpointTitle(comment.milestoneInstanceId)}`,
+          changes: [{ field: "comment", from: comment.body }],
+        }
+      )
+      return ok
+    },
+    [actor, checkpointTitle, db.comments, write]
   )
 
   /* ------------------------------------------------ meetings and actions */
+
+  /* ---------------------------------------------------- weekly progress */
+
+  const submitWeeklyProgress = React.useCallback(
+    (
+      projectId: string,
+      week: number,
+      input: { summary: string; files: WeeklyFile[] }
+    ): ActionResult => {
+      if (!actor) return deny("Sign in first.")
+      const project = findProject(projectId)
+      if (!project) return deny("That project no longer exists.")
+      const check = canSubmitWeekly(actor, project)
+      if (!check.allowed) return deny(check.reason ?? "Not permitted.")
+      if (week < 1 || week > currentWeek(batch.startDate))
+        return deny("That week has not started yet.")
+      if (
+        db.weeklyProgress.some(
+          (r) => r.projectId === projectId && r.week === week
+        )
+      )
+        return deny(`Week ${week} has already been submitted.`)
+      const summary = input.summary.trim()
+      if (!summary && input.files.length === 0)
+        return deny("Add a short summary or at least one file.")
+
+      const report: WeeklyProgress = {
+        id: id("wk"),
+        projectId,
+        week,
+        summary,
+        files: input.files,
+        submittedBy: actor.person.id,
+        submittedAt: new Date().toISOString(),
+      }
+      write(
+        (draft) => {
+          draft.weeklyProgress = [report, ...draft.weeklyProgress]
+        },
+        {
+          action: "weekly.submit",
+          subject: projectId,
+          detail: `week ${week}`,
+        }
+      )
+      return ok
+    },
+    [actor, batch.startDate, db.weeklyProgress, findProject, write]
+  )
 
   const addMeeting = React.useCallback(
     (
@@ -894,16 +1832,33 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
               kind: "meeting",
               title: `${meeting.title} on ${meeting.date}`,
               body: `${projectLabel(project).slice(0, 60)}`,
-              href: `/projects/${projectId}?tab=meetings`,
+              href: `/projects/${projectId}?tab=notes`,
               createdAt: meeting.createdAt,
             }
           )
         },
-        { action: "meeting.create", subject: meeting.id }
+        { action: "meeting.create", subject: meeting.id },
+        {
+          action: "meeting.created",
+          projectId,
+          target: { type: "meeting", id: meeting.id, label: meeting.title },
+          summary: `Scheduled “${meeting.title}” for ${meeting.date}${meeting.time ? ` at ${meeting.time}` : ""}`,
+          changes: [
+            {
+              field: "attendees",
+              to: meeting.attendeeIds
+                .map((x) => db.people.find((p) => p.id === x)?.name ?? x)
+                .join(", "),
+            },
+            ...(meeting.callUrl
+              ? [{ field: "call link", to: meeting.callUrl }]
+              : []),
+          ],
+        }
       )
       return ok
     },
-    [actor, findProject, write]
+    [actor, db.people, findProject, write]
   )
 
   const saveMinutes = React.useCallback(
@@ -923,6 +1878,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
         return deny("This project is not yours to change.")
       }
       const now = new Date().toISOString()
+      const existingMinutes = db.minutes.find((m) => m.meetingId === meetingId)
       write(
         (draft) => {
           const existing = draft.minutes.find((m) => m.meetingId === meetingId)
@@ -949,11 +1905,31 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
             draft.minutes = [minutes, ...draft.minutes]
           }
         },
-        { action: "minutes.save", subject: meetingId }
+        { action: "minutes.save", subject: meetingId },
+        {
+          action: existingMinutes ? "minutes.edited" : "minutes.recorded",
+          projectId: meeting.projectId,
+          target: { type: "meeting", id: meetingId, label: meeting.title },
+          summary: `${existingMinutes ? "Edited" : "Recorded"} the minutes of “${meeting.title}”`,
+          // Only the parts that differ from what was there before, kept short.
+          changes: (
+            [
+              ["discussed", existingMinutes?.discussed, input.discussed],
+              ["decided", existingMinutes?.decided, input.decided],
+              ["next", existingMinutes?.next, input.next],
+            ] as const
+          )
+            .filter(([, before, after]) => (before ?? "") !== after)
+            .map(([field, before, after]) => ({
+              field,
+              from: before ? clip(before) : undefined,
+              to: clip(after),
+            })),
+        }
       )
       return ok
     },
-    [actor, db.meetings, findProject, write]
+    [actor, db.meetings, db.minutes, findProject, write]
   )
 
   const confirmMinutes = React.useCallback(
@@ -963,15 +1939,31 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       const project = minutes ? findProject(minutes.projectId) : undefined
       if (!minutes || !project) return deny("Those minutes no longer exist.")
       const now = new Date().toISOString()
-      write((draft) => {
-        const m = draft.minutes.find((x) => x.id === minutesId)!
-        if (isMemberOf(actor, project)) m.confirmedByTeamAt = now
-        else if (isMentorOf(actor, project) || isCoordinator(actor))
-          m.confirmedByMentorAt = now
-      })
+      const meetingTitle =
+        db.meetings.find((m) => m.id === minutes.meetingId)?.title ??
+        "a meeting"
+      write(
+        (draft) => {
+          const m = draft.minutes.find((x) => x.id === minutesId)!
+          if (isMemberOf(actor, project)) m.confirmedByTeamAt = now
+          else if (isMentorOf(actor, project) || isCoordinator(actor))
+            m.confirmedByMentorAt = now
+        },
+        undefined,
+        {
+          action: "minutes.confirmed",
+          projectId: project.id,
+          target: {
+            type: "meeting",
+            id: minutes.meetingId,
+            label: meetingTitle,
+          },
+          summary: `Confirmed the minutes of “${meetingTitle}” as ${isMemberOf(actor, project) ? "the team" : "a mentor"}`,
+        }
+      )
       return ok
     },
-    [actor, db.minutes, findProject, write]
+    [actor, db.meetings, db.minutes, findProject, write]
   )
 
   const addActionItem = React.useCallback(
@@ -988,6 +1980,9 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       if (!actor) return deny("Sign in first.")
       const project = findProject(projectId)
       if (!project) return deny("That project no longer exists.")
+      // The coordinator reads a team's actions; the team and its mentors add them.
+      if (isCoordinator(actor))
+        return deny("Only the team and its mentors can add action items.")
       if (!input.text.trim()) return deny("An action needs a description.")
       if (!input.ownerId) return deny("An action needs one named owner.")
       const item: ActionItem = {
@@ -1010,7 +2005,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
             kind: "action_item",
             title: "You were given an action",
             body: item.text,
-            href: `/projects/${projectId}?tab=meetings`,
+            href: `/projects/${projectId}?tab=notes`,
             createdAt: item.createdAt,
           })
         }
@@ -1637,9 +2632,18 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
         createdAt: now,
         updatedAt: now,
       }
-      write((draft) => {
-        draft.notes = [note, ...draft.notes]
-      })
+      write(
+        (draft) => {
+          draft.notes = [note, ...draft.notes]
+        },
+        undefined,
+        {
+          action: "note.created",
+          projectId,
+          target: { type: "note", id: note.id, label: note.title },
+          summary: `Created the note “${note.title}”`,
+        }
+      )
       return note.id
     },
     [actor, findProject, write]
@@ -1662,12 +2666,41 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       ) {
         return deny("Only the team and its mentors can edit its notes.")
       }
-      write((draft) => {
-        const n = draft.notes.find((x) => x.id === noteId)!
-        if (patch.title !== undefined) n.title = patch.title
-        if (patch.content !== undefined) n.content = patch.content
-        n.updatedAt = new Date().toISOString()
-      })
+      const renamed = patch.title !== undefined && patch.title !== note.title
+      const changed =
+        renamed ||
+        (patch.content !== undefined && patch.content !== note.content)
+      const key = `${noteId}:${actor.person.id}`
+      const last = noteEditLogged.get(key) ?? 0
+      const logIt = changed && (renamed || Date.now() - last > NOTE_EDIT_LOG_MS)
+      if (logIt) noteEditLogged.set(key, Date.now())
+
+      write(
+        (draft) => {
+          const n = draft.notes.find((x) => x.id === noteId)!
+          if (patch.title !== undefined) n.title = patch.title
+          if (patch.content !== undefined) n.content = patch.content
+          n.updatedAt = new Date().toISOString()
+        },
+        undefined,
+        logIt
+          ? {
+              action: renamed ? "note.renamed" : "note.edited",
+              projectId: project.id,
+              target: {
+                type: "note",
+                id: noteId,
+                label: patch.title ?? note.title,
+              },
+              summary: renamed
+                ? `Renamed the note “${note.title}”`
+                : `Edited the note “${note.title}”`,
+              changes: renamed
+                ? [{ field: "title", from: note.title, to: patch.title }]
+                : undefined,
+            }
+          : undefined
+      )
       return ok
     },
     [actor, db.notes, findProject, write]
@@ -1685,13 +2718,24 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       if (!onTeam && note.authorId !== actor.person.id) {
         return deny("Only the team and its mentors can delete its notes.")
       }
-      write((draft) => {
-        draft.notes = draft.notes.filter((n) => n.id !== noteId)
-        draft.actionItems = draft.actionItems.filter((a) => a.noteId !== noteId)
-        draft.noteComments = draft.noteComments.filter(
-          (c) => c.noteId !== noteId
-        )
-      })
+      write(
+        (draft) => {
+          draft.notes = draft.notes.filter((n) => n.id !== noteId)
+          draft.actionItems = draft.actionItems.filter(
+            (a) => a.noteId !== noteId
+          )
+          draft.noteComments = draft.noteComments.filter(
+            (c) => c.noteId !== noteId
+          )
+        },
+        undefined,
+        {
+          action: "note.deleted",
+          projectId: note.projectId,
+          target: { type: "note", id: noteId, label: note.title },
+          summary: `Deleted the note “${note.title}”`,
+        }
+      )
       return ok
     },
     [actor, db.notes, findProject, write]
@@ -1726,31 +2770,64 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
         parentId: input.parentId,
         createdAt: new Date().toISOString(),
       }
-      write((draft) => {
-        draft.noteComments = [...draft.noteComments, comment]
-        if (input.content !== undefined) {
-          const n = draft.notes.find((x) => x.id === noteId)!
-          n.content = input.content
-          n.updatedAt = comment.createdAt
-        }
-        notify(
-          draft,
-          [...project.teamMemberIds, ...project.mentorIds].filter(
-            (p) => p !== actor.person.id
-          ),
-          {
-            kind: "review",
-            title: `${actor.person.name} commented on "${note.title}"`,
-            body: comment.body.slice(0, 80),
-            href: `/notes/${noteId}`,
-            createdAt: comment.createdAt,
+      write(
+        (draft) => {
+          draft.noteComments = [...draft.noteComments, comment]
+          if (input.content !== undefined) {
+            const n = draft.notes.find((x) => x.id === noteId)!
+            n.content = input.content
+            n.updatedAt = comment.createdAt
           }
-        )
-      })
+          notify(
+            draft,
+            [...project.teamMemberIds, ...project.mentorIds].filter(
+              (p) => p !== actor.person.id
+            ),
+            {
+              kind: "comment",
+              title: `${actor.person.name} commented on "${note.title}"`,
+              body: comment.body.slice(0, 80),
+              href: `/notes/${noteId}`,
+              createdAt: comment.createdAt,
+            }
+          )
+        },
+        undefined,
+        {
+          action: input.parentId ? "note.comment_replied" : "note.commented",
+          projectId: project.id,
+          target: { type: "note", id: noteId, label: note.title },
+          summary: `${input.parentId ? "Replied" : "Commented"} on the note “${note.title}”`,
+          changes: [
+            ...(input.quote ? [{ field: "on", to: clip(input.quote) }] : []),
+            { field: "comment", to: comment.body },
+          ],
+        }
+      )
       return ok
     },
     [actor, db.notes, findProject, write]
   )
+
+  const clearCommentsAndNotifications = React.useCallback((): ActionResult => {
+    const denied = requireCoordinator()
+    if (denied) return denied
+    // Through `write`, so the emptied lists are also taken off the server when
+    // there is one. The activity log is not touched: it is append-only, and it
+    // keeps its own record of what was said.
+    write(
+      (draft) => {
+        draft.comments = []
+        draft.notifications = []
+      },
+      {
+        action: "data.cleared",
+        subject: "comments and notifications",
+        detail: `${db.comments.length} comments, ${db.notifications.length} notifications`,
+      }
+    )
+    return ok
+  }, [db.comments.length, db.notifications.length, requireCoordinator, write])
 
   const resetAll = React.useCallback(() => {
     setDb(resetDatabase())
@@ -1779,6 +2856,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       setMilestoneStatus,
       toggleDeliverable,
       submitMilestone,
+      submitDocument,
       reviewSubmission,
       openForReview,
       setDueWeekOverride,
@@ -1786,6 +2864,13 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       confirmFeedbackAddressed,
       addArtefact,
       removeArtefact,
+      updateArtefact,
+      removeProgressEntry,
+      updateProgressEntry,
+      addComment,
+      editComment,
+      deleteComment,
+      submitWeeklyProgress,
       addMeeting,
       saveMinutes,
       confirmMinutes,
@@ -1818,6 +2903,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       updateNote,
       deleteNote,
       addNoteComment,
+      clearCommentsAndNotifications,
       resetAll,
       setDemoData,
     }),
@@ -1836,6 +2922,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       setMilestoneStatus,
       toggleDeliverable,
       submitMilestone,
+      submitDocument,
       reviewSubmission,
       openForReview,
       setDueWeekOverride,
@@ -1843,6 +2930,13 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       confirmFeedbackAddressed,
       addArtefact,
       removeArtefact,
+      updateArtefact,
+      removeProgressEntry,
+      updateProgressEntry,
+      addComment,
+      editComment,
+      deleteComment,
+      submitWeeklyProgress,
       addMeeting,
       saveMinutes,
       confirmMinutes,
@@ -1871,6 +2965,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       addDomain,
       saveMilestoneTemplateItem,
       deleteMilestoneTemplateItem,
+      clearCommentsAndNotifications,
       resetAll,
       setDemoData,
       createNote,

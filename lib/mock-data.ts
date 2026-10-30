@@ -10,6 +10,13 @@ import type { Batch, Domain, Person, Project, Team } from "@/lib/types"
 // team preferred, which isn't tracked here.
 export const seedPeople: Person[] = [
   {
+    id: "p-test-coordinator",
+    name: "Test Coordinator",
+    email: "test.coordinator@iiit.ac.in",
+    roles: ["coordinator"],
+    affiliation: "Test account",
+  },
+  {
     id: "p-mentor-prakash",
     reportsTo: "p-mentor-raman",
     name: "Prakash Yalla",

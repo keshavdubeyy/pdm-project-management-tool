@@ -1,5 +1,10 @@
 "use client"
 
+import {
+  hasLegacyDeliverables,
+  migrateTicks,
+  milestoneTemplateFor,
+} from "@/lib/milestone-template"
 import { buildSeedDatabase, DB_VERSION } from "@/lib/seed"
 import type { Database } from "@/lib/types"
 
@@ -47,10 +52,100 @@ export function withSeedEmails(db: Database): Database {
   return changed ? { ...db, people } : db
 }
 
-function syncEmails(db: Database): Database {
-  const next = withSeedEmails(db)
+/** The programme calendar is data a coordinator can edit, but the sheet is the
+ * source of truth for the weeks, the phases and the activities beneath them.
+ * A checkpoint saved by an earlier version is brought in line with it, matched
+ * by id, so the statuses, submissions and reviews that point at it are
+ * untouched.
+ *
+ * A checkpoint that still lists the earlier deliverable names is moved onto
+ * the sheet's sub-activities, and every team's ticks under the old names are
+ * rewritten to match, so nobody loses progress. Once moved, deliverables are
+ * left alone so a coordinator's later edits stick. Returns the same object
+ * when nothing differs, so it is safe to run on every load. */
+export function withSeedTemplate(db: Database): Database {
+  const wanted = new Map(
+    db.batches
+      .flatMap((b) => milestoneTemplateFor(b.id))
+      .map((item) => [item.id, item])
+  )
+  let changed = false
+  const milestoneTemplate = db.milestoneTemplate.map((item) => {
+    const seed = wanted.get(item.id)
+    if (!seed) return item
+    const legacy = hasLegacyDeliverables(item.deliverables)
+    const same =
+      !legacy &&
+      item.dueWeek === seed.dueWeek &&
+      item.phase === seed.phase &&
+      item.semester === seed.semester &&
+      Boolean(item.isGate) === Boolean(seed.isGate) &&
+      JSON.stringify(item.activities) === JSON.stringify(seed.activities)
+    if (same) return item
+    changed = true
+    return {
+      ...item,
+      dueWeek: seed.dueWeek,
+      phase: seed.phase,
+      semester: seed.semester,
+      isGate: seed.isGate,
+      activities: seed.activities,
+      deliverables: legacy ? seed.deliverables : item.deliverables,
+    }
+  })
+
+  const seeded = new Set(wanted.keys())
+  let ticksChanged = false
+  const milestones = db.milestones.map((m) => {
+    if (!seeded.has(m.templateItemId)) return m
+    const next = migrateTicks(m.completedDeliverables)
+    if (
+      next.length === m.completedDeliverables.length &&
+      next.every((t, i) => t === m.completedDeliverables[i])
+    )
+      return m
+    ticksChanged = true
+    return { ...m, completedDeliverables: next }
+  })
+
+  if (!changed && !ticksChanged) return db
+  return {
+    ...db,
+    milestoneTemplate: changed
+      ? [...milestoneTemplate].sort((a, b) => a.dueWeek - b.dueWeek)
+      : db.milestoneTemplate,
+    milestones: ticksChanged ? milestones : db.milestones,
+  }
+}
+
+function syncSeedData(db: Database): Database {
+  const next = withSeedTemplate(withSeedEmails(db))
   if (next !== db) saveDatabase(next, { broadcast: false })
   return next
+}
+
+/** A one-time clean-up of the comments and notifications that testing left in a
+ * browser. The first time this version loads in a browser it empties both lists,
+ * and the leftover test entries of the activity log kept before the server had
+ * one, then notes that it has done so and never does it again. Both lists are
+ * the server's now, so this only removes what that browser was holding.
+ *
+ * Remove this, and PURGED_KEY, once every browser in use has loaded it. */
+const PURGED_KEY = "pdm.purged.comments-notifications.v1"
+
+function purgeTestData(db: Database): Database {
+  try {
+    if (window.localStorage.getItem(PURGED_KEY)) return db
+    window.localStorage.setItem(PURGED_KEY, new Date().toISOString())
+    window.localStorage.removeItem("pdm.activity.v1")
+  } catch {
+    return db
+  }
+  if (db.comments.length === 0 && db.notifications.length === 0) return db
+  const cleared = { ...db, comments: [], notifications: [] }
+  // Saved now: nothing else will write it back out before the next change.
+  saveDatabase(cleared, { broadcast: false })
+  return cleared
 }
 
 export function loadDatabase(): Database {
@@ -71,7 +166,14 @@ export function loadDatabase(): Database {
       saveDatabase(fresh, { broadcast: false })
       return fresh
     }
-    return syncEmails(parsed)
+    // Added after the first release; a store saved earlier has no such list.
+    return syncSeedData(
+      purgeTestData({
+        ...parsed,
+        weeklyProgress: parsed.weeklyProgress ?? [],
+        comments: parsed.comments ?? [],
+      })
+    )
   } catch {
     return buildSeedDatabase()
   }

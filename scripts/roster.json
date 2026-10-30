@@ -351,5 +351,13 @@
     "roles": [
       "student"
     ]
+  },
+  {
+    "personId": "p-test-coordinator",
+    "name": "Test Coordinator",
+    "email": "test.coordinator@iiit.ac.in",
+    "roles": [
+      "coordinator"
+    ]
   }
 ]

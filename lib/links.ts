@@ -235,6 +235,15 @@ export function embedUrl(rawUrl: string): string | null {
   }
 }
 
+/** What was typed, as an address a browser will open. "google.com" has no
+ * scheme, so as an href it would be read as a page inside this app; it gets
+ * https:// in front. Anything already http or https is left as it is. */
+export function normalizeUrl(raw: string): string {
+  const url = raw.trim()
+  if (/^https?:\/\//i.test(url)) return url
+  return `https://${url.replace(/^\/+/, "")}`
+}
+
 export function isValidUrl(raw: string): boolean {
   try {
     const u = new URL(raw.trim())

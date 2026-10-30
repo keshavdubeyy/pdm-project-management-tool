@@ -1,6 +1,6 @@
 "use client"
 
-import type { Database } from "@/lib/types"
+import type { ActivityEvent, Database } from "@/lib/types"
 import { createClient } from "@/utils/supabase/client"
 
 /** The part of the database that lives on the server.
@@ -21,6 +21,16 @@ export const SHARED_TABLES = {
   notes: "notes",
   actionItems: "action_items",
   artefacts: "artefacts",
+  weeklyProgress: "weekly_progress",
+  // What a team and its mentor both act on: where a checkpoint stands, what
+  // was handed in, what was decided, and what was said about it.
+  milestones: "milestones",
+  submissions: "submissions",
+  reviews: "reviews",
+  comments: "comments",
+  // Notices for people. One person's action has to reach another person's
+  // screen, so these cannot live in one browser.
+  notifications: "notifications",
 } as const
 
 export type SharedKey = keyof typeof SHARED_TABLES
@@ -64,6 +74,41 @@ export async function hasServerSession(): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+export const PROGRESS_BUCKET = "progress-files"
+/** Matches the bucket's own limit in supabase/schema.sql. */
+export const MAX_PROGRESS_FILE_BYTES = 25 * 1024 * 1024
+
+/** Puts one file in the private bucket and returns where it landed, or the
+ * reason it could not. The path is unique per upload, so two files with the
+ * same name never replace each other. */
+export async function uploadProgressFile(
+  projectId: string,
+  week: number,
+  file: File
+): Promise<{ ok: true; path: string } | { ok: false; reason: string }> {
+  const sb = supabase()
+  if (!sb || !(await hasServerSession()))
+    return { ok: false, reason: "File storage is not available right now." }
+  const safe = file.name.replace(/[^\w.\- ]+/g, "_")
+  const path = `${projectId}/week-${week}/${Date.now()}-${safe}`
+  const { error } = await sb.storage
+    .from(PROGRESS_BUCKET)
+    .upload(path, file, { contentType: file.type || undefined })
+  if (error) return { ok: false, reason: error.message }
+  return { ok: true, path }
+}
+
+/** A short-lived link to a stored file. The bucket is private, so a file can
+ * only be opened through one of these. */
+export async function progressFileUrl(path: string): Promise<string | null> {
+  const sb = supabase()
+  if (!sb) return null
+  const { data, error } = await sb.storage
+    .from(PROGRESS_BUCKET)
+    .createSignedUrl(path, 300)
+  return error ? null : data.signedUrl
 }
 
 /** Everything on the server, or null when it cannot be reached or nobody is
@@ -124,11 +169,14 @@ export function pushDiff(prev: Database, next: Database) {
   }
 }
 
-/** The roster is the only thing a browser seeds the server with, and only
- * while the server has none of it. Notes, action items and progress links are
- * the server's alone: an empty table there means they were deleted, and a
- * browser's old copy must never bring them back. */
-const MIGRATED: SharedKey[] = ["people", "projects"]
+/** What a browser may seed the server with, and only while the server has none
+ * of it: the roster, and the calendar's checkpoints, which every browser builds
+ * the same way from the programme sheet. Everything people make after that is
+ * the server's alone: an empty table there means something was deleted, and a
+ * browser's old copy must never bring it back. That includes what was handed in,
+ * what was decided and what was said (submissions, reviews, comments), and
+ * everyone's notifications. */
+const MIGRATED: SharedKey[] = ["people", "projects", "milestones"]
 
 export function migrateLocal(
   local: SharedData,
@@ -217,4 +265,79 @@ export async function uploadAvatar(personId: string, file: File) {
     .upload(path, file, { contentType: file.type, cacheControl: "31536000" })
   if (error) throw new Error("The photo could not be uploaded. Try again.")
   return sb.storage.from("avatars").getPublicUrl(path).data.publicUrl
+}
+
+/* -------------------------------------------------------- activity log */
+
+const LOG_TABLE = "activity_log"
+const LOCAL_LOG_KEY = "pdm.activity.v1"
+/** Only used when there is no server: a browser's own copy, so the page still
+ * works in development. It is not tamper-proof and not shared. */
+const LOCAL_LOG_LIMIT = 5000
+
+function readLocalLog(): ActivityEvent[] {
+  try {
+    return JSON.parse(window.localStorage.getItem(LOCAL_LOG_KEY) ?? "[]")
+  } catch {
+    return []
+  }
+}
+
+/** Writes entries to the log. Insert only: a row that already exists is left
+ * as it is, so nothing here can change an entry, and nothing deletes one. */
+export function appendActivity(events: ActivityEvent[]) {
+  if (events.length === 0) return
+  const sb = supabase()
+  if (!sb) {
+    try {
+      const kept = [...events, ...readLocalLog()].slice(0, LOCAL_LOG_LIMIT)
+      window.localStorage.setItem(LOCAL_LOG_KEY, JSON.stringify(kept))
+    } catch {}
+    return
+  }
+  sb.from(LOG_TABLE)
+    .upsert(
+      events.map((e) => ({
+        id: e.id,
+        project_id: e.projectId,
+        data: e,
+      })),
+      { onConflict: "id", ignoreDuplicates: true }
+    )
+    .then(({ error }) => {
+      if (error) console.warn("Could not write to the activity log", error)
+    })
+}
+
+/** One team's log, newest first, a page at a time. */
+export async function fetchActivity(
+  projectId: string,
+  opts: { before?: string; limit?: number } = {}
+): Promise<{ events: ActivityEvent[]; failed: boolean }> {
+  const limit = opts.limit ?? 50
+  const sb = supabase()
+  if (!sb) {
+    const mine = readLocalLog()
+      .filter((e) => e.projectId === projectId)
+      .filter((e) => !opts.before || e.at < opts.before)
+      .sort((a, b) => b.at.localeCompare(a.at))
+    return { events: mine.slice(0, limit), failed: false }
+  }
+  if (!(await hasServerSession())) return { events: [], failed: true }
+  let query = sb
+    .from(LOG_TABLE)
+    .select("data")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+  if (opts.before) query = query.lt("data->>at", opts.before)
+  const { data, error } = await query
+  if (error) {
+    console.warn("Could not read the activity log", error)
+    return { events: [], failed: true }
+  }
+  return {
+    events: (data ?? []).map((row) => row.data as ActivityEvent),
+    failed: false,
+  }
 }

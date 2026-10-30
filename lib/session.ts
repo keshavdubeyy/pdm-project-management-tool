@@ -17,6 +17,13 @@ const SESSION_KEY = "pdm.session"
 const LAST_SESSION_KEY = "pdm.lastSession"
 
 export function readSession(): Session | null {
+  const found = readStoredSession()
+  // preview: a testing session left in a browser means nothing in production.
+  if (found?.preview && process.env.NODE_ENV === "production") return null
+  return found
+}
+
+function readStoredSession(): Session | null {
   if (typeof window === "undefined") return null
   try {
     const raw = window.sessionStorage.getItem(SESSION_KEY)
