@@ -341,6 +341,7 @@ const TableRow = <T extends object>({
           "relative outline-focus-ring transition-colors after:pointer-events-none hover:bg-secondary focus-visible:outline-2 focus-visible:-outline-offset-2",
           size === "sm" ? "h-14" : "h-18",
           highlightSelectedRow && "selected:bg-secondary",
+          (props.href || props.onAction) && "cursor-pointer",
 
           // Row border—using an "after" pseudo-element to avoid the border taking up space.
           "[&>td]:after:absolute [&>td]:after:inset-x-0 [&>td]:after:bottom-0 [&>td]:after:h-px [&>td]:after:w-full [&>td]:after:bg-border-secondary last:[&>td]:after:hidden [&>td]:focus-visible:after:opacity-0 focus-visible:[&>td]:after:opacity-0",

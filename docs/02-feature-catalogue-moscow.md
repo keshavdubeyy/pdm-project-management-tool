@@ -1,4 +1,4 @@
-# PDM Project Space — Feature Catalogue & MoSCoW Prioritisation
+# PDM ProjectGarage — Feature Catalogue & MoSCoW Prioritisation
 
 **Project:** Digitization of the PDM Final Project Lifecycle
 **Companion to:** [`01-workflow-map.md`](./01-workflow-map.md) — read that first; every feature here traces to a friction point (`F#`) defined there.

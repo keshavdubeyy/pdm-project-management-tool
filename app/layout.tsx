@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { AppFrame } from "@/components/shell/app-frame"
 import { RouterProvider } from "@/components/router-provider"
+import { ScrollbarReveal } from "@/components/scrollbar-reveal"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/untitled/application/notifications/toast"
 import { ProjectsProvider } from "@/lib/store"
@@ -13,7 +14,7 @@ import { cn } from "@/lib/utils"
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export const metadata: Metadata = {
-  title: "PDM Project Space",
+  title: "PDM ProjectGarage",
   description:
     "Milestones, reviews, meetings and announcements for the PDM final project at IIIT Hyderabad.",
 }
@@ -37,6 +38,7 @@ export default function RootLayout({
             </RouterProvider>
           </ProjectsProvider>
           <Toaster />
+          <ScrollbarReveal />
         </ThemeProvider>
       </body>
     </html>

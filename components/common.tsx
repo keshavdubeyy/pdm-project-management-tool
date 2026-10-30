@@ -7,13 +7,14 @@ import {
   Tooltip,
   TooltipTrigger,
 } from "@/components/untitled/base/tooltip/tooltip"
-import { describeDue } from "@/lib/dates"
+import { describeDue, formatDate, PROJECT_TIMEZONE } from "@/lib/dates"
 import {
   hasProjectTitle,
   initialsOf,
   PROJECT_TITLE_PLACEHOLDER,
 } from "@/lib/selectors"
-import type { Person } from "@/lib/types"
+import { statusMeta } from "@/lib/status"
+import type { MilestoneStatus, Person } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 /** Any icon from `@untitledui/icons`, or anything else that takes a class. */
@@ -255,10 +256,18 @@ export function DueBadge({
   dueDate,
   className,
   hideIcon,
+  small,
+  plain,
 }: {
   dueDate: string
   className?: string
   hideIcon?: boolean
+  /** One size down from the page's text (14px, where it would be 16px), for a
+   * dense list. */
+  small?: boolean
+  /** No tooltip, and no button of its own: for use inside something that is
+   * already a button, where a nested one is invalid HTML. */
+  plain?: boolean
 }) {
   const info = describeDue(dueDate)
   const tone = {
@@ -267,6 +276,22 @@ export function DueBadge({
     soon: "text-status-returned-fg",
     calm: "text-muted-foreground",
   }[info.tone]
+
+  if (plain) {
+    return (
+      <span
+        title={info.full}
+        className={cn(
+          "inline-flex items-center gap-1 text-meta font-medium whitespace-nowrap",
+          tone,
+          className
+        )}
+      >
+        {!hideIcon && <span aria-hidden>·</span>}
+        {small ? <span className="text-meta">{info.label}</span> : info.label}
+      </span>
+    )
+  }
 
   return (
     <Tooltip title={<>{info.full}</>}>
@@ -278,9 +303,67 @@ export function DueBadge({
         )}
       >
         {!hideIcon && <span aria-hidden>·</span>}
-        {info.label}
+        {/* The size goes on an inner element on purpose. The trigger merges its
+          classes with a rule set that does not know the app's size classes and
+          would drop one beside the colour. */}
+        {small ? <span className="text-meta">{info.label}</span> : info.label}
       </TooltipTrigger>
     </Tooltip>
+  )
+}
+
+/** Where a checkpoint stands, as plain coloured text in the same style as
+ * DueBadge, so "Overdue by 60 days" and "Submitted" read as one family: green
+ * once the work is in or accepted, amber when it comes back. */
+export function StatusText({
+  status,
+  submittedAt,
+  small,
+  className,
+}: {
+  status: MilestoneStatus
+  /** When it was handed in. Shown with "Submitted", so the word comes with the
+   * day, as "Overdue by 60 days" comes with its count. */
+  submittedAt?: string
+  /** The size DueBadge uses with `small`. */
+  small?: boolean
+  className?: string
+}) {
+  const tone: Record<MilestoneStatus, string> = {
+    submitted: "text-status-accepted-fg",
+    accepted: "text-status-accepted-fg",
+    under_review: "text-status-under_review-fg",
+    returned: "text-status-returned-fg",
+    overdue: "text-status-overdue-fg",
+    in_progress: "text-muted-foreground",
+    not_started: "text-muted-foreground",
+  }
+  // There is no separate "in review": from the team's side, and the faculty's,
+  // work that is in and not yet decided is simply Submitted.
+  const shown: MilestoneStatus =
+    status === "under_review" ? "submitted" : status
+  const base = statusMeta(shown).shortLabel
+  // The day in the programme's own calendar, so a late-night upload is not
+  // dated by the server's clock.
+  const label =
+    shown === "submitted" && submittedAt
+      ? `${base} ${formatDate(
+          new Date(submittedAt).toLocaleDateString("en-CA", {
+            timeZone: PROJECT_TIMEZONE,
+          })
+        )}`
+      : base
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center font-medium whitespace-nowrap",
+        tone[shown],
+        className
+      )}
+    >
+      {/* Size on an inner element, as in DueBadge. */}
+      {small ? <span className="text-meta">{label}</span> : label}
+    </span>
   )
 }
 
@@ -291,20 +374,39 @@ export function MetricTile({
   value,
   hint,
   tone = "default",
+  dashboard,
   ref: reference,
 }: {
   label: string
   value: string
   hint?: string
   tone?: "default" | "good" | "warn"
+  /** The dashboard style: the label as a normal sentence, and the same outline
+   * as the input fields and the lists beside it. The Measures page keeps its
+   * capitals and its own border. */
+  dashboard?: boolean
   /** The measure's number in the plan, e.g. "K1". It sits in the header row
    * rather than floating over it, so a long label cannot run underneath it. */
   ref?: string
 }) {
   return (
-    <div className="flex h-full flex-col rounded-xl border border-border bg-card p-4">
+    <div
+      className={cn(
+        "flex h-full flex-col p-4",
+        dashboard
+          ? "rounded-lg bg-primary shadow-xs ring-1 ring-primary ring-inset"
+          : "rounded-xl border border-border bg-card"
+      )}
+    >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-th text-muted-foreground uppercase">{label}</p>
+        <p
+          className={cn(
+            "text-muted-foreground",
+            dashboard ? "text-meta font-medium" : "text-th uppercase"
+          )}
+        >
+          {label}
+        </p>
         {reference && (
           <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-caption font-medium text-muted-foreground">
             {reference}

@@ -33,11 +33,11 @@ BLUE_ROW = FILL_BLUE
 
 def build(page_map, out_path):
     doc = new_document()
-    footer_page_numbers(doc, "PDM Project Space  |  Feature Plan and Priorities")
+    footer_page_numbers(doc, "PDM ProjectGarage  |  Feature Plan and Priorities")
 
     cover(
         doc,
-        "PDM Project Space",
+        "PDM ProjectGarage",
         "Feature plan, priorities and the build order for the year",
         [
             ("Programme", "M.Tech Product Design and Management, IIIT Hyderabad"),

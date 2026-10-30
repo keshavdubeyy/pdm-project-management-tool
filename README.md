@@ -1,4 +1,4 @@
-# PDM Project Space
+# PDM ProjectGarage
 
 Milestones, reviews, meetings and announcements for the year-long final project on the
 M.Tech in Product Design and Management at IIIT Hyderabad.

@@ -12,7 +12,7 @@
 @custom-variant focus-input-within (&:has(input:focus));
 
 /* ---------------------------------------------------------------------------
-   PDM Project Space — on Untitled UI
+   PDM ProjectGarage — on Untitled UI
 
    The tokens live in `styles/theme.css` and are Untitled UI's own. This file
    does three things on top of them:
@@ -282,6 +282,38 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+/* A scrollbar that stays out of the way: thin, light, and not drawn at all until
+ * the area is being scrolled (ScrollbarReveal sets data-scrolling, and takes it
+ * off again a moment after). Browsers that understand the standard scrollbar
+ * properties use them; the rest, older Safari, get the -webkit rules. The two
+ * are kept apart because where the standard properties are understood they
+ * switch the -webkit ones off. */
+@utility scrollbar-subtle {
+  @supports (scrollbar-color: auto) {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    &[data-scrolling="true"] {
+      scrollbar-color: color-mix(in srgb, var(--muted-foreground) 40%, transparent)
+        transparent;
+    }
+  }
+  @supports not (scrollbar-color: auto) {
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background-color: transparent;
+      border-radius: 9999px;
+    }
+    &[data-scrolling="true"]::-webkit-scrollbar-thumb {
+      background-color: color-mix(in srgb, var(--muted-foreground) 40%, transparent);
+    }
+  }
+}
 @utility transition-inherit-all {
   transition-property: inherit;
   transition-duration: inherit;
@@ -309,6 +341,27 @@
   }
   [id] {
     scroll-margin-top: 5rem;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  [role="link"],
+  a[href],
+  summary,
+  select:not(:disabled),
+  label[for],
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="file"]:not(:disabled),
+  [role="row"][data-href],
+  tr[data-href] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
   }
 }
 

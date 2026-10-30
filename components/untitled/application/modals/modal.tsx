@@ -58,7 +58,7 @@ export const Dialog = (props: AriaDialogProps) => (
   <AriaDialog
     {...props}
     className={cx(
-      "relative max-h-[inherit] w-full overflow-y-auto outline-hidden",
+      "scrollbar-subtle relative max-h-[inherit] w-full overflow-y-auto outline-hidden",
       props.className
     )}
   />

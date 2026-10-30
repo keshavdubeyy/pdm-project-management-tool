@@ -69,7 +69,7 @@ export const Dialog = (props: DialogProps) => (
     aria-label="Slideout menu"
     {...props}
     className={cx(
-      "relative flex size-full flex-col items-start gap-6 overflow-y-auto bg-primary ring-1 ring-secondary_alt outline-hidden",
+      "scrollbar-subtle relative flex size-full flex-col items-start gap-6 overflow-y-auto bg-primary ring-1 ring-secondary_alt outline-hidden",
       props.className
     )}
   />
@@ -124,7 +124,7 @@ const Content = ({ role = "main", ...props }: ComponentPropsWithRef<"div">) => {
       role={role}
       {...props}
       className={cx(
-        "flex size-full flex-col gap-6 overflow-y-auto overscroll-auto px-4 md:px-6",
+        "scrollbar-subtle flex size-full flex-col gap-6 overflow-y-auto overscroll-auto px-4 md:px-6",
         props.className
       )}
     />
