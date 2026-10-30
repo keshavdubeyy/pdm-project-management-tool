@@ -3,9 +3,11 @@
 import * as React from "react"
 import { usePathname, useRouter } from "next/navigation"
 
+import { PreviewSwitcher } from "@/components/dev/preview-switcher"
 import { PasswordSetupPrompt } from "@/components/password-setup-prompt"
 import { ProjectTitlePrompt } from "@/components/project-title-prompt"
 import { AppTopbar } from "@/components/shell/app-topbar"
+import { LiveNotifications } from "@/components/shell/live-notifications"
 import { hasServerSession } from "@/lib/remote"
 import { useProjectsStore } from "@/lib/store"
 
@@ -29,7 +31,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
   // or one that expired) is signed out, so it is never shown data it cannot
   // save.
   React.useEffect(() => {
-    if (!ready || !session) return
+    if (!ready || !session || session.preview) return // preview
     let cancelled = false
     hasServerSession().then((ok) => {
       if (!ok && !cancelled) signOut()
@@ -51,6 +53,8 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
       <AppTopbar />
+      <LiveNotifications />
+      {session.preview && <PreviewSwitcher floating />}
       <PasswordSetupPrompt />
       <ProjectTitlePrompt />
       <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">

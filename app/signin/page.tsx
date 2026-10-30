@@ -1,5 +1,6 @@
 "use client"
 
+import { PreviewSwitcher } from "@/components/dev/preview-switcher"
 import * as React from "react"
 import { useRouter } from "next/navigation"
 
@@ -58,7 +59,7 @@ export default function SignInPage() {
           <h1 className="mt-2 flex items-center justify-center gap-3 text-page text-foreground">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-color.svg" alt="PDM" className="h-8 w-auto" />
-            Project Space
+            ProjectGarage
           </h1>
           <p className="mt-2 text-body text-muted-foreground">
             Sign in to continue with your final project.
@@ -101,6 +102,8 @@ export default function SignInPage() {
             Sign in
           </Button>
         </form>
+
+        <PreviewSwitcher />
 
         <p className="mt-6 text-center text-caption text-muted-foreground">
           Forgot your password?{" "}
