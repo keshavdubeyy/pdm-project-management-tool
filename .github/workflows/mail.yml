@@ -33,6 +33,15 @@ jobs:
             echo "MAIL_CRON_URL or MAIL_CRON_SECRET is not set."
             exit 1
           fi
-          curl --fail-with-body --silent --show-error \
-            --retry 2 --retry-delay 10 --max-time 90 \
-            -H "Authorization: Bearer $SECRET" "$URL"
+          # The response names recipients, and this repository is public, so
+          # its logs are too: print counts only. The full detail is in the
+          # function logs on Vercel, which are private.
+          code=$(curl --silent --show-error --retry 2 --retry-delay 10 \
+            --max-time 90 -o response.json -w "%{http_code}" \
+            -H "Authorization: Bearer $SECRET" "$URL")
+          echo "HTTP $code"
+          if [ "$code" != "200" ]; then
+            jq -r '.error // "failed"' response.json 2>/dev/null || true
+            exit 1
+          fi
+          jq '{mode, planned: ((.planned // []) | length), skipped: ((.skipped // []) | length), failed: ((.failed // []) | length)}' response.json

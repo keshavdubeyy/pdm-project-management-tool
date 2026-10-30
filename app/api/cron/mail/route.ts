@@ -32,7 +32,10 @@ async function handle(request: Request) {
     return Response.json({ error: "Gmail is not configured." }, { status: 500 })
 
   try {
-    return Response.json(await runMail({ mode: mode as MailMode, startDate }))
+    const summary = await runMail({ mode: mode as MailMode, startDate })
+    // Vercel's function logs are private; the full detail goes there.
+    console.log("mail run", JSON.stringify(summary))
+    return Response.json(summary)
   } catch (error) {
     return Response.json(
       { error: error instanceof Error ? error.message : "Mail run failed." },
