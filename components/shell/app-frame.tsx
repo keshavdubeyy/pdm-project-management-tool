@@ -11,7 +11,7 @@ import { LiveNotifications } from "@/components/shell/live-notifications"
 import { hasServerSession } from "@/lib/remote"
 import { useProjectsStore } from "@/lib/store"
 
-const PUBLIC_ROUTES = ["/signin", "/design-system", "/updates"]
+const PUBLIC_ROUTES = ["/signin", "/get-password", "/design-system", "/updates"]
 
 /** The frame around every page, and the gate in front of it.
  *
@@ -48,7 +48,10 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
     return <BootSkeleton />
   }
 
-  if (pathname.startsWith("/signin")) return <>{children}</>
+  // Sign-in and the temporary-password page are shared by link, so they never
+  // carry the top bar, even in a tab that is already signed in.
+  if (pathname.startsWith("/signin") || pathname.startsWith("/get-password"))
+    return <>{children}</>
 
   return (
     <div className="flex min-h-svh flex-col">

@@ -2,6 +2,7 @@
 
 import { PreviewSwitcher } from "@/components/dev/preview-switcher"
 import * as React from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/untitled/base/buttons/button"
@@ -106,6 +107,16 @@ export default function SignInPage() {
         <PreviewSwitcher />
 
         <p className="mt-6 text-center text-caption text-muted-foreground">
+          First time here?{" "}
+          <Link
+            href="/get-password"
+            className="font-medium text-brand-secondary underline-offset-2 hover:underline"
+          >
+            Get your temporary password
+          </Link>
+        </p>
+
+        <p className="mt-3 text-center text-caption text-muted-foreground">
           Forgot your password?{" "}
           <a
             href={RESET_MAILTO}
