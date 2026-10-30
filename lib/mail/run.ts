@@ -82,8 +82,26 @@ export async function runMail(options: {
   }
   const alreadySent = new Set((logged ?? []).map((r) => r.id as string))
 
-  const everyone = db.people.filter(
-    (p) => p.email && !/test/i.test(p.name)
+  // Only people who have chosen their own password are mailed: until then they
+  // are not really using the tool, and a mail would point at a door they
+  // cannot open yet.
+  const owned = new Set<string>()
+  for (let page = 1; ; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage: 200,
+    })
+    if (error) throw new Error(`Could not read accounts: ${error.message}`)
+    data.users.forEach((u) => {
+      if (u.user_metadata?.password_set === true && u.email)
+        owned.add(u.email.toLowerCase())
+    })
+    if (data.users.length < 200) break
+  }
+  const candidates = db.people.filter((p) => p.email && !/test/i.test(p.name))
+  const everyone = candidates.filter((p) => owned.has(p.email.toLowerCase()))
+  summary.skipped.push(
+    `${candidates.length - everyone.length} of ${candidates.length} people not mailed: own password not set yet`
   )
   const queue: { mail: Mail; logId: string; why: string; notificationIds?: string[] }[] = []
 
