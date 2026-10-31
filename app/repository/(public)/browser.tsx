@@ -26,7 +26,20 @@ export function matches(p: PublicRepoProject, q: string) {
     .includes(q)
 }
 
-export function ProjectGrid({ projects }: { projects: PublicRepoProject[] }) {
+/** What the coordinator's view adds to each project card: its own badge (say,
+ * "Hidden") and buttons. The public pages pass nothing. */
+export type ProjectExtras = {
+  badge?: (p: PublicRepoProject) => React.ReactNode
+  actions?: (p: PublicRepoProject) => React.ReactNode
+}
+
+export function ProjectGrid({
+  projects,
+  extras,
+}: {
+  projects: PublicRepoProject[]
+  extras?: ProjectExtras
+}) {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
       {projects.map((p) => (
@@ -35,12 +48,18 @@ export function ProjectGrid({ projects }: { projects: PublicRepoProject[] }) {
           href={`/repository/${p.id}`}
           icon={<GlassSheet />}
           badge={
-            p.domain && (
-              <Badge size="sm" color="gray">
-                {p.domain}
-              </Badge>
+            (extras?.badge?.(p) || p.domain) && (
+              <span className="flex gap-1">
+                {extras?.badge?.(p)}
+                {p.domain && (
+                  <Badge size="sm" color="gray">
+                    {p.domain}
+                  </Badge>
+                )}
+              </span>
             )
           }
+          actions={extras?.actions?.(p)}
           title={p.title}
           meta={p.team.map((m) => m.name).join(", ")}
           align="left"
@@ -55,8 +74,10 @@ export function ProjectGrid({ projects }: { projects: PublicRepoProject[] }) {
  * send once. */
 export function RepositoryBrowser({
   projects,
+  extras,
 }: {
   projects: PublicRepoProject[]
+  extras?: ProjectExtras
 }) {
   const [query, setQuery] = React.useState("")
   const [domain, setDomain] = React.useState("")
@@ -111,7 +132,7 @@ export function RepositoryBrowser({
           Nothing matches. Try a different search.
         </p>
       ) : (
-        <ProjectGrid projects={shown} />
+        <ProjectGrid projects={shown} extras={extras} />
       )}
     </>
   )

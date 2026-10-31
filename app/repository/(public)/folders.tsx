@@ -7,13 +7,21 @@ import { BATCHES, type PublicRepoProject } from "@/lib/repository"
 
 import { SearchLg } from "@untitledui/icons"
 
-import { ProjectGrid, matches } from "./browser"
+import { ProjectGrid, matches, type ProjectExtras } from "./browser"
 import { GlassFolder, Tile } from "./tile"
 
 /** The top of the repository: one folder per batch, newest first. The search
  * narrows the folders by batch name or year, and also lists any project that
  * matches across every batch, so a visitor need not know which batch to open. */
-export function BatchFolders({ projects }: { projects: PublicRepoProject[] }) {
+export function BatchFolders({
+  projects,
+  batchHref = (year) => `/repository/batch/${year}`,
+  extras,
+}: {
+  projects: PublicRepoProject[]
+  batchHref?: (graduationYear: number) => string
+  extras?: ProjectExtras
+}) {
   const [query, setQuery] = React.useState("")
   const q = query.trim().toLowerCase()
 
@@ -47,7 +55,7 @@ export function BatchFolders({ projects }: { projects: PublicRepoProject[] }) {
           {shownFolders.map((b) => (
             <Tile
               key={b.graduationYear}
-              href={`/repository/batch/${b.graduationYear}`}
+              href={batchHref(b.graduationYear)}
               icon={<GlassFolder empty={b.count === 0} />}
               title={`Batch ${b.label}`}
               meta={`${b.count} ${b.count === 1 ? "project" : "projects"}`}
@@ -68,7 +76,7 @@ export function BatchFolders({ projects }: { projects: PublicRepoProject[] }) {
               Nothing matches. Try a different search.
             </p>
           ) : (
-            <ProjectGrid projects={shownProjects} />
+            <ProjectGrid projects={shownProjects} extras={extras} />
           )}
         </>
       )}

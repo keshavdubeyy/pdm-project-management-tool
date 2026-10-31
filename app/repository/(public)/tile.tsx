@@ -9,6 +9,7 @@ export function Tile({
   title,
   meta,
   badge,
+  actions,
   align = "center",
 }: {
   href: string
@@ -16,9 +17,11 @@ export function Tile({
   title: string
   meta?: React.ReactNode
   badge?: React.ReactNode
+  /** Buttons over the panel's top-right corner, outside the link. */
+  actions?: React.ReactNode
   align?: "center" | "left"
 }) {
-  return (
+  const card = (
     <Link
       href={href}
       className="group flex flex-col gap-3 rounded-2xl border border-border p-2 pb-4 transition-[background-color,border-color] duration-fast-02 ease-standard hover:border-foreground/25 hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/40"
@@ -38,6 +41,13 @@ export function Tile({
         )}
       </span>
     </Link>
+  )
+  if (!actions) return card
+  return (
+    <div className="relative">
+      {card}
+      <div className="absolute top-4 right-4 z-10 flex gap-1">{actions}</div>
+    </div>
   )
 }
 
@@ -75,3 +85,27 @@ export function GlassSheet() {
   )
 }
 
+
+/** A row of empty tiles in the same shape, shown while the rows load. */
+export function TileSkeletons({
+  count,
+  className,
+}: {
+  count: number
+  className: string
+}) {
+  return (
+    <div aria-hidden className={className}>
+      {Array.from({ length: count }, (_, i) => (
+        <div
+          key={i}
+          className="flex flex-col gap-3 rounded-2xl border border-border p-2 pb-4"
+        >
+          <span className="aspect-[16/10] animate-pulse rounded-xl bg-secondary" />
+          <span className="mx-2 h-4 animate-pulse rounded-md bg-secondary" />
+          <span className="mx-8 h-3 animate-pulse rounded-md bg-secondary" />
+        </div>
+      ))}
+    </div>
+  )
+}

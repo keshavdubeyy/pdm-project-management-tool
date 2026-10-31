@@ -8,7 +8,7 @@ import {
 } from "@/lib/repository"
 
 /** The coordinator's side of the repository: see every submission, publish or
- * reject one, and download the lot as a CSV.
+ * reject one, and download them as a CSV, all at once or one batch at a time.
  *
  * The caller sends their sign-in token; the server looks them up in the roster
  * and lets only a coordinator through. */
@@ -61,11 +61,18 @@ export async function GET(request: Request) {
       500
     )
 
-  if (new URL(request.url).searchParams.get("format") === "csv") {
-    return new Response(toCsv(rows), {
+  const params = new URL(request.url).searchParams
+  if (params.get("format") === "csv") {
+    // ?batch=2027 narrows the file to one batch, by graduation year.
+    const batch = params.get("batch")
+    const picked = batch
+      ? rows.filter((r) => String(r.graduation_year) === batch)
+      : rows
+    const name = batch ? `batch-${batch}` : "all"
+    return new Response(toCsv(picked), {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="project-repository-${new Date().toISOString().slice(0, 10)}.csv"`,
+        "Content-Disposition": `attachment; filename="project-repository-${name}-${new Date().toISOString().slice(0, 10)}.csv"`,
       },
     })
   }
