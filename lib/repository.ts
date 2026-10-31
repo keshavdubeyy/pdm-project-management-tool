@@ -225,11 +225,10 @@ export function parseSubmission(
     )
   ).slice(0, 10)
 
-  const submitterName = text(b.submitterName, 100)
-  const submitterEmail = text(b.submitterEmail, 200).toLowerCase()
-  if (!submitterName) return { ok: false, error: "Tell us your name." }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(submitterEmail))
-    return { ok: false, error: "Enter a valid email so we can reach you." }
+  // The form no longer asks who is sending it, so the first team member stands
+  // in as the contact.
+  const submitterName = team[0].name
+  const submitterEmail = team.find((m) => m.email)?.email ?? ""
 
   return {
     ok: true,

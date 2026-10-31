@@ -24,15 +24,13 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /** Everything wrong with the form right now, keyed by the field it belongs to,
  * so each one can be marked where it is. Keys: title, summary, batch,
- * member-N-name, member-N-email, link-N-url, submitterName, submitterEmail. */
+ * member-N-name, member-N-email, link-N-url. */
 function validate(v: {
   title: string
   summary: string
   batch: string
   team: RepoPerson[]
   links: RepoLink[]
-  submitterName: string
-  submitterEmail: string
 }): Errors {
   const e: Errors = {}
   if (!v.title.trim()) e.title = "Give the project a title."
@@ -58,9 +56,6 @@ function validate(v: {
   if (linkCount === 0 && !Object.keys(e).some((k) => k.startsWith("link-")))
     e["link-0-url"] = "Add at least one link to your project."
 
-  if (!v.submitterName.trim()) e.submitterName = "Tell us your name."
-  if (!EMAIL.test(v.submitterEmail.trim()))
-    e.submitterEmail = "Enter a valid email so we can reach you."
   return e
 }
 
@@ -99,8 +94,6 @@ export default function SubmitProjectPage() {
   const [team, setTeam] = React.useState<RepoPerson[]>([{ name: "" }])
   const [links, setLinks] = React.useState<RepoLink[]>([{ label: "", url: "" }])
   const [tags, setTags] = React.useState("")
-  const [submitterName, setSubmitterName] = React.useState("")
-  const [submitterEmail, setSubmitterEmail] = React.useState("")
   const [website, setWebsite] = React.useState("") // honeypot
   const [error, setError] = React.useState<string | null>(null)
   const [busy, setBusy] = React.useState(false)
@@ -112,7 +105,7 @@ export default function SubmitProjectPage() {
 
   const errors: Errors =
     attempts > 0
-      ? validate({ title, summary, batch, team, links, submitterName, submitterEmail })
+      ? validate({ title, summary, batch, team, links })
       : {}
 
   // Take them to the first thing still missing.
@@ -140,7 +133,7 @@ export default function SubmitProjectPage() {
     setAttempts((n) => n + 1)
     if (
       Object.keys(
-        validate({ title, summary, batch, team, links, submitterName, submitterEmail })
+        validate({ title, summary, batch, team, links })
       ).length > 0
     )
       return
@@ -156,8 +149,6 @@ export default function SubmitProjectPage() {
       team,
       links,
       tags: tags.split(","),
-      submitterName,
-      submitterEmail,
       website,
     }
     const checked = parseSubmission(body)
@@ -216,8 +207,6 @@ export default function SubmitProjectPage() {
       { label: "Demo video", url: "https://example.com/demo" },
     ])
     setTags("healthcare, iot, ageing")
-    setSubmitterName("Test Submitter")
-    setSubmitterEmail("test@example.com")
     setError(null)
   }
 
@@ -344,7 +333,7 @@ export default function SubmitProjectPage() {
           for the programme&apos;s records only.
         </p>
         {team.map((m, i) => (
-          <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_8rem_auto]">
+          <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_10rem_auto]">
             <Field invalid={!!errors[`member-${i}-name`]}>
               <Input
                 aria-label={`Member ${i + 1} name`}
@@ -369,7 +358,7 @@ export default function SubmitProjectPage() {
             </Field>
             <Input
               aria-label={`Member ${i + 1} roll number`}
-              placeholder="Roll no."
+              placeholder="Roll no. (optional)"
               value={m.rollNumber ?? ""}
               onChange={(rollNumber) => setMember(i, { rollNumber })}
               maxLength={30}
@@ -448,37 +437,6 @@ export default function SubmitProjectPage() {
             </Button>
           </div>
         )}
-      </fieldset>
-
-      <fieldset className="flex flex-col gap-4">
-        <legend className="mb-1 text-subhead text-foreground">Your details</legend>
-        <p className="-mt-2 text-meta text-muted-foreground">
-          So the coordinator can reach you with questions. Never shown publicly.
-        </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field invalid={!!errors.submitterName}>
-            <Input
-              label="Your name"
-              isRequired
-              value={submitterName}
-              onChange={setSubmitterName}
-              maxLength={100}
-              isInvalid={!!errors.submitterName}
-              hint={errors.submitterName}
-            />
-          </Field>
-          <Field invalid={!!errors.submitterEmail}>
-            <Input
-              label="Your email"
-              type="email"
-              isRequired
-              value={submitterEmail}
-              onChange={setSubmitterEmail}
-              isInvalid={!!errors.submitterEmail}
-              hint={errors.submitterEmail}
-            />
-          </Field>
-        </div>
       </fieldset>
 
       {/* Honeypot: hidden from people, tempting to bots. */}

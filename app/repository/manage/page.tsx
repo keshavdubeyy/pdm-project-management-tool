@@ -181,8 +181,8 @@ export default function ManageRepositoryPage() {
               <p className="mt-1 text-meta text-muted-foreground">{p.summary}</p>
             </div>
             <p className="text-caption text-muted-foreground">
-              Team: {p.team.map((m) => m.name).join(", ")} · Submitted by{" "}
-              {p.submitter_name} ({p.submitter_email})
+              Team: {p.team.map((m) => m.name).join(", ")}
+              {p.submitter_email && ` · Contact: ${p.submitter_email}`}
             </p>
             <div className="flex flex-wrap gap-2">
               {p.status !== "published" && (
