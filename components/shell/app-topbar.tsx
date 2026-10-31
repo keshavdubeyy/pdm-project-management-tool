@@ -31,6 +31,11 @@ export function AppTopbar() {
           active:
             pathname.startsWith("/teams") || pathname.startsWith("/projects"),
         },
+        {
+          label: "Repository",
+          href: "/repository/manage",
+          active: pathname.startsWith("/repository/manage"),
+        },
       ]
     : []
 

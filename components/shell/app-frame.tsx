@@ -11,7 +11,16 @@ import { LiveNotifications } from "@/components/shell/live-notifications"
 import { hasServerSession } from "@/lib/remote"
 import { useProjectsStore } from "@/lib/store"
 
-const PUBLIC_ROUTES = ["/signin", "/get-password", "/design-system", "/updates"]
+const PUBLIC_ROUTES = [
+  "/signin",
+  "/get-password",
+  "/design-system",
+  "/updates",
+  "/repository",
+  "/submit-project",
+]
+/** Inside a public area, but for the coordinator only. */
+const PRIVATE_ROUTES = ["/repository/manage"]
 
 /** The frame around every page, and the gate in front of it.
  *
@@ -21,7 +30,9 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { ready, session, signOut } = useProjectsStore()
-  const isPublic = PUBLIC_ROUTES.some((route) => pathname.startsWith(route))
+  const isPrivate = PRIVATE_ROUTES.some((route) => pathname.startsWith(route))
+  const isPublic =
+    PUBLIC_ROUTES.some((route) => pathname.startsWith(route)) && !isPrivate
 
   React.useEffect(() => {
     if (ready && !session && !isPublic) router.replace("/signin")
@@ -48,9 +59,15 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
     return <BootSkeleton />
   }
 
-  // Sign-in and the temporary-password page are shared by link, so they never
-  // carry the top bar, even in a tab that is already signed in.
-  if (pathname.startsWith("/signin") || pathname.startsWith("/get-password"))
+  // Sign-in, the temporary-password page, the project form and the public
+  // repository are shared by link, so they never carry the top bar, even in a
+  // tab that is already signed in.
+  if (
+    pathname.startsWith("/signin") ||
+    pathname.startsWith("/get-password") ||
+    pathname.startsWith("/submit-project") ||
+    (pathname.startsWith("/repository") && !isPrivate)
+  )
     return <>{children}</>
 
   return (

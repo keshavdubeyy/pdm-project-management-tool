@@ -263,3 +263,39 @@ as $$
 $$;
 revoke all on function public.dev_storage_stats() from public, anon, authenticated;
 grant execute on function public.dev_storage_stats() to service_role;
+
+-- The public project repository: graduated projects from every batch, filled
+-- in by alumni through the public form at /submit-project.
+-- Only the server reads or writes it (service-role key bypasses row level
+-- security), so there are no policies and the browser key can reach nothing.
+-- A submission goes live as 'published' at once; the coordinator can hide
+-- ('rejected') or delete one afterwards. Submitter
+-- contact details stay in this table and are never sent to the public pages.
+create table if not exists public.repository_projects (
+  id uuid primary key default gen_random_uuid(),
+  status text not null default 'pending'
+    check (status in ('pending', 'published', 'rejected')),
+  title text not null,
+  summary text not null,
+  problem text,
+  outcome text,
+  graduation_year int not null,
+  batch_label text,
+  domain text,
+  mentor text,
+  team jsonb not null default '[]'::jsonb,   -- [{ name, email?, rollNumber? }]
+  links jsonb not null default '[]'::jsonb,  -- [{ label, url }]
+  tags text[] not null default '{}',
+  submitter_name text not null,
+  submitter_email text not null,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz
+);
+create index if not exists repository_projects_listing
+  on public.repository_projects (status, graduation_year desc, created_at desc);
+alter table public.repository_projects enable row level security;
+
+-- Which kind of project this is. Graduation projects only for now; a course or
+-- systems-thinking project can be added later without another table.
+alter table public.repository_projects
+  add column if not exists project_type text not null default 'graduation';
