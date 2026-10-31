@@ -18,7 +18,8 @@ import type {
  * decides which rows appear on them.
  *
  * And a team can carry its own work as far as "turned in" but no further. Only
- * a mentor closes a checkpoint. That is the programme's rule, not a technical
+ * a mentor closes a checkpoint, and only the team turns work in: a coordinator
+ * may accept or return, never submit on a team's behalf. That is the programme's rule, not a technical
  * one, so it is enforced in the store rather than by hiding a button.
  */
 
@@ -134,6 +135,13 @@ export function canSetMilestoneStatus(
     }
   }
 
+  if (next === "submitted" && !member) {
+    return {
+      allowed: false,
+      reason: "Only the team can turn their own work in.",
+    }
+  }
+
   if (next === "overdue") {
     return {
       allowed: false,
@@ -149,8 +157,7 @@ export function canSubmitMilestone(
   project: Project
 ): TransitionCheck {
   if (isMemberOf(actor, project)) return { allowed: true }
-  if (isCoordinator(actor)) return { allowed: true }
-  if (isMentorOf(actor, project)) {
+  if (isMentorOf(actor, project) || isCoordinator(actor)) {
     return {
       allowed: false,
       reason: "Only the team can turn their own work in.",
