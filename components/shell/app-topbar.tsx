@@ -11,17 +11,25 @@ import { cn } from "@/lib/utils"
 
 /** The one bar across the top: the PDM mark and the product name on the left,
  * the notifications and the person on the right. Every page opens from the name,
- * so there is no menu to learn, except for the coordinator, who also gets
- * Overview and Teams beside the name. The way back from a team or a note is a
+ * so there is no menu to learn, except for the coordinator and mentors, who
+ * also get Overview and Teams beside the name. The way back from a team or a note is a
  * link on that page. */
 export function AppTopbar() {
   const { actor } = useProjectsStore()
   const pathname = usePathname()
   if (!actor) return null
 
-  // The coordinator works across the whole batch, so has two places to start:
-  // how it is doing, and the list of teams. Students and mentors have one home,
-  // which is the name on the left.
+  // The coordinator and mentors have two places to start: how their teams are
+  // doing, and the list of them; the coordinator also runs the repository.
+  // Students have one home, which is the name on the left.
+  const teamsTabs = [
+    { label: "Overview", href: "/", active: pathname === "/" },
+    {
+      label: "Teams",
+      href: "/teams",
+      active: pathname.startsWith("/teams") || pathname.startsWith("/projects"),
+    },
+  ]
   const tabs = isCoordinator(actor)
     ? [
         { label: "Overview", href: "/", active: pathname === "/" },
@@ -37,7 +45,9 @@ export function AppTopbar() {
           active: pathname.startsWith("/repository/manage"),
         },
       ]
-    : []
+    : actor.role === "mentor"
+      ? teamsTabs
+      : []
 
   return (
     <header className="sticky top-0 z-30 border-b border-secondary bg-primary">

@@ -2,19 +2,21 @@
 
 import { CoordinatorTeams } from "@/components/coordinator/teams-view"
 import { EmptyState } from "@/components/common"
+import { MentorTeams } from "@/components/mentor/mentor-teams"
 import { isCoordinator } from "@/lib/permissions"
 import { useProjectsStore } from "@/lib/store"
 
-/** Every team in the batch. The programme coordinator's list; a mentor's teams
- * are on their own home page. */
+/** Every team in the batch for the programme coordinator; a mentor sees the
+ * teams they mentor. */
 export default function TeamsPage() {
   const { actor } = useProjectsStore()
   if (!actor) return null
+  if (actor.role === "mentor") return <MentorTeams />
   if (!isCoordinator(actor))
     return (
       <EmptyState
         title="This list belongs to the programme coordinator"
-        body="Mentors find their teams on their home page, and students open their own project from there."
+        body="Students open their own project from their home page."
       />
     )
   return <CoordinatorTeams />

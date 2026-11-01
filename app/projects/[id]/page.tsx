@@ -85,13 +85,7 @@ export default function ProjectPage() {
         // page starts over for it rather than keeping what was open.
         key={`${requested ?? ""}:${requestedComment ?? ""}`}
         project={project}
-        backHref={
-          actor.role === "student"
-            ? undefined
-            : actor.role === "coordinator"
-              ? "/teams"
-              : "/"
-        }
+        backHref={actor.role === "student" ? undefined : "/teams"}
         backLabel={actor.role === "coordinator" ? "Teams" : "Your teams"}
         initialTab={searchParams.get("tab") ?? undefined}
         initialMilestone={requested ?? undefined}

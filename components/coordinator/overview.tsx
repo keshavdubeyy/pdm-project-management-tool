@@ -17,12 +17,20 @@ const teamName = (t: TeamHealth) =>
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`
 
 /** The programme coordinator's home: how the batch is doing in four numbers, and
- * three short lists under them, the teams to be glad about and the ones to go and
- * see. Everything is worked out from the same data as the rest of the app, so it
+ * four short lists under them, the teams to be glad about, the busiest, and the
+ * ones to go and see. Everything is worked out from the same data as the rest of the app, so it
  * agrees with the Teams list. */
-export function CoordinatorOverview() {
+export function CoordinatorOverview({
+  projectIds,
+  mentor,
+}: {
+  /** Only these teams; the whole batch when left out. */
+  projectIds?: string[]
+  /** Worded for a mentor reading their own teams. */
+  mentor?: boolean
+} = {}) {
   const { db } = useProjectsStore()
-  const o = batchOverview(db)
+  const o = batchOverview(db, projectIds)
   const total = o.teams.length
   const share = total ? o.onTrack / total : 1
 
@@ -58,6 +66,29 @@ export function CoordinatorOverview() {
         a.overdue - b.overdue
     )
 
+  // Whoever has handed in the most so far, checkpoints and weekly updates
+  // alike; on a tie, whoever was active most recently. This fills up from the
+  // first week, long before anything is accepted.
+  const active = o.teams
+    .filter((t) => t.submissions > 0)
+    .sort(
+      (a, b) =>
+        b.submissions - a.submissions ||
+        (b.lastActivity ?? "").localeCompare(a.lastActivity ?? "")
+    )
+
+  // A mentor's to-do: teams with work handed in and not yet reviewed, the
+  // longest waiting first.
+  const toReview = o.teams
+    .filter((t) => t.waiting > 0)
+    .sort(
+      (a, b) =>
+        (b.oldestWaitingDays ?? 0) - (a.oldestWaitingDays ?? 0) ||
+        b.waiting - a.waiting
+    )
+  // Behind only, since a mentor's own reviews have their list above.
+  const behind = attention.filter((t) => t.status === "behind")
+
   return (
     <>
       <PageHeader
@@ -87,7 +118,7 @@ export function CoordinatorOverview() {
         />
         <MetricTile
           dashboard
-          label="Waiting on a mentor"
+          label={mentor ? "Waiting on your review" : "Waiting on a mentor"}
           value={String(o.waitingTotal)}
           hint={
             o.oldestWaitingDays === null
@@ -107,25 +138,62 @@ export function CoordinatorOverview() {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-2">
+        {mentor ? (
+          <>
+            <TeamList
+              title="Needs your review"
+              note="Handed in and not yet reviewed, longest waiting first"
+              teams={toReview}
+              empty="Nothing is waiting on you."
+              detail={(t) =>
+                `${t.waiting} to review${t.oldestWaitingDays !== null ? ` · ${t.oldestWaitingDays}d` : ""}`
+              }
+              tone={(t) => ((t.oldestWaitingDays ?? 0) > 7 ? "bad" : "warn")}
+            />
+            <TeamList
+              title="Teams behind"
+              note="Checkpoints overdue, most overdue first"
+              teams={behind}
+              empty="No team is behind."
+              detail={(t) => `${t.overdue} overdue`}
+              tone={() => "bad"}
+            />
+          </>
+        ) : (
+          <>
+            <TeamList
+              title="Top teams on track"
+              note="No checkpoint overdue, furthest along first"
+              teams={onTrack}
+              empty="No team is fully on track yet."
+              detail={(t) => `${t.accepted}/${t.total} accepted`}
+            />
+            <TeamList
+              title="Top teams needing attention"
+              note={
+                mentor
+                  ? "Behind or waiting on your review, most urgent first"
+                  : "Behind or waiting on a mentor, most urgent first"
+              }
+              teams={attention}
+              empty="Every team is on track."
+              detail={(t) =>
+                t.status === "behind"
+                  ? `${t.overdue} overdue`
+                  : `Waiting${t.oldestWaitingDays !== null ? ` ${t.oldestWaitingDays}d` : ""}`
+              }
+              tone={(t) => (t.status === "behind" ? "bad" : "warn")}
+            />
+          </>
+        )}
         <TeamList
-          title="Top teams on track"
-          note="No checkpoint overdue, furthest along first"
-          teams={onTrack}
-          empty="No team is fully on track yet."
-          detail={(t) => `${t.accepted}/${t.total} accepted`}
-        />
-        <TeamList
-          title="Top teams needing attention"
-          note="Behind or waiting on a mentor, most urgent first"
-          teams={attention}
-          empty="Every team is on track."
-          detail={(t) =>
-            t.status === "behind"
-              ? `${t.overdue} overdue`
-              : `Waiting${t.oldestWaitingDays !== null ? ` ${t.oldestWaitingDays}d` : ""}`
-          }
-          tone={(t) => (t.status === "behind" ? "bad" : "warn")}
+          title="Most active teams"
+          note="Most handed in so far, checkpoints and weekly updates"
+          teams={active}
+          empty="No team has handed anything in yet."
+          ranked
+          detail={(t) => plural(t.submissions, "submission")}
         />
         <TeamList
           title="Top performing teams"
@@ -142,9 +210,11 @@ export function CoordinatorOverview() {
           href="/teams"
           className="font-medium text-brand-secondary hover:underline"
         >
-          See every team
+          {mentor ? "See your teams" : "See every team"}
         </Link>{" "}
-        with its progress, status and last activity.
+        {mentor
+          ? "and open any of them."
+          : "with its progress, status and last activity."}
       </p>
     </>
   )

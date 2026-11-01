@@ -29,6 +29,9 @@ export type TeamHealth = {
   oldestWaitingDays: number | null
   /** Behind beats waiting: what the team has to act on comes first. */
   status: TeamStatus
+  /** Everything the team has handed in so far: checkpoint submissions,
+   * resubmissions included, and weekly progress updates. */
+  submissions: number
   /** The latest thing the team did, ISO. */
   lastActivity: string | null
 }
@@ -58,8 +61,11 @@ const latest = (times: (string | undefined)[]) =>
     .sort()
     .at(-1) ?? null
 
-export function batchOverview(db: Database): BatchOverview {
-  const projects = db.projects.filter((p) => !p.archived)
+/** The whole batch, or only the projects named (a mentor's own teams). */
+export function batchOverview(db: Database, only?: string[]): BatchOverview {
+  const projects = db.projects.filter(
+    (p) => !p.archived && (!only || only.includes(p.id))
+  )
   const ids = new Set(projects.map((p) => p.id))
   const batchStart = db.batches[0]?.startDate ?? todayIso()
   const week = currentWeek(batchStart)
@@ -77,6 +83,9 @@ export function batchOverview(db: Database): BatchOverview {
     const waitingViews = views.filter(
       (v) => v.status === "submitted" || v.status === "under_review"
     )
+    const handedIn =
+      db.submissions.filter((s) => s.projectId === project.id).length +
+      db.weeklyProgress.filter((w) => w.projectId === project.id).length
     const ages = waitingViews
       .map((v) => v.instance.submittedAt)
       .filter((t): t is string => Boolean(t))
@@ -102,6 +111,7 @@ export function batchOverview(db: Database): BatchOverview {
       oldestWaitingDays: ages.length ? Math.max(...ages) : null,
       status:
         overdue > 0 ? "behind" : waitingViews.length ? "waiting" : "on_track",
+      submissions: handedIn,
       // The calendar's own checkpoints are not activity: they carry the day they
       // were created, which would make every team look busy.
       lastActivity: latest([
