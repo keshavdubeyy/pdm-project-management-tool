@@ -105,7 +105,7 @@ export function NotificationBell() {
           <Bell01 className="size-5" />
           {/* How many are unread. */}
           {unread > 0 && (
-            <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-solid px-1 text-[10px] font-semibold text-white ring-2 ring-primary">
+            <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-solid px-1 text-[10px] font-semibold text-white ring-2 ring-[var(--color-utility-brand-100)]">
               {unread > 9 ? "9+" : unread}
             </span>
           )}

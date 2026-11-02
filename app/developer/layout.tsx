@@ -3,11 +3,16 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
-/** The developer pages share one row of tabs. */
+import { cn } from "@/lib/utils"
+
+/** The developer's one place: a row of tabs over every developer page. The top
+ * bar has a single Developer button that opens this. */
 const TABS = [
   { href: "/developer", label: "People" },
   { href: "/developer/mail", label: "Mail" },
   { href: "/developer/storage", label: "Storage" },
+  { href: "/developer/measures", label: "Measures" },
+  { href: "/developer/design-system", label: "Design system" },
 ] as const
 
 export default function DeveloperLayout({
@@ -18,16 +23,18 @@ export default function DeveloperLayout({
   const pathname = usePathname()
   return (
     <>
-      <nav className="flex gap-2">
+      <nav aria-label="Developer" className="flex flex-wrap gap-1">
         {TABS.map((t) => (
           <Link
             key={t.href}
             href={t.href}
-            className={`rounded-md border px-3 py-1 text-sm ${
+            aria-current={pathname === t.href ? "page" : undefined}
+            className={cn(
+              "rounded-lg px-3 py-1.5 text-meta font-semibold outline-brand focus-visible:outline-2",
               pathname === t.href
-                ? "border-foreground font-semibold"
-                : "border-border text-muted-foreground"
-            }`}
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+            )}
           >
             {t.label}
           </Link>

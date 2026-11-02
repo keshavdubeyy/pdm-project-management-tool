@@ -2,7 +2,7 @@
 
 import * as React from "react"
 
-const COLORS = ["#7F56D9", "#9E77ED", "#F79009", "#12B76A", "#2E90FA", "#F04438"]
+const COLORS = ["#118AB1", "#3FAACC", "#F79009", "#12B76A", "#2E90FA", "#F04438"]
 
 type Piece = {
   x: number

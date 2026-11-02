@@ -41,7 +41,7 @@ activity for stress-testing; **Clear demo data** removes it again.
 
 ## Design system
 
-Untitled UI, with its default purple brand. Every screen is built from its components,
+Untitled UI, with the PDM logo blues as the brand scale. Every screen is built from its components,
 which live in `components/untitled` (React Aria underneath) and are used as installed:
 `npx untitledui@latest add <component> -y -t base|application` adds more. Its tokens
 are in `styles/theme.css` unchanged; `app/globals.css` maps the older names the app

@@ -96,8 +96,8 @@ export default function DesignSystemPage() {
           Colour
         </SectionHeading>
         <p className="mb-4 max-w-2xl text-meta text-muted-foreground">
-          Untitled UI&rsquo;s tokens, unchanged, with its default purple as the
-          brand colour: one accent, one neutral ramp, and seven status colours
+          Untitled UI&rsquo;s tokens, with the PDM logo blue (#118AB1) and dark
+          teal (#073B4C) as the brand scale: one accent, one neutral ramp, and seven status colours
           that only ever appear on a status. Light and dark are the same names
           resolving to different values, so nothing on this page is written
           twice.
